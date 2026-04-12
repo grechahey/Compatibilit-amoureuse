@@ -1,2 +1,2 @@
-# Compatibilit-amoureuse
+# Compatibilité-amoureuse
 Site de compatibilité amoureuse 

@@ -20,6 +20,83 @@ const ZODIAC = [
   { name: "Sagittaire", emoji: "♐", from: [11, 22], to: [12, 21], element: "feu" },
 ];
 
+/* ----------------------- Astrologie chinoise ----------------------- */
+// Index = année % 12
+const CHINESE = [
+  { name: "Singe",   emoji: "🐒" }, // 0
+  { name: "Coq",     emoji: "🐓" }, // 1
+  { name: "Chien",   emoji: "🐕" }, // 2
+  { name: "Cochon",  emoji: "🐖" }, // 3
+  { name: "Rat",     emoji: "🐀" }, // 4
+  { name: "Buffle",  emoji: "🐂" }, // 5
+  { name: "Tigre",   emoji: "🐅" }, // 6
+  { name: "Lapin",   emoji: "🐇" }, // 7
+  { name: "Dragon",  emoji: "🐉" }, // 8
+  { name: "Serpent", emoji: "🐍" }, // 9
+  { name: "Cheval",  emoji: "🐴" }, // 10
+  { name: "Chèvre",  emoji: "🐐" }, // 11
+];
+
+// Trigones (très compatibles)
+const CHINESE_TRINES = [
+  ["Rat", "Dragon", "Singe"],
+  ["Buffle", "Serpent", "Coq"],
+  ["Tigre", "Cheval", "Chien"],
+  ["Lapin", "Chèvre", "Cochon"],
+];
+// Amis secrets (paires idéales)
+const CHINESE_FRIENDS = [
+  ["Rat", "Buffle"], ["Tigre", "Cochon"], ["Lapin", "Chien"],
+  ["Dragon", "Coq"], ["Serpent", "Singe"], ["Cheval", "Chèvre"],
+];
+// Oppositions (signes qui s'affrontent)
+const CHINESE_CLASHES = [
+  ["Rat", "Cheval"], ["Buffle", "Chèvre"], ["Tigre", "Singe"],
+  ["Lapin", "Coq"], ["Dragon", "Chien"], ["Serpent", "Cochon"],
+];
+
+function chineseFor(date) {
+  return CHINESE[((date.getFullYear() % 12) + 12) % 12];
+}
+
+function inPair(list, a, b) {
+  return list.some((p) => (p[0] === a && p[1] === b) || (p[0] === b && p[1] === a));
+}
+
+function chineseScore(c1, c2) {
+  const a = c1.name, b = c2.name;
+  if (inPair(CHINESE_FRIENDS, a, b)) return 1.0;
+  if (inPair(CHINESE_CLASHES, a, b)) return 0.3;
+  if (CHINESE_TRINES.some((t) => t.includes(a) && t.includes(b))) return 0.9;
+  if (a === b) return 0.72;
+  return 0.6;
+}
+
+/* ----------------------------- MBTI ----------------------------- */
+const MBTI_TYPES = [
+  "INTJ", "INTP", "ENTJ", "ENTP",
+  "INFJ", "INFP", "ENFJ", "ENFP",
+  "ISTJ", "ISFJ", "ESTJ", "ESFJ",
+  "ISTP", "ISFP", "ESTP", "ESFP",
+];
+
+// Compatibilité par dimension : 1 = même lettre, 0 = lettre opposée
+const MBTI_DIM = [
+  { same: 0.6, diff: 0.85 }, // E/I : les énergies opposées s'équilibrent
+  { same: 1.0, diff: 0.4 },  // N/S : partager la même vision du monde compte le plus
+  { same: 0.6, diff: 0.85 }, // T/F : tête et cœur se complètent
+  { same: 0.65, diff: 0.8 }, // J/P : structure et spontanéité s'attirent
+];
+
+function mbtiScore(t1, t2) {
+  if (!t1 || !t2) return 0.6;
+  let sum = 0;
+  for (let i = 0; i < 4; i++) {
+    sum += t1[i] === t2[i] ? MBTI_DIM[i].same : MBTI_DIM[i].diff;
+  }
+  return sum / 4;
+}
+
 // Affinités entre éléments (0 → 1)
 const ELEMENT_AFFINITY = {
   feu:   { feu: 0.8, terre: 0.45, air: 0.95, eau: 0.4 },
@@ -81,9 +158,17 @@ function compatibility(p1, p2) {
 
   const z1 = zodiacFor(p1.dob);
   const z2 = zodiacFor(p2.dob);
+  const c1 = chineseFor(p1.dob);
+  const c2 = chineseFor(p2.dob);
 
   // 1. Affinité astrologique (éléments)
   const astro = ELEMENT_AFFINITY[z1.element][z2.element];
+
+  // 1bis. Astrologie chinoise
+  const chinese = chineseScore(c1, c2);
+
+  // 1ter. Compatibilité de personnalité (MBTI)
+  const mbti = mbtiScore(p1.mbti, p2.mbti);
 
   // 2. Alchimie des prénoms (lettres partagées)
   const names = 0.35 + lettersScore(n1, n2) * 0.65;
@@ -98,19 +183,27 @@ function compatibility(p1, p2) {
   const rhythm = 1 - Math.min(diff, 372 - diff) / 186; // 0..1, max d'écart = 6 mois
 
   const factors = [
+    { label: "Compatibilité MBTI",    emoji: "🧠", value: mbti },
     { label: "Affinité astrologique", emoji: "✨", value: astro },
+    { label: "Astrologie chinoise",   emoji: "🐉", value: chinese },
     { label: "Alchimie des prénoms",  emoji: "🔤", value: names },
     { label: "Étincelle du couple",   emoji: "⚡", value: spark },
     { label: "Rythme de vie",         emoji: "🌙", value: rhythm },
   ];
 
-  const weighted = astro * 0.3 + names * 0.2 + spark * 0.3 + rhythm * 0.2;
+  const weighted =
+    mbti * 0.22 +
+    astro * 0.18 +
+    chinese * 0.18 +
+    names * 0.12 +
+    spark * 0.18 +
+    rhythm * 0.12;
   const score = Math.round(weighted * 100);
 
-  return { score, factors, z1, z2 };
+  return { score, factors, z1, z2, c1, c2 };
 }
 
-function verdictFor(score, z1, z2) {
+function verdictFor(score, z1, z2, c1, c2) {
   let line;
   if (score >= 90)      line = "Une évidence. Vous êtes faits l'un pour l'autre. 💍";
   else if (score >= 75) line = "Une belle harmonie : il y a une vraie magie entre vous. 💕";
@@ -118,7 +211,7 @@ function verdictFor(score, z1, z2) {
   else if (score >= 45) line = "Des différences qui peuvent s'attirer… ou faire des étincelles. 🔥";
   else if (score >= 30) line = "Un chemin semé d'efforts, mais l'amour aime les défis. 🌱";
   else                  line = "Opposés sur bien des points — mais qui sait, les contraires s'attirent ! 🎲";
-  return `${z1.emoji} ${z1.name} & ${z2.emoji} ${z2.name} — ${line}`;
+  return `${z1.emoji} ${z1.name} ${c1.emoji} & ${z2.emoji} ${z2.name} ${c2.emoji} — ${line}`;
 }
 
 /* ------------------------------- UI ------------------------------- */
@@ -149,13 +242,20 @@ form.addEventListener("submit", (e) => {
   const today = new Date();
   if (dob1 > today || dob2 > today) return showError("Une date de naissance ne peut pas être dans le futur. ⏳");
 
-  const r = compatibility({ name: name1, dob: dob1 }, { name: name2, dob: dob2 });
+  const mbti1 = document.getElementById("mbti1").value;
+  const mbti2 = document.getElementById("mbti2").value;
+  if (!mbti1 || !mbti2) return showError("Choisis les deux types de personnalité (MBTI). 🧠");
+
+  const r = compatibility(
+    { name: name1, dob: dob1, mbti: mbti1 },
+    { name: name2, dob: dob2, mbti: mbti2 }
+  );
   renderResult(name1, name2, r);
 });
 
 function renderResult(name1, name2, r) {
   document.getElementById("result-title").textContent = `${name1} ❤ ${name2}`;
-  document.getElementById("verdict").textContent = verdictFor(r.score, r.z1, r.z2);
+  document.getElementById("verdict").textContent = verdictFor(r.score, r.z1, r.z2, r.c1, r.c2);
 
   // breakdown
   const ul = document.getElementById("breakdown");
@@ -206,6 +306,25 @@ document.getElementById("again").addEventListener("click", () => {
   form.scrollIntoView({ behavior: "smooth", block: "center" });
   document.getElementById("name1").focus();
 });
+
+/* --------------------- Remplissage des menus MBTI --------------------- */
+(function fillMbti() {
+  for (const id of ["mbti1", "mbti2"]) {
+    const sel = document.getElementById(id);
+    const ph = document.createElement("option");
+    ph.value = "";
+    ph.textContent = "— choisir —";
+    ph.disabled = true;
+    ph.selected = true;
+    sel.appendChild(ph);
+    for (const t of MBTI_TYPES) {
+      const o = document.createElement("option");
+      o.value = t;
+      o.textContent = t;
+      sel.appendChild(o);
+    }
+  }
+})();
 
 /* ----------------------- Décor : cœurs flottants ----------------------- */
 (function hearts() {

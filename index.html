@@ -36,6 +36,21 @@
             Personnalité (MBTI)
             <select id="mbti1" name="mbti1" class="mbti-select" required></select>
           </label>
+          <details class="asc-group">
+            <summary>Ascendant (facultatif)</summary>
+            <label>
+              Heure de naissance
+              <input type="time" id="time1" name="time1" />
+            </label>
+            <label>
+              Ville de naissance
+              <select id="city1" name="city1" class="mbti-select"></select>
+            </label>
+            <label class="check">
+              <input type="checkbox" id="dst1" name="dst1" />
+              Heure d'été (DST) ce jour-là
+            </label>
+          </details>
         </fieldset>
 
         <div class="plus" aria-hidden="true">❤</div>
@@ -54,6 +69,21 @@
             Personnalité (MBTI)
             <select id="mbti2" name="mbti2" class="mbti-select" required></select>
           </label>
+          <details class="asc-group">
+            <summary>Ascendant (facultatif)</summary>
+            <label>
+              Heure de naissance
+              <input type="time" id="time2" name="time2" />
+            </label>
+            <label>
+              Ville de naissance
+              <select id="city2" name="city2" class="mbti-select"></select>
+            </label>
+            <label class="check">
+              <input type="checkbox" id="dst2" name="dst2" />
+              Heure d'été (DST) ce jour-là
+            </label>
+          </details>
         </fieldset>
       </div>
 
@@ -74,6 +104,8 @@
       </div>
 
       <p class="verdict" id="verdict"></p>
+
+      <p class="ascendants" id="ascendants" hidden></p>
 
       <p class="cusp-note" id="cusp-note" hidden></p>
 

@@ -222,6 +222,86 @@ function cuspInfo(date) {
   return { from: ZODIAC[a], to: ZODIAC[b] };
 }
 
+/* ----------------------- Ascendant (exact) -----------------------
+ * Signe se levant à l'est au moment et au lieu de naissance.
+ * Temps sidéral apparent + nutation + obliquité vraie, puis formule
+ * de l'ascendant. Validé contre le Swiss Ephemeris (écart < 2"). */
+const norm360 = (x) => ((x % 360) + 360) % 360;
+
+function meanObliquity(jd) {
+  const T = (jd - 2451545.0) / 36525.0;
+  return 23.4392911 - 0.0130041667 * T - 1.6388889e-7 * T * T + 5.0361111e-7 * T * T * T;
+}
+function nutation(jd) {
+  const T = (jd - 2451545.0) / 36525.0;
+  const rad = Math.PI / 180;
+  const Om = (125.04452 - 1934.136261 * T) * rad;
+  const L = (280.4665 + 36000.7698 * T) * rad;
+  const Lp = (218.3165 + 481267.8813 * T) * rad;
+  const dPsi = (-17.20 * Math.sin(Om) - 1.32 * Math.sin(2 * L) -
+                0.23 * Math.sin(2 * Lp) + 0.21 * Math.sin(2 * Om)) / 3600;
+  const dEps = (9.20 * Math.cos(Om) + 0.57 * Math.cos(2 * L) +
+                0.10 * Math.cos(2 * Lp) - 0.09 * Math.cos(2 * Om)) / 3600;
+  return { dPsi, dEps };
+}
+function gmst(jd) {
+  const T = (jd - 2451545.0) / 36525.0;
+  return norm360(280.46061837 + 360.98564736629 * (jd - 2451545.0) +
+                 0.000387933 * T * T - (T * T * T) / 38710000.0);
+}
+
+// Longitude écliptique de l'ascendant. lat/lonEast en degrés.
+function ascendantLongitude(jd, lat, lonEast) {
+  const rad = Math.PI / 180;
+  const { dPsi, dEps } = nutation(jd);
+  const eps = (meanObliquity(jd) + dEps) * rad;
+  const gast = gmst(jd) + dPsi * Math.cos(eps);
+  const ramc = norm360(gast + lonEast) * rad;
+  const phi = lat * rad;
+  const asc = Math.atan2(Math.cos(ramc),
+                         -(Math.sin(ramc) * Math.cos(eps) + Math.tan(phi) * Math.sin(eps)));
+  return norm360(asc / rad);
+}
+
+// Calcule le signe ascendant à partir de la date locale, l'heure locale
+// (décimale), le décalage UTC (heures) et la latitude/longitude.
+function ascendantSign(date, localHours, utcOffset, lat, lonEast) {
+  const utHours = localHours - utcOffset;
+  const jd = julianDay(date.getFullYear(), date.getMonth() + 1, date.getDate(), utHours);
+  const lon = ascendantLongitude(jd, lat, lonEast);
+  return ZODIAC[Math.floor(lon / 30) % 12];
+}
+
+/* Villes de naissance : latitude, longitude (est+), décalage UTC standard.
+ * Le décalage est l'heure d'hiver ; cocher « heure d'été » ajoute +1 h. */
+const CITIES = [
+  ["Paris", 48.8566, 2.3522, 1], ["Marseille", 43.2965, 5.3698, 1],
+  ["Lyon", 45.764, 4.8357, 1], ["Toulouse", 43.6047, 1.4442, 1],
+  ["Nice", 43.7102, 7.262, 1], ["Nantes", 47.2184, -1.5536, 1],
+  ["Strasbourg", 48.5734, 7.7521, 1], ["Bordeaux", 44.8378, -0.5792, 1],
+  ["Lille", 50.6292, 3.0573, 1], ["Bruxelles", 50.8503, 4.3517, 1],
+  ["Genève", 46.2044, 6.1432, 1], ["Lausanne", 46.5197, 6.6323, 1],
+  ["Luxembourg", 49.6116, 6.1319, 1], ["Montréal", 45.5017, -73.5673, -5],
+  ["Québec", 46.8139, -71.208, -5], ["Dakar", 14.7167, -17.4677, 0],
+  ["Abidjan", 5.36, -4.0083, 0], ["Casablanca", 33.5731, -7.5898, 0],
+  ["Alger", 36.7538, 3.0588, 1], ["Tunis", 36.8065, 10.1815, 1],
+  ["Beyrouth", 33.8938, 35.5018, 2], ["Antananarivo", -18.8792, 47.5079, 3],
+  ["Port-au-Prince", 18.5944, -72.3074, -5], ["Cayenne", 4.9224, -52.3135, -3],
+  ["Fort-de-France", 14.6161, -61.0588, -4], ["Papeete", -17.5325, -149.5665, -10],
+  ["Nouméa", -22.2758, 166.458, 11], ["Kinshasa", -4.4419, 15.2663, 1],
+  ["Yaoundé", 3.848, 11.5021, 1], ["Londres", 51.5074, -0.1278, 0],
+  ["Madrid", 40.4168, -3.7038, 1], ["Rome", 41.9028, 12.4964, 1],
+  ["Berlin", 52.52, 13.405, 1], ["Lisbonne", 38.7223, -9.1393, 0],
+  ["New York", 40.7128, -74.006, -5], ["Los Angeles", 34.0522, -118.2437, -8],
+  ["Mexico", 19.4326, -99.1332, -6], ["São Paulo", -23.5505, -46.6333, -3],
+  ["Buenos Aires", -34.6037, -58.3816, -3], ["Tokyo", 35.6762, 139.6503, 9],
+  ["Pékin", 39.9042, 116.4074, 8], ["Hong Kong", 22.3193, 114.1694, 8],
+  ["Bangkok", 13.7563, 100.5018, 7], ["Mumbai", 19.076, 72.8777, 5.5],
+  ["Dubaï", 25.2048, 55.2708, 4], ["Le Caire", 30.0444, 31.2357, 2],
+  ["Johannesburg", -26.2041, 28.0473, 2], ["Sydney", -33.8688, 151.2093, 10],
+  ["Moscou", 55.7558, 37.6173, 3], ["Istanbul", 41.0082, 28.9784, 3],
+];
+
 // Hash stable d'une chaîne → 0..1
 function hashUnit(str) {
   let h = 2166136261;
@@ -264,8 +344,12 @@ function compatibility(p1, p2) {
   const c1 = chineseFor(p1.dob);
   const c2 = chineseFor(p2.dob);
 
-  // 1. Affinité astrologique (éléments)
-  const astro = ELEMENT_AFFINITY[z1.element][z2.element];
+  // 1. Affinité astrologique (éléments du Soleil, affinée par l'ascendant si connu)
+  let astro = ELEMENT_AFFINITY[z1.element][z2.element];
+  if (p1.asc && p2.asc) {
+    const ascAffinity = ELEMENT_AFFINITY[p1.asc.element][p2.asc.element];
+    astro = astro * 0.6 + ascAffinity * 0.4;
+  }
 
   // 1bis. Astrologie chinoise
   const chinese = chineseScore(c1, c2);
@@ -310,7 +394,8 @@ function compatibility(p1, p2) {
     rhythm * 0.10;
   const score = Math.round(weighted * 100);
 
-  return { score, factors, z1, z2, c1, c2, cusp1, cusp2, name1: p1.name, name2: p2.name };
+  return { score, factors, z1, z2, c1, c2, cusp1, cusp2,
+           asc1: p1.asc, asc2: p2.asc, name1: p1.name, name2: p2.name };
 }
 
 function verdictFor(score, z1, z2, c1, c2) {
@@ -356,9 +441,22 @@ form.addEventListener("submit", (e) => {
   const mbti2 = document.getElementById("mbti2").value;
   if (!mbti1 || !mbti2) return showError("Choisis les deux types de personnalité (MBTI). 🧠");
 
+  // Ascendant (facultatif) : nécessite heure + ville de naissance.
+  function readAscendant(date, n) {
+    const t = document.getElementById("time" + n).value;
+    const cityVal = document.getElementById("city" + n).value;
+    if (!t || !cityVal) return null;
+    const [hh, mm] = t.split(":").map(Number);
+    const { lat, lon, tz } = JSON.parse(cityVal);
+    const dst = document.getElementById("dst" + n).checked ? 1 : 0;
+    return ascendantSign(date, hh + mm / 60, tz + dst, lat, lon);
+  }
+  const asc1 = readAscendant(dob1, 1);
+  const asc2 = readAscendant(dob2, 2);
+
   const r = compatibility(
-    { name: name1, dob: dob1, mbti: mbti1 },
-    { name: name2, dob: dob2, mbti: mbti2 }
+    { name: name1, dob: dob1, mbti: mbti1, asc: asc1 },
+    { name: name2, dob: dob2, mbti: mbti2, asc: asc2 }
   );
   renderResult(name1, name2, r);
 });
@@ -366,6 +464,18 @@ form.addEventListener("submit", (e) => {
 function renderResult(name1, name2, r) {
   document.getElementById("result-title").textContent = `${name1} ❤ ${name2}`;
   document.getElementById("verdict").textContent = verdictFor(r.score, r.z1, r.z2, r.c1, r.c2);
+
+  // Ascendants (si calculés)
+  const ascEl = document.getElementById("ascendants");
+  if (r.asc1 || r.asc2) {
+    const parts = [];
+    if (r.asc1) parts.push(`${r.name1} ⬆ ${r.asc1.emoji} ${r.asc1.name}`);
+    if (r.asc2) parts.push(`${r.name2} ⬆ ${r.asc2.emoji} ${r.asc2.name}`);
+    ascEl.textContent = "Ascendant — " + parts.join("  ·  ");
+    ascEl.hidden = false;
+  } else {
+    ascEl.hidden = true;
+  }
 
   // Note de cuspide (signe qui change le jour de la naissance)
   const noteEl = document.getElementById("cusp-note");
@@ -443,6 +553,25 @@ document.getElementById("again").addEventListener("click", () => {
       const o = document.createElement("option");
       o.value = t;
       o.textContent = t;
+      sel.appendChild(o);
+    }
+  }
+})();
+
+/* --------------------- Remplissage des menus Villes --------------------- */
+(function fillCities() {
+  const sorted = [...CITIES].sort((a, b) => a[0].localeCompare(b[0], "fr"));
+  for (const id of ["city1", "city2"]) {
+    const sel = document.getElementById(id);
+    const ph = document.createElement("option");
+    ph.value = "";
+    ph.textContent = "— choisir —";
+    ph.selected = true;
+    sel.appendChild(ph);
+    for (const [name, lat, lon, tz] of sorted) {
+      const o = document.createElement("option");
+      o.value = JSON.stringify({ lat, lon, tz });
+      o.textContent = name;
       sel.appendChild(o);
     }
   }

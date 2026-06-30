@@ -227,6 +227,17 @@ input:focus, select:focus {
   max-width: 32ch;
 }
 
+.cusp-note {
+  font-size: .82rem;
+  color: #8a6478;
+  background: #fff0f5;
+  border: 1px dashed #f2c7d6;
+  border-radius: 12px;
+  padding: .6rem .8rem;
+  margin: 0 auto 1.2rem;
+  max-width: 38ch;
+}
+
 .breakdown {
   list-style: none;
   padding: 0;

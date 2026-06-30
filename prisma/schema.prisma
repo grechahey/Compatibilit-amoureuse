@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// SQLite ne supporte pas les enums natifs : on utilise des String contraintes
+// applicativement (zod) — Role ∈ {GUEST, HOST, ADMIN}, status ∈ {PENDING,
+// CONFIRMED, CANCELLED}.
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  password  String
+  name      String
+  role      String    @default("GUEST")
+  // Statut « membre vérifié » : la clientèle est sélectionnée, ce qui réduit
+  // les besoins de support et de garanties.
+  verified  Boolean   @default(false)
+  avatarUrl String?
+  bio       String?
+  createdAt DateTime  @default(now())
+
+  properties Property[] @relation("HostProperties")
+  bookings   Booking[]
+  reviews    Review[]
+}
+
+model Property {
+  id            String   @id @default(cuid())
+  title         String
+  description   String
+  // Le minimum métier (200 €/nuit) est validé applicativement à la création.
+  pricePerNight Int
+  city          String
+  country       String
+  address       String
+  lat           Float?
+  lng           Float?
+  bedrooms      Int
+  bathrooms     Int
+  maxGuests     Int
+  propertyType  String   // Villa, Penthouse, Chalet, Domaine, Loft...
+  images        String   // URLs séparées par des virgules
+  amenities     String   // équipements séparés par des virgules
+  featured      Boolean  @default(false)
+  published     Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  hostId   String
+  host     User      @relation("HostProperties", fields: [hostId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+  reviews  Review[]
+
+  @@index([city])
+  @@index([pricePerNight])
+}
+
+model Booking {
+  id         String        @id @default(cuid())
+  checkIn    DateTime
+  checkOut   DateTime
+  guests     Int
+  nights     Int
+  totalPrice Int
+  status     String   @default("CONFIRMED")
+  createdAt  DateTime @default(now())
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  guestId    String
+  guest      User     @relation(fields: [guestId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+  @@index([guestId])
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  rating     Int
+  comment    String
+  createdAt  DateTime @default(now())
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+}

@@ -55,8 +55,40 @@ const CHINESE_CLASHES = [
   ["Lapin", "Coq"], ["Dragon", "Chien"], ["Serpent", "Cochon"],
 ];
 
+// Dates du nouvel an chinois (mois-jour) : le signe d'une année commence
+// à cette date, pas le 1er janvier. Couvre 1930–2044.
+const CNY = (function () {
+  const raw =
+    "1930:1-30 1931:2-17 1932:2-6 1933:1-26 1934:2-14 1935:2-4 1936:1-24 1937:2-11 1938:1-31 1939:2-19 " +
+    "1940:2-8 1941:1-27 1942:2-15 1943:2-5 1944:1-25 1945:2-13 1946:2-2 1947:1-22 1948:2-10 1949:1-29 " +
+    "1950:2-17 1951:2-6 1952:1-27 1953:2-14 1954:2-3 1955:1-24 1956:2-12 1957:1-31 1958:2-18 1959:2-8 " +
+    "1960:1-28 1961:2-15 1962:2-5 1963:1-25 1964:2-13 1965:2-2 1966:1-21 1967:2-9 1968:1-30 1969:2-17 " +
+    "1970:2-6 1971:1-27 1972:2-15 1973:2-3 1974:1-23 1975:2-11 1976:1-31 1977:2-18 1978:2-7 1979:1-28 " +
+    "1980:2-16 1981:2-5 1982:1-25 1983:2-13 1984:2-2 1985:2-20 1986:2-9 1987:1-29 1988:2-17 1989:2-6 " +
+    "1990:1-27 1991:2-15 1992:2-4 1993:1-23 1994:2-10 1995:1-31 1996:2-19 1997:2-7 1998:1-28 1999:2-16 " +
+    "2000:2-5 2001:1-24 2002:2-12 2003:2-1 2004:1-22 2005:2-9 2006:1-29 2007:2-18 2008:2-7 2009:1-26 " +
+    "2010:2-14 2011:2-3 2012:1-23 2013:2-10 2014:1-31 2015:2-19 2016:2-8 2017:1-28 2018:2-16 2019:2-5 " +
+    "2020:1-25 2021:2-12 2022:2-1 2023:1-22 2024:2-10 2025:1-29 2026:2-17 2027:2-6 2028:1-26 2029:2-13 " +
+    "2030:2-3 2031:1-23 2032:2-11 2033:1-31 2034:2-19 2035:2-8 2036:1-28 2037:2-15 2038:2-4 2039:1-24 " +
+    "2040:2-12 2041:2-1 2042:1-22 2043:2-10 2044:1-30";
+  const o = {};
+  for (const t of raw.split(" ")) {
+    const [y, md] = t.split(":");
+    const [m, d] = md.split("-");
+    o[+y] = [+m, +d];
+  }
+  return o;
+})();
+
 function chineseFor(date) {
-  return CHINESE[((date.getFullYear() % 12) + 12) % 12];
+  let y = date.getFullYear();
+  const cny = CNY[y];
+  if (cny) {
+    const m = date.getMonth() + 1, d = date.getDate();
+    // Né avant le nouvel an chinois → on appartient à l'année précédente
+    if (m < cny[0] || (m === cny[0] && d < cny[1])) y -= 1;
+  }
+  return CHINESE[((y % 12) + 12) % 12];
 }
 
 function inPair(list, a, b) {
@@ -95,6 +127,41 @@ function mbtiScore(t1, t2) {
     sum += t1[i] === t2[i] ? MBTI_DIM[i].same : MBTI_DIM[i].diff;
   }
   return sum / 4;
+}
+
+/* --------------------------- Numérologie --------------------------- */
+// Réduit un nombre à un chiffre, en conservant les nombres maîtres 11/22/33
+function reduceNumber(n, keepMaster = true) {
+  while (n > 9 && !(keepMaster && (n === 11 || n === 22 || n === 33))) {
+    n = String(n).split("").reduce((a, c) => a + Number(c), 0);
+  }
+  return n;
+}
+
+// Chemin de vie : somme de tous les chiffres de la date de naissance
+function lifePath(date) {
+  const digits = `${date.getFullYear()}${date.getMonth() + 1}${date.getDate()}`;
+  const sum = digits.split("").reduce((a, c) => a + Number(c), 0);
+  return reduceNumber(sum);
+}
+
+// Pour la compatibilité, les nombres maîtres redescendent à un chiffre
+function toSingle(n) {
+  return n === 11 ? 2 : n === 22 ? 4 : n === 33 ? 6 : n;
+}
+
+// Affinités numérologiques classiques (chiffres harmonieux)
+const NUM_COMPAT = {
+  1: [1, 5, 7], 2: [2, 4, 8], 3: [3, 6, 9],
+  4: [2, 4, 8], 5: [1, 5, 7], 6: [3, 6, 9],
+  7: [1, 5, 7], 8: [2, 4, 8], 9: [3, 6, 9],
+};
+
+function numerologyScore(lp1, lp2) {
+  const a = toSingle(lp1), b = toSingle(lp2);
+  if (NUM_COMPAT[a] && NUM_COMPAT[a].includes(b)) return a === b ? 0.88 : 1.0;
+  const dist = Math.min(Math.abs(a - b), 9 - Math.abs(a - b)); // 1..4
+  return 0.45 + ((4 - dist) / 4) * 0.2; // ~0.45 → 0.60
 }
 
 // Affinités entre éléments (0 → 1)
@@ -170,6 +237,11 @@ function compatibility(p1, p2) {
   // 1ter. Compatibilité de personnalité (MBTI)
   const mbti = mbtiScore(p1.mbti, p2.mbti);
 
+  // 1quater. Numérologie (chemin de vie)
+  const lp1 = lifePath(p1.dob);
+  const lp2 = lifePath(p2.dob);
+  const numerology = numerologyScore(lp1, lp2);
+
   // 2. Alchimie des prénoms (lettres partagées)
   const names = 0.35 + lettersScore(n1, n2) * 0.65;
 
@@ -183,21 +255,23 @@ function compatibility(p1, p2) {
   const rhythm = 1 - Math.min(diff, 372 - diff) / 186; // 0..1, max d'écart = 6 mois
 
   const factors = [
-    { label: "Compatibilité MBTI",    emoji: "🧠", value: mbti },
-    { label: "Affinité astrologique", emoji: "✨", value: astro },
-    { label: "Astrologie chinoise",   emoji: "🐉", value: chinese },
-    { label: "Alchimie des prénoms",  emoji: "🔤", value: names },
-    { label: "Étincelle du couple",   emoji: "⚡", value: spark },
-    { label: "Rythme de vie",         emoji: "🌙", value: rhythm },
+    { label: "Compatibilité MBTI",                  emoji: "🧠", value: mbti },
+    { label: `Numérologie · chemins ${lp1} & ${lp2}`, emoji: "🔢", value: numerology },
+    { label: "Affinité astrologique",               emoji: "✨", value: astro },
+    { label: "Astrologie chinoise",                 emoji: "🐉", value: chinese },
+    { label: "Alchimie des prénoms",                emoji: "🔤", value: names },
+    { label: "Étincelle du couple",                 emoji: "⚡", value: spark },
+    { label: "Rythme de vie",                       emoji: "🌙", value: rhythm },
   ];
 
   const weighted =
-    mbti * 0.22 +
-    astro * 0.18 +
-    chinese * 0.18 +
-    names * 0.12 +
-    spark * 0.18 +
-    rhythm * 0.12;
+    mbti * 0.20 +
+    numerology * 0.16 +
+    astro * 0.15 +
+    chinese * 0.15 +
+    names * 0.10 +
+    spark * 0.14 +
+    rhythm * 0.10;
   const score = Math.round(weighted * 100);
 
   return { score, factors, z1, z2, c1, c2 };

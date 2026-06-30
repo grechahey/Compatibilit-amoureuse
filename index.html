@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Trouve ton âme sœur : calcule ta compatibilité amoureuse en quelques secondes." />
+  <title>Âme Sœur · Compatibilité amoureuse</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="hearts" aria-hidden="true"></div>
+
+  <header class="hero">
+    <div class="logo">💞</div>
+    <h1>Trouve ton <span>âme sœur</span></h1>
+    <p class="subtitle">Découvre votre compatibilité amoureuse en quelques secondes.</p>
+  </header>
+
+  <main>
+    <form id="compat-form" class="card" novalidate>
+      <div class="people">
+        <fieldset class="person">
+          <legend>Toi</legend>
+          <label>
+            Prénom
+            <input type="text" id="name1" name="name1" placeholder="Ex : Camille" autocomplete="off" required />
+          </label>
+          <label>
+            Date de naissance
+            <input type="date" id="dob1" name="dob1" required />
+          </label>
+        </fieldset>
+
+        <div class="plus" aria-hidden="true">❤</div>
+
+        <fieldset class="person">
+          <legend>L'autre</legend>
+          <label>
+            Prénom
+            <input type="text" id="name2" name="name2" placeholder="Ex : Alex" autocomplete="off" required />
+          </label>
+          <label>
+            Date de naissance
+            <input type="date" id="dob2" name="dob2" required />
+          </label>
+        </fieldset>
+      </div>
+
+      <p class="error" id="error" role="alert" hidden></p>
+
+      <button type="submit" class="btn">Révéler notre compatibilité ✨</button>
+    </form>
+
+    <section id="result" class="card result" hidden aria-live="polite">
+      <h2 id="result-title"></h2>
+
+      <div class="score-ring" id="score-ring">
+        <svg viewBox="0 0 120 120" width="160" height="160">
+          <circle class="ring-bg" cx="60" cy="60" r="52" />
+          <circle class="ring-fg" id="ring-fg" cx="60" cy="60" r="52" />
+        </svg>
+        <div class="score-value"><span id="score-number">0</span><small>%</small></div>
+      </div>
+
+      <p class="verdict" id="verdict"></p>
+
+      <ul class="breakdown" id="breakdown"></ul>
+
+      <button type="button" class="btn btn-ghost" id="again">Tester un autre couple</button>
+    </section>
+  </main>
+
+  <footer>
+    <p>Fait avec ❤ — juste pour le plaisir. Les vraies histoires s'écrivent à deux.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

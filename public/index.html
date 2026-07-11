@@ -17,14 +17,36 @@
     <div class="brand">💞 Âme Sœur</div>
     <nav class="tabs" id="tabs" hidden>
       <button type="button" id="nav-discover" class="tab">Découvrir</button>
+      <button type="button" id="nav-matches" class="tab">Messages</button>
       <button type="button" id="nav-profile" class="tab">Mon profil</button>
       <button type="button" id="nav-premium" class="tab premium-chip" title="Options premium">💛 <span id="credits-count">1</span></button>
+      <button type="button" id="nav-logout" class="tab" title="Se déconnecter">⎋</button>
     </nav>
   </header>
 
   <main id="app">
+    <!-- ============ Vue Authentification ============ -->
+    <section id="view-auth" class="view" hidden>
+      <div class="hero-mini">
+        <h1>Trouvez votre <span>âme sœur</span></h1>
+        <p class="subtitle">Des rencontres par affinités profondes : MBTI, thème astral, numérologie et bien plus.</p>
+      </div>
+      <form id="auth-form" class="card" novalidate>
+        <h2 class="section-title" id="auth-title">Créer un compte</h2>
+        <label class="field">Email
+          <input type="email" id="a-email" autocomplete="email" placeholder="vous@exemple.fr" required />
+        </label>
+        <label class="field">Mot de passe
+          <input type="password" id="a-pw" autocomplete="current-password" placeholder="6 caractères minimum" required />
+        </label>
+        <p class="error" id="auth-error" role="alert" hidden></p>
+        <button type="submit" class="btn" id="auth-submit">S'inscrire</button>
+        <p class="switch-auth">Déjà membre ? <a href="#" id="auth-switch">Se connecter</a></p>
+      </form>
+    </section>
+
     <!-- ============ Vue Profil / Inscription ============ -->
-    <section id="view-profile" class="view">
+    <section id="view-profile" class="view" hidden>
       <div class="hero-mini">
         <h1>Trouvez votre <span>âme sœur</span></h1>
         <p class="subtitle">On croise votre personnalité (MBTI), votre thème astral, votre numérologie et vos affinités pour révéler vos meilleurs matchs.</p>
@@ -138,6 +160,24 @@
         <button type="button" class="act msg" id="act-msg" title="Message direct (premium)" aria-label="Message direct">✍️</button>
         <button type="button" class="act superlike" id="act-super" title="Super Like" aria-label="Super Like">💛</button>
         <button type="button" class="act like" id="act-like" title="J'aime" aria-label="J'aime">♥</button>
+      </div>
+    </section>
+
+    <!-- ============ Vue Messages ============ -->
+    <section id="view-matches" class="view" hidden>
+      <div class="hero-mini"><h1>Vos <span>conversations</span></h1></div>
+      <div id="matches-list" class="matches-list"></div>
+      <div id="chat" class="chat card" hidden>
+        <div class="chat-head">
+          <button type="button" class="chat-back" id="chat-back">←</button>
+          <div class="chat-face" id="chat-face"></div>
+          <div><h3 id="chat-name"></h3><p id="chat-meta"></p></div>
+        </div>
+        <div class="chat-body" id="chat-body"></div>
+        <form class="chat-compose" id="chat-form">
+          <input type="text" id="chat-input" placeholder="Votre message…" autocomplete="off" />
+          <button type="submit" class="btn small">Envoyer</button>
+        </form>
       </div>
     </section>
   </main>

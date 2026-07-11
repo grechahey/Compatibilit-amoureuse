@@ -1,0 +1,28 @@
+{
+  "name": "compatibilit-amoureuse",
+  "version": "1.0.0",
+  "description": "Site de rencontres par affinités profondes (MBTI, astrologie, numérologie, BDSM)",
+  "main": "server/server.js",
+  "dependencies": {
+    "express": "^4.22.2"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.61.1"
+  },
+  "scripts": {
+    "start": "node --experimental-sqlite server/server.js",
+    "dev": "node --experimental-sqlite --watch server/server.js"
+  },
+  "engines": { "node": ">=22.5" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grechahey/Compatibilit-amoureuse.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/grechahey/Compatibilit-amoureuse/issues"
+  },
+  "homepage": "https://github.com/grechahey/Compatibilit-amoureuse#readme"
+}

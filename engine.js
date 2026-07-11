@@ -195,6 +195,12 @@
     ["dominant", "submissive"], ["sadist", "masochist"], ["rigger", "ropebunny"],
     ["brattamer", "brat"], ["owner", "pet"], ["degrader", "degradee"],
     ["primalhunter", "primalprey"], ["daddy", "little"], ["voyeur", "exhibitionist"],
+    // Candaulisme : celui/celle qui montre ↔ celui/celle qui s'expose.
+    ["candauliste", "hotwife"],
+    // Préférences partagées : l'accord se fait quand les deux sont élevés
+    // (l'auto-paire récompense les valeurs mutuellement fortes).
+    ["polygame", "polygame"], ["blackaddict", "blackaddict"], ["bigcock", "bigcock"],
+    ["asexual", "asexual"], ["hypersexual", "hypersexual"], ["daddybaby", "daddybaby"],
   ];
   function bdsmScore(a, b) {
     if (!a || !b) return null;

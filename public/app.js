@@ -8,10 +8,12 @@
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const BDSM_LABELS = {
     dominant: "Dominant·e", submissive: "Soumis·e", sadist: "Sadique", masochist: "Masochiste",
-    rigger: "Attacheur·se", ropebunny: "Attaché·e", brattamer: "Dresseur·se", brat: "Insolent·e",
+    rigger: "Attacheur·se", ropebunny: "Attaché·e", brattamer: "Dresseur·se", brat: "Rebelle",
     owner: "Maître/sse", pet: "Animal", daddy: "Protecteur·rice", little: "Tendre",
     voyeur: "Voyeur·se", exhibitionist: "Exhib.", experimental: "Explorateur·rice", switch: "Switch",
     degrader: "Humiliant·e", degradee: "Humilié·e", primalhunter: "Primal chasseur", primalprey: "Primal proie",
+    candauliste: "Candauliste", hotwife: "Hotwife", polygame: "Polygame", blackaddict: "Black addict",
+    bigcock: "Big cock addict", asexual: "Asexuel·le", hypersexual: "Hypersexuel·le", daddybaby: "Daddy/Baby",
   };
 
   async function api(path, opts = {}) {
@@ -117,6 +119,7 @@
     const csel = $("p-city");
     csel.appendChild(new Option("— non précisé —", ""));
     [...Data.CITIES].sort((a, b) => a[0].localeCompare(b[0], "fr")).forEach((c) => csel.appendChild(new Option(c[0], c[0])));
+    $("btn-bdsm-test").textContent = `Passer le test kink (${Data.BDSM_QUESTIONS.length} questions)`;
     $("p-bdsm-optin").addEventListener("change", (e) => { $("bdsm-area").hidden = !e.target.checked; if (!e.target.checked) { tempBdsm = null; refreshBdsmBadge(); } });
     $("btn-mbti-test").addEventListener("click", openMbtiQuiz);
     $("btn-bdsm-test").addEventListener("click", openBdsmQuiz);
@@ -153,7 +156,7 @@
   }
   function openBdsmQuiz() {
     quizMode = "bdsm"; $("quiz-title").textContent = "Test de compatibilité kink (18+)";
-    $("quiz-intro").textContent = "Notez chaque énoncé de 1 (pas du tout) à 10 (tout à fait). 16 questions. Aucune bonne réponse — ça reste privé.";
+    $("quiz-intro").textContent = `Notez chaque énoncé de 1 (pas du tout) à 10 (tout à fait). ${Data.BDSM_QUESTIONS.length} questions. Aucune bonne réponse — ça reste privé.`;
     const body = $("quiz-body"); body.innerHTML = "";
     Data.BDSM_QUESTIONS.forEach((q, i) => {
       const scale = Array.from({ length: 10 }, (_, k) => k + 1).map((v) =>
@@ -592,9 +595,20 @@
 
   /* ============================= Toast ========================== */
   let toastT = null;
+  // Place le toast juste sous l'en-tête réellement visible (barre + éventuel
+  // bandeau de vérification), pour qu'il ne chevauche jamais le contenu.
+  function positionToast(t) {
+    // Hauteurs de mise en page (indépendantes du défilement) : la barre et le
+    // bandeau sont empilés en haut, et chaque changement de vue défile en haut.
+    const bar = $("topbar"), banner = $("verify-banner");
+    let top = bar ? bar.offsetHeight : 56;
+    if (banner && banner.offsetParent !== null) top += banner.offsetHeight;
+    t.style.top = Math.round(top + 12) + "px";
+  }
   function toast(msg) {
     let t = $("toast"); if (!t) { t = document.createElement("div"); t.id = "toast"; t.className = "toast"; document.body.appendChild(t); }
-    t.textContent = msg; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2600);
+    t.textContent = msg; positionToast(t); t.classList.add("show");
+    clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2600);
   }
   document.addEventListener("click", (e) => { if (e.target && e.target.id === "modal") closeModal(); });
 

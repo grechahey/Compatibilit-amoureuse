@@ -60,7 +60,7 @@
            (tally.T >= tally.F ? "T" : "F") + (tally.J >= tally.P ? "J" : "P");
   }
 
-  /* ------------------------ Test BDSM (16 questions, 18+) -------------
+  /* ------------------------ Test BDSM (24 questions, 18+) -------------
    * Chaque énoncé se note de 1 (pas du tout) à 10 (tout à fait) et alimente
    * un trait (0..1). Adaptation légère inspirée de bdsmtest.org. */
   const BDSM_QUESTIONS = [
@@ -80,6 +80,14 @@
     { trait: "exhibitionist", t: "Être regardé·e / me montrer m'excite." },
     { trait: "experimental", t: "Je suis curieux·se d'explorer de nouvelles pratiques." },
     { trait: "switch", t: "Je peux aussi bien dominer que me soumettre selon l'instant." },
+    { trait: "candauliste", t: "Montrer ou partager mon/ma partenaire avec d'autres m'excite." },
+    { trait: "hotwife", t: "Avoir des aventures ouvertes, au su et à l'excitation de mon/ma partenaire, me plaît." },
+    { trait: "polygame", t: "Je me verrais bien dans une relation à plusieurs ou non-exclusive." },
+    { trait: "blackaddict", t: "Je suis particulièrement attiré·e par les partenaires noir·es." },
+    { trait: "bigcock", t: "Je suis particulièrement attiré·e par les partenaires très bien membrés." },
+    { trait: "asexual", t: "Je ressens peu ou pas d'attirance sexuelle." },
+    { trait: "hypersexual", t: "J'ai une libido très élevée ; le sexe tient une grande place pour moi." },
+    { trait: "daddybaby", t: "La dynamique Daddy/Baby (protéger d'un côté, être choyé·e de l'autre) me parle." },
   ];
   function scoreBdsm(answers) {
     // answers : tableau d'entiers 1..10 aligné sur BDSM_QUESTIONS

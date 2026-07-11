@@ -294,7 +294,8 @@ input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border: none;
 /* Footer & toast */
 footer { text-align: center; padding: 2.5rem 1.3rem 3.5rem; color: var(--faint); font-size: .8rem; max-width: 640px; margin: 0 auto; }
 footer a { color: var(--muted); border-bottom: 1px solid var(--line); text-decoration: none; }
-.toast { position: fixed; left: 50%; bottom: 1.8rem; transform: translateX(-50%) translateY(1.5rem); background: #fff; color: #111; padding: .75rem 1.2rem; border-radius: 99px; font-size: .88rem; font-weight: 500; opacity: 0; pointer-events: none; transition: all .3s; z-index: 40; max-width: 90vw; text-align: center; }
+.toast { position: fixed; left: 50%; top: 4rem; transform: translateX(-50%) translateY(-1rem); display: inline-flex; align-items: center; gap: .5rem; background: #fff; color: #16161a; padding: .75rem 1.25rem; border-radius: 99px; font-size: .88rem; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 60; max-width: 92vw; text-align: center; box-shadow: 0 14px 34px rgba(0, 0, 0, .55), 0 2px 6px rgba(0, 0, 0, .4); }
+.toast::before { content: ""; width: 14px; height: 14px; flex: 0 0 auto; border-radius: 50%; background: var(--grad); }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }

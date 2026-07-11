@@ -79,7 +79,7 @@
     { trait: "voyeur", t: "Regarder / être spectateur·rice m'excite." },
     { trait: "exhibitionist", t: "Être regardé·e / me montrer m'excite." },
     { trait: "experimental", t: "Je suis curieux·se d'explorer de nouvelles pratiques." },
-    { trait: "switch", t: "Je peux aussi bien dominer que me soumettre selon l'instant." },
+    { trait: "switch", t: "Je peux être dominant·e ou soumis·e selon les périodes et les partenaires." },
     { trait: "candauliste", t: "Montrer ou partager mon/ma partenaire avec d'autres m'excite." },
     { trait: "hotwife", t: "Avoir des aventures ouvertes, au su et à l'excitation de mon/ma partenaire, me plaît." },
     { trait: "polygame", t: "Je me verrais bien dans une relation à plusieurs ou non-exclusive." },

@@ -28,7 +28,6 @@
   let S = { user: null, profile: null, credits: { superLikes: 1, messages: 0, premium: false } };
   let CONFIG = { org: { name: "Âme Sœur", dpoEmail: "dpo@amesoeur.exemple", legal: "" } };
   let tempMbti = null, tempBdsm = null, pendingPhoto = null, devVerifyUrl = null;
-  let selectedInterests = [];
   let candidates = [], deck = [], pos = 0;
   let authMode = "register";
   let currentChat = null;
@@ -123,7 +122,6 @@
     msel.appendChild(new Option("— choisir ou passer le test —", ""));
     MBTI_TYPES.forEach((t) => msel.appendChild(new Option(t, t)));
     msel.addEventListener("change", () => { tempMbti = msel.value || null; refreshMbtiBadge(); });
-    buildInterestsPicker();
     $("p-bdsm-optin").addEventListener("change", (e) => { $("bdsm-area").hidden = !e.target.checked; if (!e.target.checked) { tempBdsm = null; refreshBdsmBadge(); } });
     $("btn-mbti-test").addEventListener("click", openMbtiQuiz);
     $("btn-bdsm-test").addEventListener("click", openBdsmQuiz);
@@ -134,25 +132,6 @@
     $("nav-premium").addEventListener("click", () => openPremiumModal());
     $("quiz-close").addEventListener("click", closeOverlay);
     ["pass", "like", "super", "msg"].forEach((k) => $("act-" + k).addEventListener("click", () => act(k)));
-  }
-  function buildInterestsPicker() {
-    const wrap = $("interests-picker"); if (!wrap) return;
-    wrap.innerHTML = "";
-    Data.INTERESTS.forEach(([label, emoji]) => {
-      const b = document.createElement("button");
-      b.type = "button"; b.className = "ipick"; b.dataset.label = label;
-      b.innerHTML = `${emoji} ${esc(label)}`;
-      b.addEventListener("click", () => {
-        const i = selectedInterests.indexOf(label);
-        if (i >= 0) { selectedInterests.splice(i, 1); b.classList.remove("on"); }
-        else { if (selectedInterests.length >= 8) { toast("8 passions maximum."); return; } selectedInterests.push(label); b.classList.add("on"); }
-      });
-      wrap.appendChild(b);
-    });
-  }
-  function syncInterestsPicker() {
-    const wrap = $("interests-picker"); if (!wrap) return;
-    wrap.querySelectorAll(".ipick").forEach((b) => b.classList.toggle("on", selectedInterests.includes(b.dataset.label)));
   }
   function refreshMbtiBadge() { const b = $("mbti-badge"); if (tempMbti) { b.hidden = false; b.textContent = `Type retenu : ${tempMbti}`; } else b.hidden = true; }
   function refreshBdsmBadge() {
@@ -218,7 +197,6 @@
       time: $("p-time").value || null, city: $("p-city").value || null, mbti: tempMbti, bdsm: tempBdsm,
       sensitiveConsent: tempBdsm ? $("p-bdsm-optin").checked : false,
       discoverPhoto: $("p-discover-photo").checked,
-      interests: selectedInterests.slice(),
     };
     if (pendingPhoto) body.photo = pendingPhoto;
     try { const r = await api("/profile", { method: "PUT", body }); S.profile = r.profile; toast("Profil enregistré"); showView("discover"); }
@@ -303,9 +281,6 @@
     if (c.seeking) ess.push(essRow(ICON.search, "Recherche : " + esc(SEEKING_LABELS[c.seeking] || "—")));
     if (c.mbti) ess.push(essRow(ICON.spark, esc(c.mbti)));
     if (signs) ess.push(essRow(ICON.star, signs));
-    const interests = Array.isArray(c.interests) ? c.interests : [];
-    const chips = interests.map((label, i) =>
-      `<span class="chip${i === 0 ? " hi" : ""}">${Data.INTEREST_EMOJI[label] ? Data.INTEREST_EMOJI[label] + " " : ""}${esc(label)}</span>`).join("");
     return `<article class="swipe card">
       ${c.superLikedYou ? `<div class="superbadge">${esc(c.name)} vous a super-liké·e</div>` : ""}
       <div class="profile-hero">
@@ -319,10 +294,6 @@
         <div class="pcard-head">${ICON.person} L'essentiel</div>
         <ul class="essentials">${ess.join("")}</ul>
       </section>
-      ${chips ? `<section class="pcard">
-        <div class="pcard-head">${ICON.heart} Passions</div>
-        <div class="chips">${chips}</div>
-      </section>` : ""}
       <p class="locked">Photos débloquées après un match mutuel</p>
       <button type="button" class="report-link" data-report="${c.id}" data-name="${esc(c.name)}">Signaler ce profil</button>
     </article>`;
@@ -559,8 +530,6 @@
     if (me.bdsm) { $("p-bdsm-optin").checked = true; $("bdsm-area").hidden = false; refreshBdsmBadge(); }
     if (me.photo) { const pv = $("p-photo-preview"); pv.src = me.photo; pv.hidden = false; }
     $("p-discover-photo").checked = !!me.discoverPhoto;
-    selectedInterests = Array.isArray(me.interests) ? me.interests.slice() : [];
-    syncInterestsPicker();
   }
 
   /* ======================= Décor & toast ======================== */

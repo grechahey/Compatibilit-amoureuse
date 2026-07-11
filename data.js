@@ -33,8 +33,10 @@
 
   const AVATARS = ["🦊", "🦋", "🌙", "🌻", "🐬", "🦁", "🦚", "🐺", "🌊", "🔥", "🌸", "🍃", "⭐", "🕊️", "🦌", "🐝"];
 
-  /* ------------------------ Test MBTI (20 questions) ------------------
-   * Chaque énoncé se note de 1 (pas du tout) à 5 (tout à fait).
+  /* ------------------------ Test MBTI (32 questions) ------------------
+   * Instrument original (non affilié à MBTI®) sur les 4 dichotomies
+   * jungiennes. 8 énoncés par axe (4 « + » vers la 1re lettre, 4 « − »),
+   * notés de 1 (pas du tout) à 5 (tout à fait).
    * dim : 0 = E/I, 1 = N/S, 2 = T/F, 3 = J/P.
    * sign : +1 si « d'accord » va vers la 1re lettre (E/N/T/J), -1 vers la 2de.
    * Énoncés entremêlés et à polarité alternée pour limiter les biais. */
@@ -44,14 +46,14 @@
     { dim: 1, sign: 1, t: "Je me fie d'abord à mon intuition et aux idées." },
     { dim: 2, sign: 1, t: "Je décide surtout avec la logique et l'analyse." },
     { dim: 3, sign: 1, t: "J'aime planifier et décider tôt." },
-    { dim: 0, sign: 1, t: "Après une soirée animée, je me sens plein·e d'énergie." },
-    { dim: 1, sign: 1, t: "J'aime imaginer les possibles et le futur." },
-    { dim: 2, sign: 1, t: "Je privilégie la vérité, même quand elle dérange." },
-    { dim: 3, sign: 1, t: "J'aime l'ordre, les listes et les échéances tenues." },
     { dim: 0, sign: -1, t: "J'ai besoin de solitude pour me ressourcer." },
     { dim: 1, sign: -1, t: "Je préfère les faits concrets et l'expérience vécue." },
     { dim: 2, sign: -1, t: "Je décide surtout avec le cœur et mes valeurs." },
     { dim: 3, sign: -1, t: "Je préfère garder mes options ouvertes." },
+    { dim: 0, sign: 1, t: "Après une soirée animée, je me sens plein·e d'énergie." },
+    { dim: 1, sign: 1, t: "J'aime imaginer les possibles et le futur." },
+    { dim: 2, sign: 1, t: "Je privilégie la vérité, même quand elle dérange." },
+    { dim: 3, sign: 1, t: "J'aime l'ordre, les listes et les échéances tenues." },
     { dim: 0, sign: -1, t: "Je réfléchis longuement en moi avant de parler." },
     { dim: 1, sign: -1, t: "Je remarque surtout les détails pratiques et le présent." },
     { dim: 2, sign: -1, t: "Je cherche l'harmonie et le tact avant tout." },
@@ -60,6 +62,18 @@
     { dim: 1, sign: 1, t: "Les concepts, symboles et métaphores me parlent." },
     { dim: 2, sign: 1, t: "On me dit objectif·ve et franc·he." },
     { dim: 3, sign: 1, t: "Je me sens mieux quand tout est organisé d'avance." },
+    { dim: 0, sign: -1, t: "Les grands groupes finissent par me vider." },
+    { dim: 1, sign: -1, t: "Je fais confiance à ce qui est éprouvé plutôt qu'aux théories." },
+    { dim: 2, sign: -1, t: "Je ressens fortement les émotions des autres." },
+    { dim: 3, sign: -1, t: "Les plans trop rigides m'étouffent." },
+    { dim: 0, sign: 1, t: "Je pense souvent à voix haute, en parlant." },
+    { dim: 1, sign: 1, t: "La routine et le trop concret m'ennuient vite." },
+    { dim: 2, sign: 1, t: "Je reste calme et rationnel·le dans un désaccord." },
+    { dim: 3, sign: 1, t: "Une décision prise me soulage plus qu'elle ne m'enferme." },
+    { dim: 0, sign: -1, t: "Je préfère quelques amis proches à un large cercle." },
+    { dim: 1, sign: -1, t: "J'ai les pieds sur terre ; le tangible me rassure." },
+    { dim: 2, sign: -1, t: "Je fais passer les gens avant les principes." },
+    { dim: 3, sign: -1, t: "Je carbure souvent à la dernière minute." },
   ];
   const MBTI_TYPE_NAMES = {
     INTJ: "L'Architecte", INTP: "Le Logicien", ENTJ: "Le Commandant", ENTP: "L'Innovateur",

@@ -199,6 +199,8 @@
     ["candauliste", "hotwife"],
     // Admirateur·rice ↔ objet du désir (complémentarité miroir).
     ["blackaddict", "blackdesired"], ["bigcock", "hung"],
+    // Partage : qui offre sa/son partenaire ↔ l'homme désiré qui la/le reçoit.
+    ["blacksharer", "blackdesired"], ["hungsharer", "hung"],
     // Préférences partagées : l'accord se fait quand les deux sont élevés
     // (l'auto-paire récompense les valeurs mutuellement fortes).
     ["polygame", "polygame"], ["asexual", "asexual"], ["hypersexual", "hypersexual"],

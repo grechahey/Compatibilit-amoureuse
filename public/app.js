@@ -15,6 +15,7 @@
     candauliste: "Candauliste", hotwife: "Hotwife", polygame: "Polygame", blackaddict: "Black addict",
     bigcock: "Big cock addict", asexual: "Asexuel·le", hypersexual: "Hypersexuel·le", daddybaby: "Daddy/Baby",
     echangiste: "Échangiste", blackdesired: "Black (désiré·e)", hung: "Bien membré",
+    blacksharer: "Partage (hommes noirs)", hungsharer: "Partage (bien membrés)",
   };
 
   async function api(path, opts = {}) {

@@ -60,7 +60,7 @@
            (tally.T >= tally.F ? "T" : "F") + (tally.J >= tally.P ? "J" : "P");
   }
 
-  /* ------------------------ Test BDSM (27 questions, 18+) -------------
+  /* ------------------------ Test BDSM (29 questions, 18+) -------------
    * Chaque énoncé se note de 1 (pas du tout) à 10 (tout à fait) et alimente
    * un trait (0..1). Adaptation légère inspirée de bdsmtest.org. */
   const BDSM_QUESTIONS = [
@@ -91,6 +91,8 @@
     { trait: "echangiste", t: "Échanger de partenaire avec un autre couple m'attire (échangisme)." },
     { trait: "blackdesired", t: "Je suis noir·e et j'aime être désiré·e pour cela." },
     { trait: "hung", t: "Je suis très bien membré et j'aime être désiré pour cela." },
+    { trait: "blacksharer", t: "J'aime partager ma/mon partenaire avec des hommes noirs, sans l'être moi-même." },
+    { trait: "hungsharer", t: "J'aime partager ma/mon partenaire avec des hommes très bien membrés, sans l'être moi-même." },
   ];
   function scoreBdsm(answers) {
     // answers : tableau d'entiers 1..10 aligné sur BDSM_QUESTIONS

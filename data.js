@@ -129,6 +129,35 @@
       bdsm: { dominant: 0.55, brattamer: 0.55, owner: 0.5, exhibitionist: 0.5, experimental: 0.55, switch: 0.45 } },
   ];
 
+  /* ----------------------- Centres d'intérêt ------------------------- */
+  const INTERESTS = [
+    ["Street food", "🍜"], ["Café", "☕"], ["Vin nature", "🍷"], ["Cuisine", "🍳"],
+    ["Bubble tea", "🧋"], ["Voyages", "✈️"], ["Randonnée", "🥾"], ["Nature", "🏞️"],
+    ["Yoga", "🧘"], ["Méditation", "🕉️"], ["Spa", "🕯️"], ["Prendre soin de soi", "🌼"],
+    ["Sport", "🏋️"], ["Danse", "💃"], ["Musique", "🎧"], ["Concerts", "🎤"],
+    ["Cinéma", "🎬"], ["Lecture", "📚"], ["Écriture", "✍️"], ["Art", "🎨"],
+    ["Photographie", "📷"], ["Jeux vidéo", "🎮"], ["Mode", "👗"], ["Animaux", "🐾"],
+    ["Spiritualité", "🔮"], ["Astrologie", "✨"], ["Bénévolat", "🤝"], ["Fêtes", "🎉"],
+    ["Surf", "🏄"], ["Vélo", "🚲"], ["Théâtre", "🎭"], ["Bricolage", "🔨"],
+  ];
+  const INTEREST_EMOJI = Object.fromEntries(INTERESTS.map(([l, e]) => [l, e]));
+
+  const SEED_INTERESTS = {
+    s1: ["Danse", "Écriture", "Concerts", "Café", "Voyages"],
+    s2: ["Randonnée", "Vin nature", "Sport", "Voyages", "Cuisine"],
+    s3: ["Photographie", "Musique", "Voyages", "Art", "Fêtes"],
+    s4: ["Sport", "Cuisine", "Nature", "Cinéma", "Prendre soin de soi"],
+    s5: ["Cuisine", "Street food", "Musique", "Fêtes", "Vin nature"],
+    s6: ["Art", "Lecture", "Spiritualité", "Café", "Astrologie"],
+    s7: ["Lecture", "Écriture", "Cinéma", "Nature", "Méditation"],
+    s8: ["Surf", "Jeux vidéo", "Musique", "Nature", "Café"],
+    s9: ["Sport", "Nature", "Animaux", "Cuisine", "Vélo"],
+    s10: ["Animaux", "Nature", "Prendre soin de soi", "Bubble tea", "Bénévolat"],
+    s11: ["Lecture", "Café", "Nature", "Écriture", "Théâtre"],
+    s12: ["Danse", "Musique", "Fêtes", "Bien-être", "Voyages"],
+  };
+  SEED.forEach((s) => { s.interests = SEED_INTERESTS[s.id] || []; });
+
   /* --------- Petits textes « anti-mauvais-critères » (éparpillés) ------ */
   const NUDGES = [
     { icon: "🐾", title: "« Pas d'animaux » ?",
@@ -148,5 +177,6 @@
   global.Data = {
     CITIES, CITY_BY_NAME, AVATARS,
     MBTI_QUESTIONS, scoreMbti, BDSM_QUESTIONS, scoreBdsm, SEED, NUDGES,
+    INTERESTS, INTEREST_EMOJI,
   };
 })(typeof window !== "undefined" ? window : globalThis);

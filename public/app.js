@@ -28,6 +28,7 @@
   let S = { user: null, profile: null, credits: { superLikes: 1, messages: 0, premium: false } };
   let CONFIG = { org: { name: "Âme Sœur", dpoEmail: "dpo@amesoeur.exemple", legal: "" } };
   let tempMbti = null, tempBdsm = null, pendingPhoto = null, devVerifyUrl = null;
+  let selectedInterests = [];
   let candidates = [], deck = [], pos = 0;
   let authMode = "register";
   let currentChat = null;
@@ -122,6 +123,7 @@
     msel.appendChild(new Option("— choisir ou passer le test —", ""));
     MBTI_TYPES.forEach((t) => msel.appendChild(new Option(t, t)));
     msel.addEventListener("change", () => { tempMbti = msel.value || null; refreshMbtiBadge(); });
+    buildInterestsPicker();
     $("p-bdsm-optin").addEventListener("change", (e) => { $("bdsm-area").hidden = !e.target.checked; if (!e.target.checked) { tempBdsm = null; refreshBdsmBadge(); } });
     $("btn-mbti-test").addEventListener("click", openMbtiQuiz);
     $("btn-bdsm-test").addEventListener("click", openBdsmQuiz);
@@ -132,6 +134,25 @@
     $("nav-premium").addEventListener("click", () => openPremiumModal());
     $("quiz-close").addEventListener("click", closeOverlay);
     ["pass", "like", "super", "msg"].forEach((k) => $("act-" + k).addEventListener("click", () => act(k)));
+  }
+  function buildInterestsPicker() {
+    const wrap = $("interests-picker"); if (!wrap) return;
+    wrap.innerHTML = "";
+    Data.INTERESTS.forEach(([label, emoji]) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "ipick"; b.dataset.label = label;
+      b.innerHTML = `${emoji} ${esc(label)}`;
+      b.addEventListener("click", () => {
+        const i = selectedInterests.indexOf(label);
+        if (i >= 0) { selectedInterests.splice(i, 1); b.classList.remove("on"); }
+        else { if (selectedInterests.length >= 8) { toast("8 passions maximum."); return; } selectedInterests.push(label); b.classList.add("on"); }
+      });
+      wrap.appendChild(b);
+    });
+  }
+  function syncInterestsPicker() {
+    const wrap = $("interests-picker"); if (!wrap) return;
+    wrap.querySelectorAll(".ipick").forEach((b) => b.classList.toggle("on", selectedInterests.includes(b.dataset.label)));
   }
   function refreshMbtiBadge() { const b = $("mbti-badge"); if (tempMbti) { b.hidden = false; b.textContent = `Type retenu : ${tempMbti}`; } else b.hidden = true; }
   function refreshBdsmBadge() {
@@ -197,6 +218,7 @@
       time: $("p-time").value || null, city: $("p-city").value || null, mbti: tempMbti, bdsm: tempBdsm,
       sensitiveConsent: tempBdsm ? $("p-bdsm-optin").checked : false,
       discoverPhoto: $("p-discover-photo").checked,
+      interests: selectedInterests.slice(),
     };
     if (pendingPhoto) body.photo = pendingPhoto;
     try { const r = await api("/profile", { method: "PUT", body }); S.profile = r.profile; toast("Profil enregistré"); showView("discover"); }
@@ -261,19 +283,46 @@
   function renderNudge(n) {
     return `<article class="nudge card"><p class="nudge-ic">Un mot sur les critères</p><h3>${esc(n.title)}</h3><p>${esc(n.text)}</p><button type="button" class="btn btn-ghost small nudge-next">Continuer à découvrir</button></article>`;
   }
+  const GENDER_LABELS = { F: "Femme", H: "Homme", NB: "Non-binaire" };
+  const SEEKING_LABELS = { T: "Tout le monde", F: "Des femmes", H: "Des hommes" };
+  const ICON = {
+    pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-5.6-6.5-10.2A6.5 6.5 0 0 1 12 4.3a6.5 6.5 0 0 1 6.5 6.5C18.5 15.4 12 21 12 21z"/><circle cx="12" cy="10.6" r="2.3"/></svg>',
+    person: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/></svg>',
+    search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-3.6-3.6"/></svg>',
+    spark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></svg>',
+    star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3.5l2.6 5.7 6.2.6-4.7 4.1 1.4 6.1L12 16.9 6.5 20.1l1.4-6.1L3.2 9.8l6.2-.6z"/></svg>',
+    heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.3l-1.4-1.3C5.4 14.2 2.5 11.6 2.5 8.3 2.5 5.8 4.5 3.9 7 3.9c1.5 0 2.9.7 3.8 1.8.9-1.1 2.3-1.8 3.8-1.8 2.5 0 4.5 1.9 4.5 4.4 0 3.3-2.9 5.9-8.1 10.7L12 20.3z"/></svg>',
+  };
+  function essRow(icon, label) { return `<li>${icon}<span>${label}</span></li>`; }
   function renderProfile(c) {
-    const circ = 2 * Math.PI * 30, off = circ * (1 - c.score / 100);
     const signs = [c.sun, c.chinese, c.ascendant ? "asc. " + c.ascendant : null].filter(Boolean).map(esc).join(" · ");
+    const ess = [];
+    if (c.distanceKm != null) ess.push(essRow(ICON.pin, `À ${c.distanceKm} km`));
+    else if (c.city) ess.push(essRow(ICON.pin, esc(c.city)));
+    ess.push(essRow(ICON.person, esc(GENDER_LABELS[c.gender] || "—")));
+    if (c.seeking) ess.push(essRow(ICON.search, "Recherche : " + esc(SEEKING_LABELS[c.seeking] || "—")));
+    if (c.mbti) ess.push(essRow(ICON.spark, esc(c.mbti)));
+    if (signs) ess.push(essRow(ICON.star, signs));
+    const interests = Array.isArray(c.interests) ? c.interests : [];
+    const chips = interests.map((label, i) =>
+      `<span class="chip${i === 0 ? " hi" : ""}">${Data.INTEREST_EMOJI[label] ? Data.INTEREST_EMOJI[label] + " " : ""}${esc(label)}</span>`).join("");
     return `<article class="swipe card">
       ${c.superLikedYou ? `<div class="superbadge">${esc(c.name)} vous a super-liké·e</div>` : ""}
-      <div class="face">${c.photo ? `<img src="${c.photo}" alt="Photo de ${esc(c.name)}">` : c.avatarSvg}</div>
-      <div class="score big"><svg viewBox="0 0 72 72" width="80" height="80"><circle cx="36" cy="36" r="30" class="rbg"/><circle cx="36" cy="36" r="30" class="rfg" style="stroke-dasharray:${circ};stroke-dashoffset:${off}"/></svg><b>${c.score}<small>%</small></b></div>
-      <p class="score-label">Compatibilité globale</p>
-      <h3>${esc(c.name)}, ${c.age}</h3>
-      <p class="sign">${signs}</p>
-      <p class="meta">${esc(c.mbti)} · ${esc(c.city || "—")}${c.distanceKm != null ? " · " + c.distanceKm + " km" : ""}</p>
-      <p class="bio">${esc(c.bio)}</p>
-      <p class="verdict">${esc(c.verdict)}</p>
+      <div class="profile-hero">
+        <div class="face">${c.photo ? `<img src="${c.photo}" alt="Photo de ${esc(c.name)}">` : c.avatarSvg}</div>
+        <h3 class="hero-name">${esc(c.name)} <span class="age">${c.age}</span></h3>
+        <span class="score-pill">${ICON.heart}<b>${c.score}%</b> d'affinité</span>
+        ${c.verdict ? `<p class="hero-verdict">${esc(c.verdict)}</p>` : ""}
+      </div>
+      ${c.bio ? `<section class="pcard"><p class="bio">${esc(c.bio)}</p></section>` : ""}
+      <section class="pcard">
+        <div class="pcard-head">${ICON.person} L'essentiel</div>
+        <ul class="essentials">${ess.join("")}</ul>
+      </section>
+      ${chips ? `<section class="pcard">
+        <div class="pcard-head">${ICON.heart} Passions</div>
+        <div class="chips">${chips}</div>
+      </section>` : ""}
       <p class="locked">Photos débloquées après un match mutuel</p>
       <button type="button" class="report-link" data-report="${c.id}" data-name="${esc(c.name)}">Signaler ce profil</button>
     </article>`;
@@ -510,6 +559,8 @@
     if (me.bdsm) { $("p-bdsm-optin").checked = true; $("bdsm-area").hidden = false; refreshBdsmBadge(); }
     if (me.photo) { const pv = $("p-photo-preview"); pv.src = me.photo; pv.hidden = false; }
     $("p-discover-photo").checked = !!me.discoverPhoto;
+    selectedInterests = Array.isArray(me.interests) ? me.interests.slice() : [];
+    syncInterestsPicker();
   }
 
   /* ======================= Décor & toast ======================== */

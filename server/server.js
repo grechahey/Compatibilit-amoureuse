@@ -151,6 +151,10 @@ app.post("/api/resend-verification", auth, async (req, res) => {
 app.put("/api/profile", auth, async (req, res) => {
   const p = req.body || {};
   if (!p.name || !p.year || !p.mbti) return res.status(400).json({ error: "Prénom, date de naissance et MBTI requis." });
+  // Passions : on ne retient que les libellés du catalogue, dédoublonnés, 8 max.
+  const valid = new Set(Data.INTERESTS.map(([l]) => l));
+  p.interests = Array.isArray(p.interests)
+    ? [...new Set(p.interests.filter((x) => valid.has(x)))].slice(0, 8) : [];
   // Données sensibles (Art. 9 RGPD) : consentement explicite obligatoire.
   if (p.bdsm) {
     if (!p.sensitiveConsent) return res.status(400).json({ error: "Le traitement des données kink exige votre consentement explicite." });
@@ -199,6 +203,7 @@ app.get("/api/discover", auth, async (req, res) => {
         mbti: c.mbti, bio: c.bio, avatarSvg: Avatars.svgSync("u" + c.id), score: r.score,
         verdict: Engine.verdict(r.score),
         sun: r.b.sun.name, chinese: r.b.chinese.name, ascendant: r.b.ascendant ? r.b.ascendant.name : null,
+        gender: c.gender, seeking: c.seeking, interests: c.interests || [],
         superLikedYou: superSet.has(c.id),
         // Photo montrée en découverte seulement si l'utilisateur l'a choisi.
         photo: c.discoverPhoto && c.photo ? c.photo : null,

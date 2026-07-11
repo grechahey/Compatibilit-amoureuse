@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   name TEXT, gender TEXT, seeking TEXT, bio TEXT, avatar TEXT, photo TEXT,
   by INTEGER, bm INTEGER, bd INTEGER, btime TEXT, city TEXT,
-  mbti TEXT, bdsm TEXT, updated_at INTEGER, discover_photo INTEGER DEFAULT 0
+  mbti TEXT, bdsm TEXT, updated_at INTEGER, discover_photo INTEGER DEFAULT 0, interests TEXT
 );
 CREATE TABLE IF NOT EXISTS reports (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,6 +64,7 @@ for (const alter of [
   "ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0",
   "ALTER TABLE users ADD COLUMN verify_token TEXT",
   "ALTER TABLE profiles ADD COLUMN discover_photo INTEGER DEFAULT 0",
+  "ALTER TABLE profiles ADD COLUMN interests TEXT",
 ]) { try { db.exec(alter); } catch (_) { /* colonne déjà présente */ } }
 
 const CONSENT_VERSION = "2026-07-11";
@@ -86,10 +87,10 @@ const q = {
   insSession: db.prepare("INSERT INTO sessions (token, user_id, expires) VALUES (?, ?, ?)"),
   sessionByToken: db.prepare("SELECT * FROM sessions WHERE token = ?"),
   delSession: db.prepare("DELETE FROM sessions WHERE token = ?"),
-  upsertProfile: db.prepare(`INSERT INTO profiles (user_id,name,gender,seeking,bio,avatar,photo,by,bm,bd,btime,city,mbti,bdsm,discover_photo,updated_at)
-    VALUES (@user_id,@name,@gender,@seeking,@bio,@avatar,@photo,@by,@bm,@bd,@btime,@city,@mbti,@bdsm,@discover_photo,@updated_at)
+  upsertProfile: db.prepare(`INSERT INTO profiles (user_id,name,gender,seeking,bio,avatar,photo,by,bm,bd,btime,city,mbti,bdsm,discover_photo,interests,updated_at)
+    VALUES (@user_id,@name,@gender,@seeking,@bio,@avatar,@photo,@by,@bm,@bd,@btime,@city,@mbti,@bdsm,@discover_photo,@interests,@updated_at)
     ON CONFLICT(user_id) DO UPDATE SET name=@name,gender=@gender,seeking=@seeking,bio=@bio,avatar=@avatar,
-      photo=COALESCE(@photo,photo),by=@by,bm=@bm,bd=@bd,btime=@btime,city=@city,mbti=@mbti,bdsm=@bdsm,discover_photo=@discover_photo,updated_at=@updated_at`),
+      photo=COALESCE(@photo,photo),by=@by,bm=@bm,bd=@bd,btime=@btime,city=@city,mbti=@mbti,bdsm=@bdsm,discover_photo=@discover_photo,interests=@interests,updated_at=@updated_at`),
   getProfile: db.prepare("SELECT p.*, u.is_bot FROM profiles p JOIN users u ON u.id=p.user_id WHERE p.user_id = ?"),
   allProfiles: db.prepare("SELECT p.*, u.is_bot FROM profiles p JOIN users u ON u.id=p.user_id WHERE p.user_id != ?"),
   insSwipe: db.prepare("INSERT OR REPLACE INTO swipes (actor,target,kind,created_at) VALUES (?,?,?,?)"),
@@ -185,7 +186,9 @@ function saveProfile(userId, p) {
     avatar: p.avatar || "⭐", photo: p.photo || null,
     by: p.year, bm: p.month, bd: p.day, btime: p.time || null, city: p.city || null,
     mbti: p.mbti, bdsm: p.bdsm ? JSON.stringify(p.bdsm) : null,
-    discover_photo: p.discoverPhoto ? 1 : 0, updated_at: now(),
+    discover_photo: p.discoverPhoto ? 1 : 0,
+    interests: p.interests && p.interests.length ? JSON.stringify(p.interests) : null,
+    updated_at: now(),
   });
 }
 function profileOut(row) {
@@ -194,7 +197,8 @@ function profileOut(row) {
     id: row.user_id, name: row.name, gender: row.gender, seeking: row.seeking, bio: row.bio,
     avatar: row.avatar, photo: row.photo, year: row.by, month: row.bm, day: row.bd,
     time: row.btime, city: row.city, mbti: row.mbti, bdsm: row.bdsm ? JSON.parse(row.bdsm) : null,
-    discoverPhoto: !!row.discover_photo, isBot: !!row.is_bot,
+    discoverPhoto: !!row.discover_photo, interests: row.interests ? JSON.parse(row.interests) : [],
+    isBot: !!row.is_bot,
   };
 }
 function getCredits(userId) {
@@ -224,7 +228,8 @@ function seedBots() {
     const info = ins.run(`bot+${s.id}@amesoeur.local`, now());
     const uid = info.lastInsertRowid;
     saveProfile(uid, { name: s.name, gender: s.gender, seeking: s.seeking, bio: s.bio, avatar: s.avatar,
-      photo: null, year: s.year, month: s.month, day: s.day, time: s.time, city: s.city, mbti: s.mbti, bdsm: s.bdsm });
+      photo: null, year: s.year, month: s.month, day: s.day, time: s.time, city: s.city, mbti: s.mbti,
+      bdsm: s.bdsm, interests: s.interests });
   }
 }
 seedBots();

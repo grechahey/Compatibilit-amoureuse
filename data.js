@@ -33,31 +33,64 @@
 
   const AVATARS = ["🦊", "🦋", "🌙", "🌻", "🐬", "🦁", "🦚", "🐺", "🌊", "🔥", "🌸", "🍃", "⭐", "🕊️", "🦌", "🐝"];
 
-  /* ------------------------ Test MBTI (12 questions) ------------------
-   * dim : 0 = E/I, 1 = N/S, 2 = T/F, 3 = J/P. a → première lettre, b → seconde. */
+  /* ------------------------ Test MBTI (20 questions) ------------------
+   * Chaque énoncé se note de 1 (pas du tout) à 5 (tout à fait).
+   * dim : 0 = E/I, 1 = N/S, 2 = T/F, 3 = J/P.
+   * sign : +1 si « d'accord » va vers la 1re lettre (E/N/T/J), -1 vers la 2de.
+   * Énoncés entremêlés et à polarité alternée pour limiter les biais. */
+  const MBTI_AXES = [["E", "I"], ["N", "S"], ["T", "F"], ["J", "P"]];
   const MBTI_QUESTIONS = [
-    { dim: 0, a: "E", b: "I", ta: "Je me ressource entouré·e de monde.", tb: "Je me ressource dans le calme, en solo." },
-    { dim: 0, a: "E", b: "I", ta: "Je pense à voix haute, spontanément.", tb: "Je réfléchis en moi avant de parler." },
-    { dim: 0, a: "E", b: "I", ta: "J'aborde facilement des inconnu·es.", tb: "Je vais vers les autres avec réserve." },
-    { dim: 1, a: "N", b: "S", ta: "Je me fie à l'intuition et aux idées.", tb: "Je me fie aux faits concrets et à l'expérience." },
-    { dim: 1, a: "N", b: "S", ta: "J'imagine les possibles, le futur.", tb: "Je vis le présent, le tangible." },
-    { dim: 1, a: "N", b: "S", ta: "J'aime les concepts et métaphores.", tb: "J'aime le pratique et le détail." },
-    { dim: 2, a: "T", b: "F", ta: "Je décide avec la logique.", tb: "Je décide avec le cœur et les valeurs." },
-    { dim: 2, a: "T", b: "F", ta: "Je privilégie la vérité, même rude.", tb: "Je privilégie l'harmonie et le tact." },
-    { dim: 2, a: "T", b: "F", ta: "On me dit juste et objectif·ve.", tb: "On me dit empathique et chaleureux·se." },
-    { dim: 3, a: "J", b: "P", ta: "J'aime planifier et décider tôt.", tb: "J'aime garder mes options ouvertes." },
-    { dim: 3, a: "J", b: "P", ta: "J'aime l'ordre et les listes.", tb: "J'aime l'improvisation et la souplesse." },
-    { dim: 3, a: "J", b: "P", ta: "Je finis avant l'échéance.", tb: "Je carbure à la dernière minute." },
+    { dim: 0, sign: 1, t: "Être entouré·e de monde me recharge." },
+    { dim: 1, sign: 1, t: "Je me fie d'abord à mon intuition et aux idées." },
+    { dim: 2, sign: 1, t: "Je décide surtout avec la logique et l'analyse." },
+    { dim: 3, sign: 1, t: "J'aime planifier et décider tôt." },
+    { dim: 0, sign: 1, t: "Après une soirée animée, je me sens plein·e d'énergie." },
+    { dim: 1, sign: 1, t: "J'aime imaginer les possibles et le futur." },
+    { dim: 2, sign: 1, t: "Je privilégie la vérité, même quand elle dérange." },
+    { dim: 3, sign: 1, t: "J'aime l'ordre, les listes et les échéances tenues." },
+    { dim: 0, sign: -1, t: "J'ai besoin de solitude pour me ressourcer." },
+    { dim: 1, sign: -1, t: "Je préfère les faits concrets et l'expérience vécue." },
+    { dim: 2, sign: -1, t: "Je décide surtout avec le cœur et mes valeurs." },
+    { dim: 3, sign: -1, t: "Je préfère garder mes options ouvertes." },
+    { dim: 0, sign: -1, t: "Je réfléchis longuement en moi avant de parler." },
+    { dim: 1, sign: -1, t: "Je remarque surtout les détails pratiques et le présent." },
+    { dim: 2, sign: -1, t: "Je cherche l'harmonie et le tact avant tout." },
+    { dim: 3, sign: -1, t: "J'improvise volontiers et m'adapte au dernier moment." },
+    { dim: 0, sign: 1, t: "J'aborde facilement des inconnu·es." },
+    { dim: 1, sign: 1, t: "Les concepts, symboles et métaphores me parlent." },
+    { dim: 2, sign: 1, t: "On me dit objectif·ve et franc·he." },
+    { dim: 3, sign: 1, t: "Je me sens mieux quand tout est organisé d'avance." },
   ];
-  function scoreMbti(answers) {
-    // answers : tableau de 'a' | 'b' aligné sur MBTI_QUESTIONS
-    const tally = { E: 0, I: 0, N: 0, S: 0, T: 0, F: 0, J: 0, P: 0 };
-    answers.forEach((ans, i) => {
-      const q = MBTI_QUESTIONS[i];
-      tally[ans === "a" ? q.a : q.b]++;
+  const MBTI_TYPE_NAMES = {
+    INTJ: "L'Architecte", INTP: "Le Logicien", ENTJ: "Le Commandant", ENTP: "L'Innovateur",
+    INFJ: "L'Avocat", INFP: "Le Médiateur", ENFJ: "Le Protagoniste", ENFP: "L'Inspirateur",
+    ISTJ: "Le Logisticien", ISFJ: "Le Défenseur", ESTJ: "Le Directeur", ESFJ: "Le Consul",
+    ISTP: "Le Virtuose", ISFP: "L'Aventurier", ESTP: "L'Entrepreneur", ESFP: "L'Amuseur",
+  };
+  // Solde signé par axe : positif → 1re lettre. answers : entiers 1..5.
+  function mbtiBalances(answers) {
+    const bal = [0, 0, 0, 0];
+    answers.forEach((v, i) => {
+      const q = MBTI_QUESTIONS[i]; if (!q) return;
+      bal[q.dim] += q.sign * ((Math.max(1, Math.min(5, Number(v) || 3)) - 3));
     });
-    return (tally.E >= tally.I ? "E" : "I") + (tally.N >= tally.S ? "N" : "S") +
-           (tally.T >= tally.F ? "T" : "F") + (tally.J >= tally.P ? "J" : "P");
+    return bal;
+  }
+  function scoreMbti(answers) {
+    return mbtiBalances(answers).map((b, d) => MBTI_AXES[d][b >= 0 ? 0 : 1]).join("");
+  }
+  // Détail : type, nom et inclinaison (%) vers la lettre retenue sur chaque axe.
+  function scoreMbtiDetail(answers) {
+    const counts = [0, 0, 0, 0];
+    MBTI_QUESTIONS.forEach((q) => { counts[q.dim]++; });
+    const bal = mbtiBalances(answers);
+    const axes = bal.map((b, d) => {
+      const letter = MBTI_AXES[d][b >= 0 ? 0 : 1];
+      const lean = Math.round(50 + (Math.abs(b) / (2 * counts[d])) * 50); // 50..100
+      return { pair: MBTI_AXES[d], letter, lean };
+    });
+    const type = axes.map((a) => a.letter).join("");
+    return { type, name: MBTI_TYPE_NAMES[type] || "", axes };
   }
 
   /* ------------------------ Test BDSM (29 questions, 18+) -------------
@@ -189,7 +222,8 @@
 
   global.Data = {
     CITIES, CITY_BY_NAME, AVATARS,
-    MBTI_QUESTIONS, scoreMbti, BDSM_QUESTIONS, scoreBdsm, SEED, NUDGES,
+    MBTI_QUESTIONS, MBTI_TYPE_NAMES, scoreMbti, scoreMbtiDetail,
+    BDSM_QUESTIONS, scoreBdsm, SEED, NUDGES,
     INTERESTS, INTEREST_EMOJI,
   };
 })(typeof window !== "undefined" ? window : globalThis);

@@ -31,7 +31,7 @@
 
   let S = { user: null, profile: null, credits: { superLikes: 1, messages: 0, premium: false } };
   let CONFIG = { org: { name: "Âme Sœur", dpoEmail: "dpo@amesoeur.exemple", legal: "" } };
-  let tempMbti = null, tempBdsm = null, pendingPhoto = null, devVerifyUrl = null, pendingAvatarFeat = null;
+  let tempMbti = null, tempMbtiDetail = null, tempBdsm = null, pendingPhoto = null, devVerifyUrl = null, pendingAvatarFeat = null;
   let candidates = [], deck = [], pos = 0;
   let authMode = "register";
   let currentChat = null;
@@ -135,8 +135,13 @@
   }
   function refreshMbtiBadge() {
     const b = $("mbti-badge"), btn = $("btn-mbti-test");
-    if (tempMbti) { b.hidden = false; b.textContent = `Votre type : ${tempMbti}`; if (btn) btn.textContent = "Refaire le test"; }
-    else { b.hidden = true; if (btn) btn.textContent = "Passer le test de personnalité"; }
+    if (!tempMbti) { b.hidden = true; if (btn) btn.textContent = "Passer le test de personnalité"; return; }
+    const name = (tempMbtiDetail && tempMbtiDetail.name) || Data.MBTI_TYPE_NAMES[tempMbti] || "";
+    const axes = tempMbtiDetail
+      ? `<span class="mbti-axes">${tempMbtiDetail.axes.map((a) => `${a.letter} ${a.lean}%`).join(" · ")}</span>` : "";
+    b.hidden = false;
+    b.innerHTML = `Votre type : <b>${esc(tempMbti)}</b>${name ? " — " + esc(name) : ""}${axes ? "<br>" + axes : ""}`;
+    if (btn) btn.textContent = "Refaire le test";
   }
   function refreshBdsmBadge() {
     const b = $("bdsm-badge");
@@ -147,11 +152,12 @@
   let quizMode = null;
   function openMbtiQuiz() {
     quizMode = "mbti"; $("quiz-title").textContent = "Test de personnalité (MBTI)";
-    $("quiz-intro").textContent = "Choisissez l'énoncé qui vous ressemble le plus. 12 questions.";
+    $("quiz-intro").textContent = `Notez chaque énoncé de 1 (pas du tout) à 5 (tout à fait). ${Data.MBTI_QUESTIONS.length} questions. Aucune bonne réponse.`;
     const body = $("quiz-body"); body.innerHTML = "";
     Data.MBTI_QUESTIONS.forEach((q, i) => {
+      const scale = [1, 2, 3, 4, 5].map((v) => `<label class="lk"><input type="radio" name="q${i}" value="${v}"><span>${v}</span></label>`).join("");
       const d = document.createElement("div"); d.className = "quiz-q";
-      d.innerHTML = `<p class="quiz-num">${i + 1}.</p><label class="opt"><input type="radio" name="q${i}" value="a"> ${esc(q.ta)}</label><label class="opt"><input type="radio" name="q${i}" value="b"> ${esc(q.tb)}</label>`;
+      d.innerHTML = `<p class="quiz-stmt">${i + 1}. ${esc(q.t)}</p><div class="likert-wrap"><div class="likert-ends"><span>Pas du tout</span><span>Tout à fait</span></div><div class="likert five">${scale}</div></div>`;
       body.appendChild(d);
     });
     openOverlay();
@@ -176,9 +182,9 @@
     for (let i = 0; i < n; i++) {
       const sel = document.querySelector(`input[name="q${i}"]:checked`);
       if (!sel) { const er = $("quiz-error"); er.textContent = `Merci de répondre à la question ${i + 1}.`; er.hidden = false; return; }
-      answers.push(quizMode === "mbti" ? sel.value : +sel.value);
+      answers.push(+sel.value);
     }
-    if (quizMode === "mbti") { tempMbti = Data.scoreMbti(answers); refreshMbtiBadge(); }
+    if (quizMode === "mbti") { tempMbtiDetail = Data.scoreMbtiDetail(answers); tempMbti = tempMbtiDetail.type; refreshMbtiBadge(); }
     else { tempBdsm = Data.scoreBdsm(answers); refreshBdsmBadge(); }
     closeOverlay();
   }
@@ -586,7 +592,7 @@
     $("p-seeking").value = me.seeking || "T"; $("p-bio").value = me.bio || "";
     if (me.year) $("p-dob").value = `${me.year}-${String(me.month).padStart(2, "0")}-${String(me.day).padStart(2, "0")}`;
     $("p-time").value = me.time || ""; $("p-city").value = me.city || "";
-    tempMbti = MBTI_TYPES.includes(me.mbti) ? me.mbti : null; refreshMbtiBadge();
+    tempMbti = MBTI_TYPES.includes(me.mbti) ? me.mbti : null; tempMbtiDetail = null; refreshMbtiBadge();
     tempBdsm = me.bdsm || null;
     if (me.bdsm) { $("p-bdsm-optin").checked = true; $("bdsm-area").hidden = false; refreshBdsmBadge(); }
     if (me.photo) { const pv = $("p-photo-preview"); pv.src = me.photo; pv.hidden = false; }

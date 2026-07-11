@@ -148,6 +148,23 @@ app.post("/api/resend-verification", auth, async (req, res) => {
 });
 
 /* ----------------------------- Profil ------------------------------ */
+const HEX6 = /^[0-9a-fA-F]{6}$/;
+// Ne conserve que des couleurs hex valides extraites de la photo (teint, cheveux).
+function sanitizeAvatarFeat(f) {
+  if (!f || typeof f !== "object") return null;
+  const out = {};
+  if (HEX6.test(f.skinColor || "")) out.skinColor = String(f.skinColor).toLowerCase();
+  if (HEX6.test(f.hairColor || "")) out.hairColor = String(f.hairColor).toLowerCase();
+  return out.skinColor || out.hairColor ? out : null;
+}
+
+// Aperçu de l'avatar généré (pour un retour visuel immédiat dans le formulaire).
+app.post("/api/avatar/preview", auth, async (req, res) => {
+  await Avatars.ready();
+  const feat = sanitizeAvatarFeat(req.body && req.body.avatarFeat);
+  res.json({ svg: Avatars.svgSync("u" + req.user.id, feat) });
+});
+
 app.put("/api/profile", auth, async (req, res) => {
   const p = req.body || {};
   if (!p.name || !p.year || !p.mbti) return res.status(400).json({ error: "Prénom, date de naissance et MBTI requis." });
@@ -155,6 +172,8 @@ app.put("/api/profile", auth, async (req, res) => {
   const valid = new Set(Data.INTERESTS.map(([l]) => l));
   p.interests = Array.isArray(p.interests)
     ? [...new Set(p.interests.filter((x) => valid.has(x)))].slice(0, 8) : [];
+  // Avatar généré depuis la photo : on ne garde que des couleurs hex valides.
+  p.avatarFeat = sanitizeAvatarFeat(p.avatarFeat);
   // Données sensibles (Art. 9 RGPD) : consentement explicite obligatoire.
   if (p.bdsm) {
     if (!p.sensitiveConsent) return res.status(400).json({ error: "Le traitement des données kink exige votre consentement explicite." });
@@ -200,7 +219,7 @@ app.get("/api/discover", auth, async (req, res) => {
       const r = Engine.compatibility(meE, toEngine(c));
       return {
         id: c.id, name: c.name, age: ageOf(c), city: c.city, distanceKm: distanceKm(me, c),
-        mbti: c.mbti, bio: c.bio, avatarSvg: Avatars.svgSync("u" + c.id), score: r.score,
+        mbti: c.mbti, bio: c.bio, avatarSvg: Avatars.svgSync("u" + c.id, c.avatarFeat), score: r.score,
         verdict: Engine.verdict(r.score),
         sun: r.b.sun.name, chinese: r.b.chinese.name, ascendant: r.b.ascendant ? r.b.ascendant.name : null,
         gender: c.gender, seeking: c.seeking, interests: c.interests || [],
@@ -252,7 +271,7 @@ function matchView(m, meId) {
   const other = D.profileOut(D.q.getProfile.get(otherId));
   const last = D.q.lastMessage.get(m.id);
   return {
-    matchId: m.id, superd: !!m.super, avatarSvg: Avatars.svgSync("u" + otherId),
+    matchId: m.id, superd: !!m.super, avatarSvg: Avatars.svgSync("u" + otherId, other.avatarFeat),
     other: { id: otherId, name: other.name, age: ageOf(other), city: other.city, mbti: other.mbti,
       photo: other.photo, bio: other.bio },
     lastMessage: last ? { body: last.body, mine: last.sender === meId, at: last.created_at } : null,

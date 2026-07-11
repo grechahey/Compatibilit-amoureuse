@@ -96,6 +96,10 @@ input[type="file"] { font-size: .82rem; padding: .5rem 0; color: var(--muted); b
 
 .photo-preview { width: 90px; height: 90px; object-fit: cover; border-radius: 14px; margin-top: .55rem; border: 1px solid var(--line); }
 .photo-note { font-size: .76rem; color: var(--faint); margin-top: .4rem; display: block; line-height: 1.5; font-weight: 400; }
+.avatar-gen { display: flex; align-items: center; gap: .9rem; margin: .6rem 0 .2rem; }
+.avatar-gen-face { width: 88px; height: 88px; flex: 0 0 auto; border-radius: 50%; overflow: hidden; border: 1px solid var(--line); background: var(--card-2); }
+.avatar-gen-face svg { width: 100%; height: 100%; display: block; }
+.avatar-gen .photo-note { margin: 0; }
 
 /* Sélecteur de centres d'intérêt */
 .interests-picker { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .3rem; }

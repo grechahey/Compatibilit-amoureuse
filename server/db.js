@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS users (
 );
 CREATE TABLE IF NOT EXISTS profiles (
   user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-  name TEXT, gender TEXT, seeking TEXT, bio TEXT, avatar TEXT, photo TEXT,
+  name TEXT, gender TEXT, seeking TEXT, bio TEXT, avatar TEXT, avatar_feat TEXT, photo TEXT,
   by INTEGER, bm INTEGER, bd INTEGER, btime TEXT, city TEXT,
   mbti TEXT, bdsm TEXT, updated_at INTEGER, discover_photo INTEGER DEFAULT 0, interests TEXT
 );
@@ -65,6 +65,7 @@ for (const alter of [
   "ALTER TABLE users ADD COLUMN verify_token TEXT",
   "ALTER TABLE profiles ADD COLUMN discover_photo INTEGER DEFAULT 0",
   "ALTER TABLE profiles ADD COLUMN interests TEXT",
+  "ALTER TABLE profiles ADD COLUMN avatar_feat TEXT",
 ]) { try { db.exec(alter); } catch (_) { /* colonne déjà présente */ } }
 
 const CONSENT_VERSION = "2026-07-11";
@@ -87,9 +88,10 @@ const q = {
   insSession: db.prepare("INSERT INTO sessions (token, user_id, expires) VALUES (?, ?, ?)"),
   sessionByToken: db.prepare("SELECT * FROM sessions WHERE token = ?"),
   delSession: db.prepare("DELETE FROM sessions WHERE token = ?"),
-  upsertProfile: db.prepare(`INSERT INTO profiles (user_id,name,gender,seeking,bio,avatar,photo,by,bm,bd,btime,city,mbti,bdsm,discover_photo,interests,updated_at)
-    VALUES (@user_id,@name,@gender,@seeking,@bio,@avatar,@photo,@by,@bm,@bd,@btime,@city,@mbti,@bdsm,@discover_photo,@interests,@updated_at)
+  upsertProfile: db.prepare(`INSERT INTO profiles (user_id,name,gender,seeking,bio,avatar,avatar_feat,photo,by,bm,bd,btime,city,mbti,bdsm,discover_photo,interests,updated_at)
+    VALUES (@user_id,@name,@gender,@seeking,@bio,@avatar,@avatar_feat,@photo,@by,@bm,@bd,@btime,@city,@mbti,@bdsm,@discover_photo,@interests,@updated_at)
     ON CONFLICT(user_id) DO UPDATE SET name=@name,gender=@gender,seeking=@seeking,bio=@bio,avatar=@avatar,
+      avatar_feat=COALESCE(@avatar_feat,avatar_feat),
       photo=COALESCE(@photo,photo),by=@by,bm=@bm,bd=@bd,btime=@btime,city=@city,mbti=@mbti,bdsm=@bdsm,discover_photo=@discover_photo,interests=@interests,updated_at=@updated_at`),
   getProfile: db.prepare("SELECT p.*, u.is_bot FROM profiles p JOIN users u ON u.id=p.user_id WHERE p.user_id = ?"),
   allProfiles: db.prepare("SELECT p.*, u.is_bot FROM profiles p JOIN users u ON u.id=p.user_id WHERE p.user_id != ?"),
@@ -183,7 +185,8 @@ function userForToken(token) {
 function saveProfile(userId, p) {
   q.upsertProfile.run({
     user_id: userId, name: p.name, gender: p.gender, seeking: p.seeking, bio: p.bio || "",
-    avatar: p.avatar || "⭐", photo: p.photo || null,
+    avatar: p.avatar || "⭐", avatar_feat: p.avatarFeat ? JSON.stringify(p.avatarFeat) : null,
+    photo: p.photo || null,
     by: p.year, bm: p.month, bd: p.day, btime: p.time || null, city: p.city || null,
     mbti: p.mbti, bdsm: p.bdsm ? JSON.stringify(p.bdsm) : null,
     discover_photo: p.discoverPhoto ? 1 : 0,
@@ -195,7 +198,8 @@ function profileOut(row) {
   if (!row) return null;
   return {
     id: row.user_id, name: row.name, gender: row.gender, seeking: row.seeking, bio: row.bio,
-    avatar: row.avatar, photo: row.photo, year: row.by, month: row.bm, day: row.bd,
+    avatar: row.avatar, avatarFeat: row.avatar_feat ? JSON.parse(row.avatar_feat) : null,
+    photo: row.photo, year: row.by, month: row.bm, day: row.bd,
     time: row.btime, city: row.city, mbti: row.mbti, bdsm: row.bdsm ? JSON.parse(row.bdsm) : null,
     discoverPhoto: !!row.discover_photo, interests: row.interests ? JSON.parse(row.interests) : [],
     isBot: !!row.is_bot,

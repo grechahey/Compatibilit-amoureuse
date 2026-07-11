@@ -27,7 +27,7 @@
 
   let S = { user: null, profile: null, credits: { superLikes: 1, messages: 0, premium: false } };
   let CONFIG = { org: { name: "Âme Sœur", dpoEmail: "dpo@amesoeur.exemple", legal: "" } };
-  let tempMbti = null, tempBdsm = null, pendingPhoto = null, devVerifyUrl = null;
+  let tempMbti = null, tempBdsm = null, pendingPhoto = null, devVerifyUrl = null, pendingAvatarFeat = null;
   let candidates = [], deck = [], pos = 0;
   let authMode = "register";
   let currentChat = null;
@@ -199,6 +199,7 @@
       discoverPhoto: $("p-discover-photo").checked,
     };
     if (pendingPhoto) body.photo = pendingPhoto;
+    if (pendingAvatarFeat) body.avatarFeat = pendingAvatarFeat;
     try { const r = await api("/profile", { method: "PUT", body }); S.profile = r.profile; toast("Profil enregistré"); showView("discover"); }
     catch (ex) { fail(ex.message); }
   }
@@ -398,15 +399,69 @@
           const max = 512, scale = Math.min(1, max / Math.max(img.width, img.height));
           const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
           const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
-          cv.getContext("2d").drawImage(img, 0, 0, w, h);
+          const ctx = cv.getContext("2d");
+          ctx.drawImage(img, 0, 0, w, h);
           pendingPhoto = cv.toDataURL("image/jpeg", 0.82);
           const pv = $("p-photo-preview"); pv.src = pendingPhoto; pv.hidden = false;
+          // Extraction locale (teint, cheveux) → avatar ressemblant. La photo ne quitte pas l'appareil pour cela.
+          try { pendingAvatarFeat = extractFeatures(ctx.getImageData(0, 0, w, h).data, w, h); }
+          catch (_) { pendingAvatarFeat = null; }
+          refreshAvatarPreview(pendingAvatarFeat);
         };
         img.onerror = () => toast("Image illisible.");
         img.src = reader.result;
       };
       reader.readAsDataURL(file);
     });
+  }
+
+  /* =============== Avatar généré depuis la photo (local) =============== */
+  // Palettes « sur-style » Micah : on aligne teint/cheveux extraits sur ces teintes.
+  const SKIN_PALETTE = ["ffdbb4", "f1c9a5", "e8b98c", "dda877", "cf9b6f", "bd8a5e", "a3714a", "8a5a34", "6b4423", "4a2f1d"];
+  const HAIR_PALETTE = ["0e0e0e", "2b2320", "3a2a1e", "5a3d29", "6b4a2f", "8a5a2b", "a97c50", "c9a35b", "d8b878", "5c2c1a", "8c3b1a", "9a9a9a", "d9d3c6", "efe9df"];
+  const hx = (n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, "0");
+  const rgbToHex = (c) => hx(c[0]) + hx(c[1]) + hx(c[2]);
+  const hexToRgb = (h) => [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  const dist2 = (a, b) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2;
+  function snap(c, palette) { let best = palette[0], bd = Infinity; for (const p of palette) { const d = dist2(c, hexToRgb(p)); if (d < bd) { bd = d; best = p; } } return best; }
+  function regionAvg(data, w, h, fx, fy, fw, fh, filter) {
+    const x0 = Math.max(0, Math.floor(fx * w)), y0 = Math.max(0, Math.floor(fy * h));
+    const x1 = Math.min(w, Math.floor((fx + fw) * w)), y1 = Math.min(h, Math.floor((fy + fh) * h));
+    let r = 0, g = 0, b = 0, n = 0;
+    for (let y = y0; y < y1; y += 2) for (let x = x0; x < x1; x += 2) {
+      const i = (y * w + x) * 4;
+      if (data[i + 3] < 200) continue;
+      const R = data[i], G = data[i + 1], B = data[i + 2];
+      if (filter && !filter(R, G, B)) continue;
+      r += R; g += G; b += B; n++;
+    }
+    return n ? [r / n, g / n, b / n, n] : null;
+  }
+  function skinish(R, G, B) {
+    const mx = Math.max(R, G, B), mn = Math.min(R, G, B);
+    if (mx < 45 || mx > 252) return false;   // trop sombre / cramé
+    if (R < G || G < B) return false;         // teint : R ≥ G ≥ B
+    if (mx - mn < 12) return false;           // trop gris (fond, mur)
+    return true;
+  }
+  function extractFeatures(data, w, h) {
+    let skin = regionAvg(data, w, h, 0.30, 0.42, 0.40, 0.34, skinish);
+    if (!skin || skin[3] < 40) skin = regionAvg(data, w, h, 0.34, 0.45, 0.32, 0.28, null);
+    const feat = {};
+    if (skin) feat.skinColor = snap([skin[0], skin[1], skin[2]], SKIN_PALETTE);
+    const top = regionAvg(data, w, h, 0.28, 0.02, 0.44, 0.16, null);
+    if (top) {
+      const c = [top[0], top[1], top[2]], mx = Math.max(c[0], c[1], c[2]), mn = Math.min(c[0], c[1], c[2]);
+      const sat = (mx - mn) / (mx || 1), background = mx > 232 && sat < 0.08;
+      const nearSkin = skin && dist2(c, [skin[0], skin[1], skin[2]]) < 500;
+      if (!background && !nearSkin) feat.hairColor = snap(c, HAIR_PALETTE);
+    }
+    return (feat.skinColor || feat.hairColor) ? feat : null;
+  }
+  async function refreshAvatarPreview(feat) {
+    const box = $("p-avatar-preview"); if (!box) return;
+    try { const r = await api("/avatar/preview", { method: "POST", body: { avatarFeat: feat || null } }); box.innerHTML = r.svg; box.hidden = false; }
+    catch (_) { box.hidden = true; }
   }
 
   /* ============================ RGPD ============================= */
@@ -530,6 +585,8 @@
     if (me.bdsm) { $("p-bdsm-optin").checked = true; $("bdsm-area").hidden = false; refreshBdsmBadge(); }
     if (me.photo) { const pv = $("p-photo-preview"); pv.src = me.photo; pv.hidden = false; }
     $("p-discover-photo").checked = !!me.discoverPhoto;
+    pendingAvatarFeat = me.avatarFeat || null;
+    refreshAvatarPreview(pendingAvatarFeat);
   }
 
   /* ======================= Décor & toast ======================== */

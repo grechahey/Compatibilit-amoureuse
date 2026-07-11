@@ -218,11 +218,10 @@ app.get("/api/discover", auth, async (req, res) => {
     .map((c) => {
       const r = Engine.compatibility(meE, toEngine(c));
       return {
+        // Première intention : score, ville, âge. Le reste (MBTI, signes,
+        // affinités) reste côté serveur et se dévoilera plus tard.
         id: c.id, name: c.name, age: ageOf(c), city: c.city, distanceKm: distanceKm(me, c),
-        mbti: c.mbti, bio: c.bio, avatarSvg: Avatars.svgSync("u" + c.id, c.avatarFeat), score: r.score,
-        verdict: Engine.verdict(r.score),
-        sun: r.b.sun.name, chinese: r.b.chinese.name, ascendant: r.b.ascendant ? r.b.ascendant.name : null,
-        gender: c.gender, seeking: c.seeking, interests: c.interests || [],
+        bio: c.bio, avatarSvg: Avatars.svgSync("u" + c.id, c.avatarFeat), score: r.score,
         superLikedYou: superSet.has(c.id),
         // Photo montrée en découverte seulement si l'utilisateur l'a choisi.
         photo: c.discoverPhoto && c.photo ? c.photo : null,

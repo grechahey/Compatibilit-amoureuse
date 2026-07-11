@@ -60,7 +60,7 @@
            (tally.T >= tally.F ? "T" : "F") + (tally.J >= tally.P ? "J" : "P");
   }
 
-  /* ------------------------ Test BDSM (24 questions, 18+) -------------
+  /* ------------------------ Test BDSM (25 questions, 18+) -------------
    * Chaque énoncé se note de 1 (pas du tout) à 10 (tout à fait) et alimente
    * un trait (0..1). Adaptation légère inspirée de bdsmtest.org. */
   const BDSM_QUESTIONS = [
@@ -88,6 +88,7 @@
     { trait: "asexual", t: "Je ressens peu ou pas d'attirance sexuelle." },
     { trait: "hypersexual", t: "J'ai une libido très élevée ; le sexe tient une grande place pour moi." },
     { trait: "daddybaby", t: "La dynamique Daddy/Baby (protéger d'un côté, être choyé·e de l'autre) me parle." },
+    { trait: "echangiste", t: "Échanger de partenaire avec un autre couple m'attire (échangisme)." },
   ];
   function scoreBdsm(answers) {
     // answers : tableau d'entiers 1..10 aligné sur BDSM_QUESTIONS

@@ -14,6 +14,7 @@
     degrader: "Humiliant·e", degradee: "Humilié·e", primalhunter: "Primal chasseur", primalprey: "Primal proie",
     candauliste: "Candauliste", hotwife: "Hotwife", polygame: "Polygame", blackaddict: "Black addict",
     bigcock: "Big cock addict", asexual: "Asexuel·le", hypersexual: "Hypersexuel·le", daddybaby: "Daddy/Baby",
+    echangiste: "Échangiste",
   };
 
   async function api(path, opts = {}) {

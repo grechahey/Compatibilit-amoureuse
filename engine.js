@@ -201,6 +201,7 @@
     // (l'auto-paire récompense les valeurs mutuellement fortes).
     ["polygame", "polygame"], ["blackaddict", "blackaddict"], ["bigcock", "bigcock"],
     ["asexual", "asexual"], ["hypersexual", "hypersexual"], ["daddybaby", "daddybaby"],
+    ["echangiste", "echangiste"],
   ];
   function bdsmScore(a, b) {
     if (!a || !b) return null;

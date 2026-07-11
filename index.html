@@ -3,116 +3,140 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Trouve ton âme sœur : calcule ta compatibilité amoureuse en quelques secondes." />
-  <title>Âme Sœur · Compatibilité amoureuse</title>
+  <meta name="description" content="Âme Sœur — le site de rencontres qui croise MBTI, astrologie, numérologie et affinités pour vous proposer vos meilleurs matchs." />
+  <title>Âme Sœur · Rencontres par affinités profondes</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="hearts" aria-hidden="true"></div>
 
-  <header class="hero">
-    <div class="logo">💞</div>
-    <h1>Trouve ton <span>âme sœur</span></h1>
-    <p class="subtitle">Découvre votre compatibilité amoureuse en quelques secondes.</p>
+  <header class="topbar" id="topbar">
+    <div class="brand">💞 Âme Sœur</div>
+    <nav class="tabs" id="tabs" hidden>
+      <button type="button" id="nav-discover" class="tab">Découvrir</button>
+      <button type="button" id="nav-profile" class="tab">Mon profil</button>
+    </nav>
   </header>
 
-  <main>
-    <form id="compat-form" class="card" novalidate>
-      <div class="people">
-        <fieldset class="person">
-          <legend>Toi</legend>
-          <label>
-            Prénom
-            <input type="text" id="name1" name="name1" placeholder="Ex : Camille" autocomplete="off" required />
-          </label>
-          <label>
-            Date de naissance
-            <input type="date" id="dob1" name="dob1" required />
-          </label>
-          <label>
-            Personnalité (MBTI)
-            <select id="mbti1" name="mbti1" class="mbti-select" required></select>
-          </label>
-          <details class="asc-group">
-            <summary>Ascendant (facultatif)</summary>
-            <label>
-              Heure de naissance
-              <input type="time" id="time1" name="time1" />
-            </label>
-            <label>
-              Ville de naissance
-              <select id="city1" name="city1" class="mbti-select"></select>
-            </label>
-            <p class="hint">L'heure d'été et les changements de fuseau historiques sont gérés automatiquement.</p>
-          </details>
-        </fieldset>
-
-        <div class="plus" aria-hidden="true">❤</div>
-
-        <fieldset class="person">
-          <legend>L'autre</legend>
-          <label>
-            Prénom
-            <input type="text" id="name2" name="name2" placeholder="Ex : Alex" autocomplete="off" required />
-          </label>
-          <label>
-            Date de naissance
-            <input type="date" id="dob2" name="dob2" required />
-          </label>
-          <label>
-            Personnalité (MBTI)
-            <select id="mbti2" name="mbti2" class="mbti-select" required></select>
-          </label>
-          <details class="asc-group">
-            <summary>Ascendant (facultatif)</summary>
-            <label>
-              Heure de naissance
-              <input type="time" id="time2" name="time2" />
-            </label>
-            <label>
-              Ville de naissance
-              <select id="city2" name="city2" class="mbti-select"></select>
-            </label>
-            <p class="hint">L'heure d'été et les changements de fuseau historiques sont gérés automatiquement.</p>
-          </details>
-        </fieldset>
+  <main id="app">
+    <!-- ============ Vue Profil / Inscription ============ -->
+    <section id="view-profile" class="view">
+      <div class="hero-mini">
+        <h1>Trouvez votre <span>âme sœur</span></h1>
+        <p class="subtitle">On croise votre personnalité (MBTI), votre thème astral, votre numérologie et vos affinités pour révéler vos meilleurs matchs.</p>
       </div>
 
-      <p class="error" id="error" role="alert" hidden></p>
+      <form id="profile-form" class="card" novalidate>
+        <h2 class="section-title">Votre profil</h2>
 
-      <button type="submit" class="btn">Révéler notre compatibilité ✨</button>
-    </form>
+        <label class="field">Avatar
+          <div class="avatar-picker" id="avatar-picker"></div>
+        </label>
 
-    <section id="result" class="card result" hidden aria-live="polite">
-      <h2 id="result-title"></h2>
+        <div class="grid2">
+          <label class="field">Prénom
+            <input type="text" id="p-name" placeholder="Ex : Camille" autocomplete="off" required />
+          </label>
+          <label class="field">Je suis
+            <select id="p-gender" required>
+              <option value="F">Une femme</option>
+              <option value="H">Un homme</option>
+              <option value="NB">Non-binaire</option>
+            </select>
+          </label>
+        </div>
 
-      <div class="score-ring" id="score-ring">
-        <svg viewBox="0 0 120 120" width="160" height="160">
-          <circle class="ring-bg" cx="60" cy="60" r="52" />
-          <circle class="ring-fg" id="ring-fg" cx="60" cy="60" r="52" />
-        </svg>
-        <div class="score-value"><span id="score-number">0</span><small>%</small></div>
+        <div class="grid2">
+          <label class="field">Je recherche
+            <select id="p-seeking" required>
+              <option value="T">Tout le monde</option>
+              <option value="F">Des femmes</option>
+              <option value="H">Des hommes</option>
+            </select>
+          </label>
+          <label class="field">Photo (optionnel)
+            <input type="file" id="p-photo" accept="image/*" />
+          </label>
+        </div>
+
+        <label class="field">Bio
+          <textarea id="p-bio" rows="2" maxlength="180" placeholder="Quelques mots sur vous…"></textarea>
+        </label>
+
+        <h2 class="section-title">Naissance <small>— pour votre thème astral</small></h2>
+        <div class="grid2">
+          <label class="field">Date de naissance
+            <input type="date" id="p-dob" required />
+          </label>
+          <label class="field">Heure (pour l'ascendant)
+            <input type="time" id="p-time" />
+          </label>
+        </div>
+        <label class="field">Ville de naissance (pour l'ascendant)
+          <select id="p-city" class="wide"></select>
+        </label>
+        <p class="hint">L'heure d'été et les fuseaux historiques sont gérés automatiquement. Heure + ville = ascendant calculé.</p>
+
+        <h2 class="section-title">Personnalité</h2>
+        <div class="grid2">
+          <label class="field">Type MBTI
+            <select id="p-mbti"></select>
+          </label>
+          <div class="field">Vous ne le connaissez pas ?
+            <button type="button" class="btn btn-ghost small" id="btn-mbti-test">Passer le test (12 Q)</button>
+          </div>
+        </div>
+        <p class="badge-line" id="mbti-badge" hidden></p>
+
+        <h2 class="section-title">Affinités intimes <small>— facultatif, 18+</small></h2>
+        <label class="check">
+          <input type="checkbox" id="p-bdsm-optin" />
+          J'ai 18 ans ou plus et je souhaite passer le test d'affinités BDSM (facultatif, privé)
+        </label>
+        <div id="bdsm-area" hidden>
+          <button type="button" class="btn btn-ghost small" id="btn-bdsm-test">Passer le test BDSM (16 Q)</button>
+          <p class="badge-line" id="bdsm-badge" hidden></p>
+        </div>
+
+        <p class="error" id="form-error" role="alert" hidden></p>
+        <button type="submit" class="btn">Enregistrer & découvrir mes matchs 💘</button>
+      </form>
+    </section>
+
+    <!-- ============ Vue Découvrir ============ -->
+    <section id="view-discover" class="view" hidden>
+      <div class="hero-mini">
+        <h1>Vos <span>matchs</span></h1>
+        <p class="subtitle" id="discover-sub"></p>
       </div>
-
-      <p class="verdict" id="verdict"></p>
-
-      <p class="ascendants" id="ascendants" hidden></p>
-
-      <p class="cusp-note" id="cusp-note" hidden></p>
-
-      <ul class="breakdown" id="breakdown"></ul>
-
-      <button type="button" class="btn btn-ghost" id="again">Tester un autre couple</button>
+      <div id="match-list" class="match-list"></div>
     </section>
   </main>
 
+  <!-- ============ Overlay de test ============ -->
+  <div id="overlay" class="overlay" hidden>
+    <div class="overlay-card">
+      <div class="overlay-head">
+        <h3 id="quiz-title"></h3>
+        <button type="button" class="close" id="quiz-close" aria-label="Fermer">✕</button>
+      </div>
+      <p class="quiz-intro" id="quiz-intro"></p>
+      <form id="quiz-form"><div id="quiz-body"></div>
+        <p class="error" id="quiz-error" role="alert" hidden></p>
+        <button type="submit" class="btn" id="quiz-submit">Valider</button>
+      </form>
+    </div>
+  </div>
+
   <footer>
-    <p>Fait avec ❤ — juste pour le plaisir. Les vraies histoires s'écrivent à deux.</p>
+    <p>Fait avec ❤ — prototype de démonstration. Vos données restent dans votre navigateur.</p>
   </footer>
 
-  <script src="script.js"></script>
+  <script src="engine.js"></script>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

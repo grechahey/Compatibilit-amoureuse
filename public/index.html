@@ -16,8 +16,6 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="hearts" aria-hidden="true"></div>
-
   <header class="topbar" id="topbar">
     <div class="brand">Âme&nbsp;Sœur</div>
     <nav class="tabs" id="tabs" hidden>
@@ -124,15 +122,9 @@
         </label>
         <p class="hint">L'heure d'été et les fuseaux historiques sont gérés automatiquement. Heure + ville = ascendant calculé.</p>
 
-        <h2 class="section-title">Personnalité</h2>
-        <div class="grid2">
-          <label class="field">Type MBTI
-            <select id="p-mbti"></select>
-          </label>
-          <div class="field">Vous ne le connaissez pas ?
-            <button type="button" class="btn btn-ghost small" id="btn-mbti-test">Passer le test (12 Q)</button>
-          </div>
-        </div>
+        <h2 class="section-title">Personnalité <small>— test MBTI, 12 questions</small></h2>
+        <p class="hint">Votre type se détermine par le test, pour une compatibilité juste — pas de type auto-déclaré. Deux minutes, aucune bonne réponse.</p>
+        <button type="button" class="btn btn-ghost" id="btn-mbti-test">Passer le test de personnalité</button>
         <p class="badge-line" id="mbti-badge" hidden></p>
 
         <h2 class="section-title">Affinités kink <small>— facultatif, 18+, données sensibles</small></h2>
@@ -141,7 +133,7 @@
           J'ai 18 ans ou plus et je consens explicitement au traitement de mes données intimes (préférences kink) pour le calcul de compatibilité — facultatif et privé
         </label>
         <div id="bdsm-area" hidden>
-          <button type="button" class="btn btn-ghost small" id="btn-bdsm-test">Passer le test kink (16 Q)</button>
+          <button type="button" class="btn btn-ghost" id="btn-bdsm-test">Passer le test kink (16 questions)</button>
           <p class="badge-line" id="bdsm-badge" hidden></p>
         </div>
 

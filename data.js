@@ -61,7 +61,7 @@
   }
 
   /* ------------------------ Test BDSM (16 questions, 18+) -------------
-   * Chaque énoncé se note de 0 (pas du tout) à 4 (tout à fait) et alimente
+   * Chaque énoncé se note de 1 (pas du tout) à 10 (tout à fait) et alimente
    * un trait (0..1). Adaptation légère inspirée de bdsmtest.org. */
   const BDSM_QUESTIONS = [
     { trait: "dominant", t: "J'aime prendre le contrôle et diriger." },
@@ -82,9 +82,9 @@
     { trait: "switch", t: "Je peux aussi bien dominer que me soumettre selon l'instant." },
   ];
   function scoreBdsm(answers) {
-    // answers : tableau d'entiers 0..4 aligné sur BDSM_QUESTIONS
+    // answers : tableau d'entiers 1..10 aligné sur BDSM_QUESTIONS
     const out = {};
-    answers.forEach((v, i) => { out[BDSM_QUESTIONS[i].trait] = Math.max(0, Math.min(4, v || 0)) / 4; });
+    answers.forEach((v, i) => { out[BDSM_QUESTIONS[i].trait] = (Math.max(1, Math.min(10, v || 1)) - 1) / 9; });
     return out;
   }
 

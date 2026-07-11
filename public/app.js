@@ -37,7 +37,6 @@
   document.addEventListener("DOMContentLoaded", async () => {
     initControls(); initFilters(); initAuth(); initMatches(); initRgpd(); initPhoto();
     $("quiz-form").addEventListener("submit", onQuizSubmit);
-    hearts();
     const params = new URLSearchParams(location.search);
     if (params.has("verified")) {
       toast(params.get("verified") === "1" ? "Email confirmé" : "Lien de vérification invalide ou expiré.");
@@ -118,10 +117,6 @@
     const csel = $("p-city");
     csel.appendChild(new Option("— non précisé —", ""));
     [...Data.CITIES].sort((a, b) => a[0].localeCompare(b[0], "fr")).forEach((c) => csel.appendChild(new Option(c[0], c[0])));
-    const msel = $("p-mbti");
-    msel.appendChild(new Option("— choisir ou passer le test —", ""));
-    MBTI_TYPES.forEach((t) => msel.appendChild(new Option(t, t)));
-    msel.addEventListener("change", () => { tempMbti = msel.value || null; refreshMbtiBadge(); });
     $("p-bdsm-optin").addEventListener("change", (e) => { $("bdsm-area").hidden = !e.target.checked; if (!e.target.checked) { tempBdsm = null; refreshBdsmBadge(); } });
     $("btn-mbti-test").addEventListener("click", openMbtiQuiz);
     $("btn-bdsm-test").addEventListener("click", openBdsmQuiz);
@@ -133,7 +128,11 @@
     $("quiz-close").addEventListener("click", closeOverlay);
     ["pass", "like", "super", "msg"].forEach((k) => $("act-" + k).addEventListener("click", () => act(k)));
   }
-  function refreshMbtiBadge() { const b = $("mbti-badge"); if (tempMbti) { b.hidden = false; b.textContent = `Type retenu : ${tempMbti}`; } else b.hidden = true; }
+  function refreshMbtiBadge() {
+    const b = $("mbti-badge"), btn = $("btn-mbti-test");
+    if (tempMbti) { b.hidden = false; b.textContent = `Votre type : ${tempMbti}`; if (btn) btn.textContent = "Refaire le test"; }
+    else { b.hidden = true; if (btn) btn.textContent = "Passer le test de personnalité"; }
+  }
   function refreshBdsmBadge() {
     const b = $("bdsm-badge");
     if (tempBdsm) { b.hidden = false; b.textContent = "Retenu — " + Object.entries(tempBdsm).filter(([, v]) => v > 0).sort((a, c) => c[1] - a[1]).slice(0, 3).map(([k]) => BDSM_LABELS[k] || k).join(" · "); } else b.hidden = true;
@@ -154,12 +153,13 @@
   }
   function openBdsmQuiz() {
     quizMode = "bdsm"; $("quiz-title").textContent = "Test de compatibilité kink (18+)";
-    $("quiz-intro").textContent = "Notez de 0 (pas du tout) à 4 (tout à fait). 16 questions. Aucune bonne réponse — ça reste privé.";
+    $("quiz-intro").textContent = "Notez chaque énoncé de 1 (pas du tout) à 10 (tout à fait). 16 questions. Aucune bonne réponse — ça reste privé.";
     const body = $("quiz-body"); body.innerHTML = "";
     Data.BDSM_QUESTIONS.forEach((q, i) => {
-      const scale = [0, 1, 2, 3, 4].map((v) => `<label class="lk"><input type="radio" name="q${i}" value="${v}"><span>${v}</span></label>`).join("");
+      const scale = Array.from({ length: 10 }, (_, k) => k + 1).map((v) =>
+        `<label class="lk"><input type="radio" name="q${i}" value="${v}"><span>${v}</span></label>`).join("");
       const d = document.createElement("div"); d.className = "quiz-q";
-      d.innerHTML = `<p class="quiz-stmt">${i + 1}. ${esc(q.t)}</p><div class="likert">${scale}</div>`;
+      d.innerHTML = `<p class="quiz-stmt">${i + 1}. ${esc(q.t)}</p><div class="likert-wrap"><div class="likert-ends"><span>Pas du tout</span><span>Tout à fait</span></div><div class="likert">${scale}</div></div>`;
       body.appendChild(d);
     });
     openOverlay();
@@ -173,7 +173,7 @@
       if (!sel) { const er = $("quiz-error"); er.textContent = `Merci de répondre à la question ${i + 1}.`; er.hidden = false; return; }
       answers.push(quizMode === "mbti" ? sel.value : +sel.value);
     }
-    if (quizMode === "mbti") { tempMbti = Data.scoreMbti(answers); $("p-mbti").value = MBTI_TYPES.includes(tempMbti) ? tempMbti : ""; refreshMbtiBadge(); }
+    if (quizMode === "mbti") { tempMbti = Data.scoreMbti(answers); refreshMbtiBadge(); }
     else { tempBdsm = Data.scoreBdsm(answers); refreshBdsmBadge(); }
     closeOverlay();
   }
@@ -190,7 +190,7 @@
     if (!dob) return fail("Indiquez votre date de naissance.");
     const d = new Date(dob + "T00:00:00");
     if (d > new Date()) return fail("La date de naissance ne peut pas être dans le futur.");
-    if (!tempMbti) return fail("Choisissez votre type MBTI ou passez le test.");
+    if (!tempMbti) return fail("Passez le test de personnalité (MBTI) pour continuer.");
     const body = {
       name, gender: $("p-gender").value, seeking: $("p-seeking").value, bio: $("p-bio").value.trim(),
       year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate(),
@@ -581,8 +581,7 @@
     $("p-seeking").value = me.seeking || "T"; $("p-bio").value = me.bio || "";
     if (me.year) $("p-dob").value = `${me.year}-${String(me.month).padStart(2, "0")}-${String(me.day).padStart(2, "0")}`;
     $("p-time").value = me.time || ""; $("p-city").value = me.city || "";
-    $("p-mbti").value = MBTI_TYPES.includes(me.mbti) ? me.mbti : "";
-    tempMbti = me.mbti || null; refreshMbtiBadge();
+    tempMbti = MBTI_TYPES.includes(me.mbti) ? me.mbti : null; refreshMbtiBadge();
     tempBdsm = me.bdsm || null;
     if (me.bdsm) { $("p-bdsm-optin").checked = true; $("bdsm-area").hidden = false; refreshBdsmBadge(); }
     if (me.photo) { const pv = $("p-photo-preview"); pv.src = me.photo; pv.hidden = false; }
@@ -591,17 +590,7 @@
     refreshAvatarPreview(pendingAvatarFeat);
   }
 
-  /* ======================= Décor & toast ======================== */
-  function hearts() {
-    const layer = document.querySelector(".hearts"); const g = ["💖", "💗", "💓", "💕", "❤", "🩷"];
-    for (let i = 0; i < 12; i++) {
-      const s = document.createElement("span"); s.textContent = g[i % g.length];
-      const seed = (i * 97 % 100) / 100;
-      s.style.left = (seed * 100).toFixed(1) + "%"; s.style.setProperty("--s", (14 + seed * 20).toFixed(0) + "px");
-      s.style.setProperty("--d", (11 + seed * 11).toFixed(1) + "s"); s.style.setProperty("--delay", (seed * 11).toFixed(1) + "s");
-      layer.appendChild(s);
-    }
-  }
+  /* ============================= Toast ========================== */
   let toastT = null;
   function toast(msg) {
     let t = $("toast"); if (!t) { t = document.createElement("div"); t.id = "toast"; t.className = "toast"; document.body.appendChild(t); }

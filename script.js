@@ -263,43 +263,70 @@ function ascendantLongitude(jd, lat, lonEast) {
   return norm360(asc / rad);
 }
 
-// Calcule le signe ascendant à partir de la date locale, l'heure locale
-// (décimale), le décalage UTC (heures) et la latitude/longitude.
-function ascendantSign(date, localHours, utcOffset, lat, lonEast) {
-  const utHours = localHours - utcOffset;
-  const jd = julianDay(date.getFullYear(), date.getMonth() + 1, date.getDate(), utHours);
+/* --- Conversion heure locale → UTC avec les règles historiques exactes ---
+ * On s'appuie sur la base IANA fournie par le navigateur (Intl), qui connaît
+ * l'historique des changements d'heure et de fuseau (DST, heure de guerre…). */
+function tzOffsetMinutes(zone, ts) {
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone: zone, hourCycle: "h23", year: "numeric", month: "2-digit",
+    day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit",
+  });
+  const p = {};
+  for (const part of dtf.formatToParts(ts)) if (part.type !== "literal") p[part.type] = part.value;
+  const asUTC = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
+  return Math.round((asUTC - ts) / 60000);
+}
+// Heure murale locale (dans `zone`) → instant UTC (Date). Double passe pour
+// gérer correctement les bascules d'heure d'été.
+function zonedToUtc(zone, y, mo, d, h, mi) {
+  let ts = Date.UTC(y, mo - 1, d, h, mi);
+  const o1 = tzOffsetMinutes(zone, ts);
+  ts -= o1 * 60000;
+  const o2 = tzOffsetMinutes(zone, ts);
+  if (o2 !== o1) ts = Date.UTC(y, mo - 1, d, h, mi) - o2 * 60000;
+  return new Date(ts);
+}
+
+// Signe ascendant : date + heure locale (décimale) + fuseau IANA + lat/lon.
+function ascendantSign(date, localHours, zone, lat, lonEast) {
+  const h = Math.floor(localHours);
+  const mi = Math.round((localHours - h) * 60);
+  const utc = zonedToUtc(zone, date.getFullYear(), date.getMonth() + 1, date.getDate(), h, mi);
+  const utH = utc.getUTCHours() + utc.getUTCMinutes() / 60 + utc.getUTCSeconds() / 3600;
+  const jd = julianDay(utc.getUTCFullYear(), utc.getUTCMonth() + 1, utc.getUTCDate(), utH);
   const lon = ascendantLongitude(jd, lat, lonEast);
   return ZODIAC[Math.floor(lon / 30) % 12];
 }
 
-/* Villes de naissance : latitude, longitude (est+), décalage UTC standard.
- * Le décalage est l'heure d'hiver ; cocher « heure d'été » ajoute +1 h. */
+/* Villes de naissance : latitude, longitude (est+), fuseau IANA.
+ * Le fuseau gère automatiquement l'heure d'été et les changements
+ * historiques d'offset. */
 const CITIES = [
-  ["Paris", 48.8566, 2.3522, 1], ["Marseille", 43.2965, 5.3698, 1],
-  ["Lyon", 45.764, 4.8357, 1], ["Toulouse", 43.6047, 1.4442, 1],
-  ["Nice", 43.7102, 7.262, 1], ["Nantes", 47.2184, -1.5536, 1],
-  ["Strasbourg", 48.5734, 7.7521, 1], ["Bordeaux", 44.8378, -0.5792, 1],
-  ["Lille", 50.6292, 3.0573, 1], ["Bruxelles", 50.8503, 4.3517, 1],
-  ["Genève", 46.2044, 6.1432, 1], ["Lausanne", 46.5197, 6.6323, 1],
-  ["Luxembourg", 49.6116, 6.1319, 1], ["Montréal", 45.5017, -73.5673, -5],
-  ["Québec", 46.8139, -71.208, -5], ["Dakar", 14.7167, -17.4677, 0],
-  ["Abidjan", 5.36, -4.0083, 0], ["Casablanca", 33.5731, -7.5898, 0],
-  ["Alger", 36.7538, 3.0588, 1], ["Tunis", 36.8065, 10.1815, 1],
-  ["Beyrouth", 33.8938, 35.5018, 2], ["Antananarivo", -18.8792, 47.5079, 3],
-  ["Port-au-Prince", 18.5944, -72.3074, -5], ["Cayenne", 4.9224, -52.3135, -3],
-  ["Fort-de-France", 14.6161, -61.0588, -4], ["Papeete", -17.5325, -149.5665, -10],
-  ["Nouméa", -22.2758, 166.458, 11], ["Kinshasa", -4.4419, 15.2663, 1],
-  ["Yaoundé", 3.848, 11.5021, 1], ["Londres", 51.5074, -0.1278, 0],
-  ["Madrid", 40.4168, -3.7038, 1], ["Rome", 41.9028, 12.4964, 1],
-  ["Berlin", 52.52, 13.405, 1], ["Lisbonne", 38.7223, -9.1393, 0],
-  ["New York", 40.7128, -74.006, -5], ["Los Angeles", 34.0522, -118.2437, -8],
-  ["Mexico", 19.4326, -99.1332, -6], ["São Paulo", -23.5505, -46.6333, -3],
-  ["Buenos Aires", -34.6037, -58.3816, -3], ["Tokyo", 35.6762, 139.6503, 9],
-  ["Pékin", 39.9042, 116.4074, 8], ["Hong Kong", 22.3193, 114.1694, 8],
-  ["Bangkok", 13.7563, 100.5018, 7], ["Mumbai", 19.076, 72.8777, 5.5],
-  ["Dubaï", 25.2048, 55.2708, 4], ["Le Caire", 30.0444, 31.2357, 2],
-  ["Johannesburg", -26.2041, 28.0473, 2], ["Sydney", -33.8688, 151.2093, 10],
-  ["Moscou", 55.7558, 37.6173, 3], ["Istanbul", 41.0082, 28.9784, 3],
+  ["Paris", 48.8566, 2.3522, "Europe/Paris"], ["Marseille", 43.2965, 5.3698, "Europe/Paris"],
+  ["Lyon", 45.764, 4.8357, "Europe/Paris"], ["Toulouse", 43.6047, 1.4442, "Europe/Paris"],
+  ["Nice", 43.7102, 7.262, "Europe/Paris"], ["Nantes", 47.2184, -1.5536, "Europe/Paris"],
+  ["Strasbourg", 48.5734, 7.7521, "Europe/Paris"], ["Bordeaux", 44.8378, -0.5792, "Europe/Paris"],
+  ["Lille", 50.6292, 3.0573, "Europe/Paris"], ["Bruxelles", 50.8503, 4.3517, "Europe/Brussels"],
+  ["Genève", 46.2044, 6.1432, "Europe/Zurich"], ["Lausanne", 46.5197, 6.6323, "Europe/Zurich"],
+  ["Luxembourg", 49.6116, 6.1319, "Europe/Luxembourg"], ["Montréal", 45.5017, -73.5673, "America/Toronto"],
+  ["Québec", 46.8139, -71.208, "America/Toronto"], ["Dakar", 14.7167, -17.4677, "Africa/Dakar"],
+  ["Abidjan", 5.36, -4.0083, "Africa/Abidjan"], ["Casablanca", 33.5731, -7.5898, "Africa/Casablanca"],
+  ["Alger", 36.7538, 3.0588, "Africa/Algiers"], ["Tunis", 36.8065, 10.1815, "Africa/Tunis"],
+  ["Beyrouth", 33.8938, 35.5018, "Asia/Beirut"], ["Antananarivo", -18.8792, 47.5079, "Indian/Antananarivo"],
+  ["Port-au-Prince", 18.5944, -72.3074, "America/Port-au-Prince"], ["Cayenne", 4.9224, -52.3135, "America/Cayenne"],
+  ["Fort-de-France", 14.6161, -61.0588, "America/Martinique"], ["Papeete", -17.5325, -149.5665, "Pacific/Tahiti"],
+  ["Nouméa", -22.2758, 166.458, "Pacific/Noumea"], ["Kinshasa", -4.4419, 15.2663, "Africa/Kinshasa"],
+  ["Yaoundé", 3.848, 11.5021, "Africa/Douala"], ["Londres", 51.5074, -0.1278, "Europe/London"],
+  ["Madrid", 40.4168, -3.7038, "Europe/Madrid"], ["Rome", 41.9028, 12.4964, "Europe/Rome"],
+  ["Berlin", 52.52, 13.405, "Europe/Berlin"], ["Lisbonne", 38.7223, -9.1393, "Europe/Lisbon"],
+  ["New York", 40.7128, -74.006, "America/New_York"], ["Los Angeles", 34.0522, -118.2437, "America/Los_Angeles"],
+  ["Mexico", 19.4326, -99.1332, "America/Mexico_City"], ["São Paulo", -23.5505, -46.6333, "America/Sao_Paulo"],
+  ["Buenos Aires", -34.6037, -58.3816, "America/Argentina/Buenos_Aires"], ["Tokyo", 35.6762, 139.6503, "Asia/Tokyo"],
+  ["Pékin", 39.9042, 116.4074, "Asia/Shanghai"], ["Hong Kong", 22.3193, 114.1694, "Asia/Hong_Kong"],
+  ["Bangkok", 13.7563, 100.5018, "Asia/Bangkok"], ["Mumbai", 19.076, 72.8777, "Asia/Kolkata"],
+  ["Dubaï", 25.2048, 55.2708, "Asia/Dubai"], ["Le Caire", 30.0444, 31.2357, "Africa/Cairo"],
+  ["Johannesburg", -26.2041, 28.0473, "Africa/Johannesburg"], ["Sydney", -33.8688, 151.2093, "Australia/Sydney"],
+  ["Moscou", 55.7558, 37.6173, "Europe/Moscow"], ["Istanbul", 41.0082, 28.9784, "Europe/Istanbul"],
 ];
 
 // Hash stable d'une chaîne → 0..1
@@ -447,9 +474,8 @@ form.addEventListener("submit", (e) => {
     const cityVal = document.getElementById("city" + n).value;
     if (!t || !cityVal) return null;
     const [hh, mm] = t.split(":").map(Number);
-    const { lat, lon, tz } = JSON.parse(cityVal);
-    const dst = document.getElementById("dst" + n).checked ? 1 : 0;
-    return ascendantSign(date, hh + mm / 60, tz + dst, lat, lon);
+    const { lat, lon, zone } = JSON.parse(cityVal);
+    return ascendantSign(date, hh + mm / 60, zone, lat, lon);
   }
   const asc1 = readAscendant(dob1, 1);
   const asc2 = readAscendant(dob2, 2);
@@ -568,9 +594,9 @@ document.getElementById("again").addEventListener("click", () => {
     ph.textContent = "— choisir —";
     ph.selected = true;
     sel.appendChild(ph);
-    for (const [name, lat, lon, tz] of sorted) {
+    for (const [name, lat, lon, zone] of sorted) {
       const o = document.createElement("option");
-      o.value = JSON.stringify({ lat, lon, tz });
+      o.value = JSON.stringify({ lat, lon, zone });
       o.textContent = name;
       sel.appendChild(o);
     }

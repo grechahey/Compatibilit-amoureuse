@@ -244,13 +244,12 @@ input:focus, select:focus {
 }
 .asc-group[open] summary { margin-bottom: .4rem; }
 .asc-group label { margin-bottom: .6rem; }
-label.check {
-  flex-direction: row;
-  align-items: center;
-  gap: .45rem;
-  font-size: .78rem;
+.asc-group .hint {
+  font-size: .72rem;
+  color: #a07e8e;
+  margin: -.2rem 0 .5rem;
+  line-height: 1.35;
 }
-label.check input { width: auto; padding: 0; }
 
 .ascendants {
   font-size: .95rem;

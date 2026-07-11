@@ -24,9 +24,12 @@
 
   const SKIN = ["#fbe0c8", "#f4cda6", "#e8b489", "#d99b6c", "#c07f4f", "#9c6238", "#6f4426"];
   const HAIR = ["#2b1d16", "#3f2a1b", "#5c3a21", "#7a4a24", "#a5632c", "#c99a5b", "#e2d2ad", "#efe7d8", "#3a3a3a", "#8a2f2f", "#43357a", "#2f5f8a"];
-  const BG = [["#ffe3ec", "#ffb8d2"], ["#e7f0ff", "#b9d3ff"], ["#e6f9ea", "#b6e6c4"], ["#fff3d6", "#ffe08a"],
-    ["#f1e7ff", "#d3b9ff"], ["#ffe7f6", "#ffbfe6"], ["#e2f6ff", "#b6e6f7"], ["#fdeee1", "#ffd3a8"]];
-  const CLOTHES = ["#ff8fb1", "#8fb8ff", "#8fe0b0", "#ffd27a", "#c79bff", "#ff9b9b", "#7ad6e0", "#9ad17a"];
+  // Fonds sobres et harmonisés avec le thème ivoire / bordeaux.
+  const BG = [
+    ["#efe2d6", "#dcc7b3"], ["#e6e0d0", "#cdc3a9"], ["#ecdcd8", "#d7b3ad"], ["#e0e2df", "#c0c7c2"],
+    ["#e7dde6", "#c9b3c6"], ["#dfe4ea", "#bcc7d4"], ["#efe6d3", "#d9c69f"], ["#e9ddd6", "#d3b9a8"],
+  ];
+  const CLOTHES = ["#b06a78", "#7d94b0", "#7ba088", "#bfa159", "#9a7fb0", "#b57f7f", "#7fa8b0", "#8fa06f"];
   const IRIS = ["#5b3a1e", "#6b4423", "#3f6b8a", "#4a7a52", "#7a6a55", "#37506b"];
   const LIPS = ["#d9738a", "#c9607a", "#cf6f74", "#b85c6e"];
 

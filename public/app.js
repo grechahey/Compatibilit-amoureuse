@@ -540,17 +540,38 @@
       const blur = Math.max(0, (1 - count / REVEAL_AT) * 8);
       $("chat-face").innerHTML = `<img src="${o.photo}" alt="" style="filter:blur(${blur.toFixed(1)}px)">`;
       $("chat-meta").textContent = blur > 0.2
-        ? `${o.mbti} · photo nette dans ${Math.max(0, REVEAL_AT - count)} message(s)`
-        : `${o.mbti} · ${o.city || "—"}`;
+        ? `${o.city || "—"} · photo nette dans ${Math.max(0, REVEAL_AT - count)} message(s)`
+        : `${o.city || "—"}`;
     } else {
       $("chat-face").innerHTML = r.match.avatarSvg;
-      $("chat-meta").textContent = `${o.mbti} · ${o.city || "—"} · photo pas encore partagée`;
+      $("chat-meta").textContent = `${o.city || "—"} · photo pas encore partagée`;
     }
     $("chat-name").textContent = `${o.name}, ${o.age}`;
+    renderReveal(r.reveal);
     const body = $("chat-body");
     body.innerHTML = r.messages.length ? r.messages.map((m) => `<div class="bubble ${m.mine ? "me" : "them"}">${esc(m.body)}</div>`).join("")
       : `<p class="chat-empty">Vous avez matché ! Lancez la conversation avec ${esc(o.name)}.</p>`;
     body.scrollTop = body.scrollHeight;
+  }
+  // Bandeau d'affinités qui se dévoile message après message.
+  const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+  function renderReveal(rv) {
+    const box = $("chat-reveal"); if (!box) return;
+    if (!rv) { box.hidden = true; return; }
+    const chips = [];
+    if (rv.mbti) chips.push(`<span class="rv-chip">🧠 ${esc(rv.mbti)}</span>`);
+    if (rv.signs) {
+      if (rv.signs.sun) chips.push(`<span class="rv-chip">☀️ ${esc(rv.signs.sun)}</span>`);
+      if (rv.signs.chinese) chips.push(`<span class="rv-chip">🐉 ${esc(rv.signs.chinese)}</span>`);
+      if (rv.signs.ascendant) chips.push(`<span class="rv-chip">↗️ Asc. ${esc(rv.signs.ascendant)}</span>`);
+    }
+    const factors = rv.factors ? `<div class="rv-factors">${rv.factors.map((f) =>
+      `<div class="rv-frow"><span>${f.emoji} ${esc(f.label)}</span><b>${f.value}%</b><i style="width:${f.value}%"></i></div>`).join("")}</div>` : "";
+    const next = rv.next
+      ? `<p class="rv-next">🔒 ${esc(cap(rv.next.label))} — dans ${rv.next.in} message${rv.next.in > 1 ? "s" : ""}</p>`
+      : `<p class="rv-next">Toutes vos affinités sont dévoilées.</p>`;
+    box.innerHTML = `<div class="rv-score"><span class="score-pill">${HEART_ICON}<b>${rv.score}%</b> d'affinité</span><span class="rv-verdict">${esc(rv.verdict)}</span></div>${chips.length ? `<div class="rv-chips">${chips.join("")}</div>` : ""}${factors}${next}`;
+    box.hidden = false;
   }
 
   /* =========================== Prefill =========================== */

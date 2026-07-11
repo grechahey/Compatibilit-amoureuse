@@ -271,10 +271,33 @@ function matchView(m, meId) {
   const last = D.q.lastMessage.get(m.id);
   return {
     matchId: m.id, superd: !!m.super, avatarSvg: Avatars.svgSync("u" + otherId, other.avatarFeat),
-    other: { id: otherId, name: other.name, age: ageOf(other), city: other.city, mbti: other.mbti,
+    other: { id: otherId, name: other.name, age: ageOf(other), city: other.city,
       photo: other.photo, bio: other.bio },
     lastMessage: last ? { body: last.body, mine: last.sender === meId, at: last.created_at } : null,
   };
+}
+
+// Révélation progressive des affinités au fil de la conversation (par paliers
+// de messages échangés). Rien n'est envoyé au client avant son palier.
+const REVEAL_STAGES = [
+  { key: "mbti", at: 2, label: "sa personnalité (MBTI)" },
+  { key: "signs", at: 5, label: "ses signes astrologiques" },
+  { key: "factors", at: 9, label: "le détail de vos affinités" },
+];
+function buildReveal(me, other, count) {
+  const r = Engine.compatibility(toEngine(me), toEngine(other));
+  const at = (k) => REVEAL_STAGES.find((s) => s.key === k).at;
+  const out = { count, score: r.score, verdict: Engine.verdict(r.score) };
+  out.mbti = count >= at("mbti") ? other.mbti : null;
+  out.signs = count >= at("signs")
+    ? { sun: r.b.sun.name, chinese: r.b.chinese.name, ascendant: r.b.ascendant ? r.b.ascendant.name : null }
+    : null;
+  out.factors = count >= at("factors")
+    ? r.factors.map((f) => ({ label: f.label, emoji: f.emoji, value: Math.round(f.value * 100) }))
+    : null;
+  const nextStage = REVEAL_STAGES.find((s) => count < s.at);
+  out.next = nextStage ? { label: nextStage.label, in: nextStage.at - count } : null;
+  return out;
 }
 app.get("/api/matches", auth, async (req, res) => {
   await Avatars.ready();
@@ -285,7 +308,14 @@ app.get("/api/messages/:matchId", auth, async (req, res) => {
   await Avatars.ready();
   const m = D.q.matchById.get(+req.params.matchId);
   if (!m || (m.a !== req.user.id && m.b !== req.user.id)) return res.status(404).json({ error: "Conversation introuvable." });
-  res.json({ match: matchView(m, req.user.id), messages: D.q.messagesFor.all(m.id).map((x) => ({ body: x.body, mine: x.sender === req.user.id, at: x.created_at })) });
+  const msgs = D.q.messagesFor.all(m.id);
+  const otherId = m.a === req.user.id ? m.b : m.a;
+  const me = D.profileOut(D.q.getProfile.get(req.user.id)), other = D.profileOut(D.q.getProfile.get(otherId));
+  res.json({
+    match: matchView(m, req.user.id),
+    reveal: buildReveal(me, other, msgs.length),
+    messages: msgs.map((x) => ({ body: x.body, mine: x.sender === req.user.id, at: x.created_at })),
+  });
 });
 app.post("/api/messages/:matchId", auth, (req, res) => {
   const m = D.q.matchById.get(+req.params.matchId);

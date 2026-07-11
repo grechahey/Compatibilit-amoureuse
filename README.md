@@ -2,9 +2,9 @@
 
 Application de rencontres full-stack qui va au-delà des photos : chaque membre
 renseigne sa **naissance** (date, heure, lieu) et passe un test **MBTI** (et,
-en option, un test **BDSM**). Le moteur croise **astrologie** (Soleil +
+en option, un test **kink**). Le moteur croise **astrologie** (Soleil +
 ascendant, calcul astronomique exact), **astrologie chinoise**, **numérologie**,
-**MBTI** et **affinités BDSM** pour donner une **note de compatibilité** et
+**MBTI** et **affinités kink** pour donner une **note de compatibilité** et
 classer les profils.
 
 ## Fonctionnalités
@@ -12,7 +12,11 @@ classer les profils.
 - **Comptes & authentification** : inscription / connexion, mots de passe
   hachés (scrypt), sessions par cookie httpOnly.
 - **Profil** : avatar, bio, genre, recherche, naissance ; tests MBTI (12 Q) et
-  BDSM (16 Q, 18+, facultatif) intégrés.
+  kink (16 Q, 18+, facultatif, données sensibles) intégrés.
+- **Conformité RGPD** : consentement explicite à l'inscription et pour les
+  données sensibles (Art. 9), politique de confidentialité, export des données
+  (Art. 15/20), suppression du compte (Art. 17), bandeau cookie strictement
+  nécessaire.
 - **Découverte en swipe** : note d'abord + **avatar-visage généré** (le physique
   suggéré avant la photo) ; **photos débloquées seulement après un match mutuel**.
 - **Filtres** : âge (min/max) et distance (haversine entre villes).
@@ -65,6 +69,8 @@ Variables d'environnement : `PORT` (défaut 3000), `DB_PATH` (défaut
 | GET/POST | `/api/messages/:matchId` | Lire / envoyer des messages |
 | POST | `/api/message-direct` | Message sans match (premium) |
 | POST | `/api/purchase` | Achat simulé (crédits) |
+| GET  | `/api/gdpr/export` | Export RGPD de toutes ses données (JSON) |
+| DELETE | `/api/account` | Suppression du compte et effacement total |
 
 ## Limites (prototype)
 

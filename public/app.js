@@ -34,7 +34,7 @@
 
   /* ============================ Boot ============================ */
   document.addEventListener("DOMContentLoaded", async () => {
-    initControls(); initFilters(); initAuth(); initMatches();
+    initControls(); initFilters(); initAuth(); initMatches(); initRgpd();
     $("quiz-form").addEventListener("submit", onQuizSubmit);
     hearts();
     try { const r = await api("/me"); S = r; afterAuth(); }
@@ -50,12 +50,20 @@
       $("auth-submit").textContent = authMode === "register" ? "S'inscrire" : "Se connecter";
       $("auth-switch").textContent = authMode === "register" ? "Se connecter" : "Créer un compte";
       $("auth-switch").previousSibling.textContent = authMode === "register" ? "Déjà membre ? " : "Nouveau ici ? ";
+      $("consent-block").hidden = authMode !== "register";
     });
+    $("privacy-link").addEventListener("click", (e) => { e.preventDefault(); openPrivacyModal(); });
     $("auth-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const err = $("auth-error"); err.hidden = true;
+      const body = { email: $("a-email").value.trim(), password: $("a-pw").value };
+      if (authMode === "register") {
+        if (!$("a-age").checked) { err.textContent = "Vous devez confirmer avoir 18 ans ou plus."; err.hidden = false; return; }
+        if (!$("a-privacy").checked) { err.textContent = "Vous devez accepter la politique de confidentialité."; err.hidden = false; return; }
+        body.ageConfirmed = true; body.acceptPrivacy = true;
+      }
       try {
-        const r = await api("/" + authMode, { method: "POST", body: { email: $("a-email").value.trim(), password: $("a-pw").value } });
+        const r = await api("/" + authMode, { method: "POST", body });
         S = { user: r.user, profile: r.profile, credits: r.credits };
         afterAuth();
       } catch (ex) { err.textContent = ex.message; err.hidden = false; }
@@ -122,7 +130,7 @@
     openOverlay();
   }
   function openBdsmQuiz() {
-    quizMode = "bdsm"; $("quiz-title").textContent = "Test d'affinités BDSM (18+)";
+    quizMode = "bdsm"; $("quiz-title").textContent = "Test de compatibilité kink (18+)";
     $("quiz-intro").textContent = "Notez de 0 (pas du tout) à 4 (tout à fait). 16 questions. Aucune bonne réponse — ça reste privé.";
     const body = $("quiz-body"); body.innerHTML = "";
     Data.BDSM_QUESTIONS.forEach((q, i) => {
@@ -165,6 +173,7 @@
       gender: $("p-gender").value, seeking: $("p-seeking").value, bio: $("p-bio").value.trim(),
       year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate(),
       time: $("p-time").value || null, city: $("p-city").value || null, mbti: tempMbti, bdsm: tempBdsm,
+      sensitiveConsent: tempBdsm ? $("p-bdsm-optin").checked : false,
     };
     try { const r = await api("/profile", { method: "PUT", body }); S.profile = r.profile; toast("Profil enregistré ✅"); showView("discover"); }
     catch (ex) { fail(ex.message); }
@@ -172,6 +181,7 @@
 
   /* ============================= Vues ============================= */
   function showView(v) {
+    if (v !== "matches") { stopChatPoll(); currentChat = null; }
     ["auth", "profile", "discover", "matches"].forEach((k) => { const el = $("view-" + k); if (el) el.hidden = k !== v; });
     $("nav-discover").classList.toggle("active", v === "discover");
     $("nav-matches").classList.toggle("active", v === "matches");
@@ -240,7 +250,7 @@
       <p class="verdict">${esc(c.verdict)}</p>
       <p class="locked">🔒 Photos débloquées après un match mutuel.</p>
       <button type="button" class="btn btn-ghost small chips-toggle">Voir le détail des affinités</button>
-      <ul class="factors" hidden>${chips}${!c.bothBdsm ? `<li class="tip">🔒 Test BDSM non partagé — l'alchimie intime n'est pas comptée.</li>` : ""}</ul>
+      <ul class="factors" hidden>${chips}${!c.bothBdsm ? `<li class="tip">🔒 Test kink non partagé — l'alchimie intime n'est pas comptée.</li>` : ""}</ul>
     </article>`;
   }
 
@@ -308,9 +318,62 @@
   }
   function refreshCredits() { $("credits-count").textContent = S.credits.premium ? "👑" : (S.credits.superLikes || 0); }
 
+  /* ============================ RGPD ============================= */
+  function initRgpd() {
+    $("btn-privacy").addEventListener("click", openPrivacyModal);
+    $("footer-privacy").addEventListener("click", (e) => { e.preventDefault(); openPrivacyModal(); });
+    $("cookie-privacy").addEventListener("click", (e) => { e.preventDefault(); openPrivacyModal(); });
+    $("btn-export").addEventListener("click", exportData);
+    $("btn-delete").addEventListener("click", deleteAccount);
+    // Bandeau cookies (cookie strictement nécessaire) — informatif.
+    const ok = $("cookie-ok"), banner = $("cookie-banner");
+    if (!localStorage.getItem("cookieNotice")) banner.hidden = false;
+    ok.addEventListener("click", () => { localStorage.setItem("cookieNotice", "1"); banner.hidden = true; });
+  }
+  async function exportData() {
+    try {
+      const res = await fetch("/api/gdpr/export", { credentials: "same-origin" });
+      if (!res.ok) throw new Error("Export impossible.");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = "mes-donnees-amesoeur.json"; a.click();
+      URL.revokeObjectURL(url); toast("Vos données ont été exportées 📦");
+    } catch (e) { toast(e.message); }
+  }
+  async function deleteAccount() {
+    if (!confirm("Supprimer définitivement votre compte et toutes vos données ? Cette action est irréversible.")) return;
+    if (!confirm("Dernière confirmation : cette suppression est définitive et immédiate.")) return;
+    try { await api("/account", { method: "DELETE" }); S = { user: null, profile: null, credits: {} }; toast("Compte supprimé. Au revoir 👋"); showAuth(); }
+    catch (e) { toast(e.message); }
+  }
+  function openPrivacyModal() {
+    openModal(`<div class="privacy-doc"><button type="button" class="close" data-close>✕</button>
+      <h3>Politique de confidentialité</h3>
+      <p class="pv-date">Version du 11 juillet 2026</p>
+      <p>Âme Sœur traite vos données personnelles dans le respect du RGPD. Voici l'essentiel, en clair.</p>
+      <h4>1. Responsable de traitement</h4>
+      <p>Âme Sœur (prototype de démonstration). Contact / délégué à la protection des données : <b>dpo@amesoeur.exemple</b>.</p>
+      <h4>2. Données collectées</h4>
+      <p>Email, mot de passe (haché, jamais lisible), prénom, genre, préférence de recherche, bio, avatar, éventuelle photo, date/heure/lieu de naissance, type MBTI, et — <b>uniquement si vous y consentez</b> — vos préférences intimes (kink), qui constituent des <b>données sensibles</b> (Art. 9 RGPD).</p>
+      <h4>3. Finalités & base légale</h4>
+      <p>Vos données servent à créer votre profil, calculer des compatibilités et vous proposer des rencontres. La base légale est votre <b>consentement</b> (Art. 6.1.a), et pour les données sensibles un <b>consentement explicite</b> distinct (Art. 9.2.a) recueilli avant le test kink.</p>
+      <h4>4. Destinataires</h4>
+      <p>Vos données ne sont ni vendues ni cédées. Les autres membres ne voient que les informations de votre profil (jamais votre email ni vos réponses brutes aux tests). Vos photos ne sont révélées qu'après un match mutuel.</p>
+      <h4>5. Durée de conservation</h4>
+      <p>Vos données sont conservées tant que votre compte est actif. Vous pouvez le supprimer à tout moment : l'effacement est alors immédiat et total.</p>
+      <h4>6. Vos droits</h4>
+      <p>Vous disposez des droits d'<b>accès</b>, de <b>rectification</b> (modifiez votre profil), d'<b>effacement</b> (supprimez votre compte), de <b>portabilité</b> (exportez vos données en JSON), d'<b>opposition</b> et de <b>retrait du consentement</b> à tout moment. Vous pouvez introduire une réclamation auprès de la <b>CNIL</b> (cnil.fr).</p>
+      <h4>7. Cookies</h4>
+      <p>Un seul cookie est utilisé, strictement nécessaire à votre connexion (session). Aucun traceur publicitaire, aucune mesure d'audience tierce.</p>
+      <h4>8. Sécurité</h4>
+      <p>Les mots de passe sont hachés (scrypt) et les échanges se font via votre session authentifiée.</p>
+      <button type="button" class="btn" data-close>Fermer</button></div>`);
+    $("modal-card").querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", closeModal));
+  }
+
   /* =========================== Messages ========================== */
   function initMatches() {
-    $("chat-back").addEventListener("click", () => { $("chat").hidden = true; $("matches-list").hidden = false; renderMatchesList(); });
+    $("chat-back").addEventListener("click", () => { stopChatPoll(); currentChat = null; lastMsgCount = -1; $("chat").hidden = true; $("matches-list").hidden = false; renderMatchesList(); });
     $("chat-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const input = $("chat-input"), body = input.value.trim(); if (!body || !currentChat) return;
@@ -332,9 +395,17 @@
       list.appendChild(d);
     });
   }
-  function openChat(id) { currentChat = id; $("matches-list").hidden = true; $("chat").hidden = false; loadChat(id); }
-  async function loadChat(id) {
-    let r; try { r = await api("/messages/" + id); } catch (e) { toast(e.message); return; }
+  let chatPoll = null;
+  function stopChatPoll() { if (chatPoll) { clearInterval(chatPoll); chatPoll = null; } }
+  function openChat(id) {
+    currentChat = id; $("matches-list").hidden = true; $("chat").hidden = false; loadChat(id);
+    stopChatPoll(); chatPoll = setInterval(() => { if (currentChat === id && !$("chat").hidden) loadChat(id, true); else stopChatPoll(); }, 4000);
+  }
+  let lastMsgCount = -1;
+  async function loadChat(id, isPoll) {
+    let r; try { r = await api("/messages/" + id); } catch (e) { if (!isPoll) toast(e.message); return; }
+    if (isPoll && r.messages.length === lastMsgCount) return; // rien de neuf → pas de re-render
+    lastMsgCount = r.messages.length;
     const o = r.match.other;
     $("chat-face").innerHTML = o.photo ? `<img src="${o.photo}" alt="">` : Avatar.face(r.match.avatarSeed);
     $("chat-name").textContent = `${o.name}, ${o.age}`;

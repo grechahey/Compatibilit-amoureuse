@@ -17,7 +17,9 @@ CREATE TABLE IF NOT EXISTS users (
   email TEXT UNIQUE,
   pw_hash TEXT, pw_salt TEXT,
   is_bot INTEGER DEFAULT 0,
-  created_at INTEGER
+  created_at INTEGER,
+  consent_at INTEGER, consent_version TEXT, age_confirmed INTEGER DEFAULT 0,
+  sensitive_consent_at INTEGER
 );
 CREATE TABLE IF NOT EXISTS profiles (
   user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -48,6 +50,15 @@ CREATE TABLE IF NOT EXISTS credits (
 );
 `);
 
+// Migrations défensives (bases existantes créées avant l'ajout du RGPD).
+for (const alter of [
+  "ALTER TABLE users ADD COLUMN consent_at INTEGER",
+  "ALTER TABLE users ADD COLUMN consent_version TEXT",
+  "ALTER TABLE users ADD COLUMN age_confirmed INTEGER DEFAULT 0",
+  "ALTER TABLE users ADD COLUMN sensitive_consent_at INTEGER",
+]) { try { db.exec(alter); } catch (_) { /* colonne déjà présente */ } }
+
+const CONSENT_VERSION = "2026-07-11";
 const now = () => Date.now();
 
 /* ------------------------------- Auth ------------------------------- */
@@ -92,9 +103,41 @@ const q = {
 /* ----------------------------- Helpers ------------------------------ */
 function createUser(email, password) {
   const { hash, salt } = hashPassword(password);
-  const info = q.insUser.run(email.toLowerCase(), hash, salt, now());
+  const info = db.prepare(`INSERT INTO users (email, pw_hash, pw_salt, is_bot, created_at, consent_at, consent_version, age_confirmed)
+    VALUES (?, ?, ?, 0, ?, ?, ?, 1)`).run(email.toLowerCase(), hash, salt, now(), now(), CONSENT_VERSION);
   q.insCredits.run(info.lastInsertRowid);
   return info.lastInsertRowid;
+}
+// Consentement explicite (Art. 9 RGPD) au traitement des données sensibles (kink).
+function stampSensitiveConsent(userId) {
+  db.prepare("UPDATE users SET sensitive_consent_at = ? WHERE id = ? AND sensitive_consent_at IS NULL").run(now(), userId);
+}
+// Droit à l'effacement (Art. 17) : suppression complète et irréversible.
+function deleteAccount(userId) {
+  const matchIds = db.prepare("SELECT id FROM matches WHERE a=? OR b=?").all(userId, userId).map((m) => m.id);
+  const delMsg = db.prepare("DELETE FROM messages WHERE match_id=?");
+  matchIds.forEach((id) => delMsg.run(id));
+  db.prepare("DELETE FROM messages WHERE sender=?").run(userId);
+  db.prepare("DELETE FROM matches WHERE a=? OR b=?").run(userId, userId);
+  db.prepare("DELETE FROM swipes WHERE actor=? OR target=?").run(userId, userId);
+  db.prepare("DELETE FROM sessions WHERE user_id=?").run(userId);
+  db.prepare("DELETE FROM credits WHERE user_id=?").run(userId);
+  db.prepare("DELETE FROM profiles WHERE user_id=?").run(userId);
+  db.prepare("DELETE FROM users WHERE id=?").run(userId);
+}
+// Droit d'accès et à la portabilité (Art. 15 & 20) : export de toutes les données.
+function exportData(userId) {
+  const u = db.prepare(`SELECT id, email, created_at, consent_at, consent_version, age_confirmed, sensitive_consent_at
+    FROM users WHERE id=?`).get(userId);
+  return {
+    exportedAt: new Date(now()).toISOString(),
+    compte: u,
+    profil: profileOut(q.getProfile.get(userId)),
+    credits: getCredits(userId),
+    swipes: db.prepare("SELECT target, kind, created_at FROM swipes WHERE actor=?").all(userId),
+    matches: db.prepare("SELECT id, a, b, created_at, super FROM matches WHERE a=? OR b=?").all(userId, userId),
+    messages: db.prepare("SELECT match_id, body, created_at FROM messages WHERE sender=?").all(userId),
+  };
 }
 function newSession(userId) {
   const token = crypto.randomBytes(32).toString("hex");
@@ -167,7 +210,8 @@ function botsSuperLike(userId) {
 }
 
 module.exports = {
-  db, q, now, verifyPassword,
+  db, q, now, verifyPassword, CONSENT_VERSION,
   createUser, newSession, userForToken, saveProfile, profileOut,
   getCredits, setCredits, tryMatch, botsSuperLike,
+  stampSensitiveConsent, deleteAccount, exportData,
 };

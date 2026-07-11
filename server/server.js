@@ -53,9 +53,11 @@ const emailOk = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
 /* ------------------------------ Auth ------------------------------- */
 app.post("/api/register", (req, res) => {
-  const { email, password } = req.body || {};
+  const { email, password, acceptPrivacy, ageConfirmed } = req.body || {};
   if (!emailOk(email)) return res.status(400).json({ error: "Email invalide." });
   if (!password || password.length < 6) return res.status(400).json({ error: "Mot de passe : 6 caractères minimum." });
+  if (!acceptPrivacy) return res.status(400).json({ error: "Vous devez accepter la politique de confidentialité." });
+  if (!ageConfirmed) return res.status(400).json({ error: "Vous devez confirmer avoir 18 ans ou plus." });
   if (D.q.userByEmail.get(email.toLowerCase())) return res.status(409).json({ error: "Cet email est déjà inscrit." });
   const id = D.createUser(email, password);
   D.botsSuperLike(id);
@@ -83,8 +85,25 @@ app.get("/api/me", auth, (req, res) => {
 app.put("/api/profile", auth, (req, res) => {
   const p = req.body || {};
   if (!p.name || !p.year || !p.mbti) return res.status(400).json({ error: "Prénom, date de naissance et MBTI requis." });
+  // Données sensibles (Art. 9 RGPD) : consentement explicite obligatoire.
+  if (p.bdsm) {
+    if (!p.sensitiveConsent) return res.status(400).json({ error: "Le traitement des données kink exige votre consentement explicite." });
+    D.stampSensitiveConsent(req.user.id);
+  }
   D.saveProfile(req.user.id, p);
   res.json({ profile: D.profileOut(D.q.getProfile.get(req.user.id)) });
+});
+
+/* ------------------------------ RGPD ------------------------------- */
+app.get("/api/gdpr/export", auth, (req, res) => {
+  res.setHeader("Content-Disposition", 'attachment; filename="mes-donnees-amesoeur.json"');
+  res.json(D.exportData(req.user.id));
+});
+app.delete("/api/account", auth, (req, res) => {
+  const token = parseCookies(req).sid;
+  D.deleteAccount(req.user.id);
+  if (token) { try { D.q.delSession.run(token); } catch (_) {} }
+  res.clearCookie("sid").json({ ok: true });
 });
 
 /* ---------------------------- Découvrir ---------------------------- */

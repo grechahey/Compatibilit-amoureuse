@@ -238,11 +238,11 @@
       if (value == null) return;
       factors.push({ key, label, emoji, value, weight });
     };
-    add("mbti", "Personnalité (MBTI)", "🧠", mbtiScore(A.mbti, B.mbti), 0.24);
-    add("bdsm", "Alchimie BDSM", "🔥", bdsmScore(A.bdsm, B.bdsm), 0.20);
-    add("astro", "Astrologie (Soleil + Asc.)", "✨", astro, 0.18);
-    add("numero", "Numérologie", "🔢", numerologyScore(a.lifePath, b.lifePath), 0.14);
-    add("chinese", "Astrologie chinoise", "🐉", chineseScore(a.chinese.name, b.chinese.name), 0.14);
+    add("mbti", "Personnalité (MBTI)", "🧠", mbtiScore(A.mbti, B.mbti), 0.25);
+    add("bdsm", "Alchimie kink", "🔥", bdsmScore(A.bdsm, B.bdsm), 0.20);
+    add("astro", "Astrologie (Soleil + Asc.)", "✨", astro, 0.20);
+    add("chinese", "Astrologie chinoise", "🐉", chineseScore(a.chinese.name, b.chinese.name), 0.15);
+    add("numero", "Numérologie", "🔢", numerologyScore(a.lifePath, b.lifePath), 0.10);
     // Étincelle : tiebreaker déterministe basé sur les prénoms.
     add("spark", "Étincelle", "⚡", spark(A.name, B.name), 0.10);
 

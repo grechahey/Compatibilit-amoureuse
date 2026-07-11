@@ -1,7 +1,7 @@
 {
   "name": "compatibilit-amoureuse",
   "version": "1.0.0",
-  "description": "Site de rencontres par affinités profondes (MBTI, astrologie, numérologie, BDSM)",
+  "description": "Site de rencontres par affinités profondes (MBTI, astrologie, numérologie, kinks) — conforme RGPD",
   "main": "server/server.js",
   "dependencies": {
     "express": "^4.22.2"

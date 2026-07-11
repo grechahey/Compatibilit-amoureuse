@@ -539,3 +539,29 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border: none;
 .chat-compose { display: flex; gap: .5rem; padding: .7rem; border-top: 1px solid #f5d7e2; }
 .chat-compose input { flex: 1; }
 .chat-compose .btn { margin-top: 0; width: auto; padding: .6rem 1rem; }
+
+/* ================= RGPD ================= */
+#consent-block { display: flex; flex-direction: column; gap: .5rem; margin: .8rem 0 .2rem; }
+#consent-block .check { font-size: .8rem; }
+#consent-block a { color: var(--rose-deep); font-weight: 600; }
+.rgpd-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .3rem; }
+.rgpd-actions .btn.small { margin-top: 0; }
+.btn.danger { color: #c0392b; border-color: #f0b8b0; }
+.btn.danger:hover { background: #fdecea; }
+
+.cookie-banner {
+  position: fixed; left: 50%; bottom: 1rem; transform: translateX(-50%);
+  width: min(680px, 92vw); background: #fff; border: 1px solid #f2c7d6; border-radius: 16px;
+  box-shadow: var(--shadow); padding: .8rem 1rem; z-index: 45;
+  display: flex; align-items: center; gap: 1rem;
+}
+.cookie-banner p { margin: 0; font-size: .82rem; color: #6f5061; }
+.cookie-banner a { color: var(--rose-deep); font-weight: 600; }
+.cookie-banner .btn { margin-top: 0; width: auto; flex: 0 0 auto; padding: .5rem .9rem; }
+
+.privacy-doc { text-align: left; max-height: 78vh; overflow-y: auto; }
+.privacy-doc h3 { font-family: "Playfair Display", serif; color: var(--plum); margin: 0 0 .2rem; }
+.privacy-doc .pv-date { font-size: .75rem; color: #a07e8e; margin: 0 0 .8rem; }
+.privacy-doc h4 { color: var(--rose-deep); margin: 1rem 0 .2rem; font-size: .95rem; }
+.privacy-doc p { font-size: .86rem; color: #5b4150; line-height: 1.5; margin: 0 0 .4rem; }
+.privacy-doc .btn { margin-top: 1rem; }

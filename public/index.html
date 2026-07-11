@@ -39,6 +39,12 @@
         <label class="field">Mot de passe
           <input type="password" id="a-pw" autocomplete="current-password" placeholder="6 caractères minimum" required />
         </label>
+        <div id="consent-block">
+          <label class="check"><input type="checkbox" id="a-age" />
+            Je certifie avoir <b>18 ans ou plus</b>.</label>
+          <label class="check"><input type="checkbox" id="a-privacy" />
+            J'ai lu et j'accepte la <a href="#" id="privacy-link">politique de confidentialité</a>.</label>
+        </div>
         <p class="error" id="auth-error" role="alert" hidden></p>
         <button type="submit" class="btn" id="auth-submit">S'inscrire</button>
         <p class="switch-auth">Déjà membre ? <a href="#" id="auth-switch">Se connecter</a></p>
@@ -115,18 +121,26 @@
         </div>
         <p class="badge-line" id="mbti-badge" hidden></p>
 
-        <h2 class="section-title">Affinités intimes <small>— facultatif, 18+</small></h2>
+        <h2 class="section-title">Affinités kink <small>— facultatif, 18+, données sensibles</small></h2>
         <label class="check">
           <input type="checkbox" id="p-bdsm-optin" />
-          J'ai 18 ans ou plus et je souhaite passer le test d'affinités BDSM (facultatif, privé)
+          J'ai 18 ans ou plus et je consens explicitement au traitement de mes données intimes (préférences kink) pour le calcul de compatibilité — facultatif et privé
         </label>
         <div id="bdsm-area" hidden>
-          <button type="button" class="btn btn-ghost small" id="btn-bdsm-test">Passer le test BDSM (16 Q)</button>
+          <button type="button" class="btn btn-ghost small" id="btn-bdsm-test">Passer le test kink (16 Q)</button>
           <p class="badge-line" id="bdsm-badge" hidden></p>
         </div>
 
         <p class="error" id="form-error" role="alert" hidden></p>
         <button type="submit" class="btn">Enregistrer & découvrir mes matchs 💘</button>
+
+        <h2 class="section-title">Confidentialité <small>— vos droits (RGPD)</small></h2>
+        <p class="hint">Vous pouvez à tout moment consulter, exporter ou supprimer vos données.</p>
+        <div class="rgpd-actions">
+          <button type="button" class="btn btn-ghost small" id="btn-privacy">Politique de confidentialité</button>
+          <button type="button" class="btn btn-ghost small" id="btn-export">Exporter mes données</button>
+          <button type="button" class="btn btn-ghost small danger" id="btn-delete">Supprimer mon compte</button>
+        </div>
       </form>
     </section>
 
@@ -203,8 +217,14 @@
   </div>
 
   <footer>
-    <p>Fait avec ❤ — prototype de démonstration. Vos données restent dans votre navigateur.</p>
+    <p>Fait avec ❤ — prototype de démonstration.</p>
+    <p><a href="#" id="footer-privacy">Politique de confidentialité</a> · Responsable de traitement : Âme Sœur (démo)</p>
   </footer>
+
+  <div id="cookie-banner" class="cookie-banner" hidden>
+    <p>🍪 Nous utilisons uniquement un cookie strictement nécessaire à votre connexion (aucun traceur publicitaire). <a href="#" id="cookie-privacy">En savoir plus</a>.</p>
+    <button type="button" class="btn small" id="cookie-ok">J'ai compris</button>
+  </div>
 
   <script src="engine.js"></script>
   <script src="avatar.js"></script>

@@ -115,14 +115,6 @@
 
   /* ====================== Contrôles du profil ====================== */
   function initControls() {
-    const ap = $("avatar-picker");
-    Data.AVATARS.forEach((a, i) => {
-      const b = document.createElement("button");
-      b.type = "button"; b.className = "avatar-opt"; b.textContent = a; b.dataset.avatar = a;
-      if (i === 0) b.classList.add("selected");
-      b.addEventListener("click", () => { ap.querySelectorAll(".avatar-opt").forEach((x) => x.classList.remove("selected")); b.classList.add("selected"); });
-      ap.appendChild(b);
-    });
     const csel = $("p-city");
     csel.appendChild(new Option("— non précisé —", ""));
     [...Data.CITIES].sort((a, b) => a[0].localeCompare(b[0], "fr")).forEach((c) => csel.appendChild(new Option(c[0], c[0])));
@@ -200,8 +192,7 @@
     if (d > new Date()) return fail("La date de naissance ne peut pas être dans le futur.");
     if (!tempMbti) return fail("Choisissez votre type MBTI ou passez le test.");
     const body = {
-      name, avatar: document.querySelector(".avatar-opt.selected")?.dataset.avatar || "⭐",
-      gender: $("p-gender").value, seeking: $("p-seeking").value, bio: $("p-bio").value.trim(),
+      name, gender: $("p-gender").value, seeking: $("p-seeking").value, bio: $("p-bio").value.trim(),
       year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate(),
       time: $("p-time").value || null, city: $("p-city").value || null, mbti: tempMbti, bdsm: tempBdsm,
       sensitiveConsent: tempBdsm ? $("p-bdsm-optin").checked : false,
@@ -264,8 +255,6 @@
     const item = deck[pos];
     if (item.type === "nudge") { actions.hidden = true; el.innerHTML = renderNudge(item.nudge); el.querySelector(".nudge-next").addEventListener("click", () => { pos++; renderCurrent(); }); return; }
     actions.hidden = false; el.innerHTML = renderProfile(item.c);
-    const tog = el.querySelector(".chips-toggle");
-    if (tog) tog.addEventListener("click", () => { const d = el.querySelector(".factors"); d.hidden = !d.hidden; tog.textContent = d.hidden ? "Voir le détail des affinités" : "Masquer"; });
     const rep = el.querySelector(".report-link");
     if (rep) rep.addEventListener("click", () => reportModal(+rep.dataset.report, rep.dataset.name));
   }
@@ -274,20 +263,18 @@
   }
   function renderProfile(c) {
     const circ = 2 * Math.PI * 30, off = circ * (1 - c.score / 100);
-    const chips = c.factors.map((f) => `<li><span class="fl">${esc(f.label)}</span><span class="fv">${Math.round(f.value * 100)}%</span><span class="bar"><i style="width:${Math.round(f.value * 100)}%"></i></span></li>`).join("");
     const signs = [c.sun, c.chinese, c.ascendant ? "asc. " + c.ascendant : null].filter(Boolean).map(esc).join(" · ");
     return `<article class="swipe card">
       ${c.superLikedYou ? `<div class="superbadge">${esc(c.name)} vous a super-liké·e</div>` : ""}
-      <div class="face">${c.photo ? `<img src="${c.photo}" alt="Photo de ${esc(c.name)}">` : Avatar.face(c.avatarSeed)}</div>
+      <div class="face">${c.photo ? `<img src="${c.photo}" alt="Photo de ${esc(c.name)}">` : c.avatarSvg}</div>
       <div class="score big"><svg viewBox="0 0 72 72" width="80" height="80"><circle cx="36" cy="36" r="30" class="rbg"/><circle cx="36" cy="36" r="30" class="rfg" style="stroke-dasharray:${circ};stroke-dashoffset:${off}"/></svg><b>${c.score}<small>%</small></b></div>
+      <p class="score-label">Compatibilité globale</p>
       <h3>${esc(c.name)}, ${c.age}</h3>
       <p class="sign">${signs}</p>
       <p class="meta">${esc(c.mbti)} · ${esc(c.city || "—")}${c.distanceKm != null ? " · " + c.distanceKm + " km" : ""}</p>
       <p class="bio">${esc(c.bio)}</p>
       <p class="verdict">${esc(c.verdict)}</p>
       <p class="locked">Photos débloquées après un match mutuel</p>
-      <button type="button" class="btn btn-ghost small chips-toggle">Voir le détail des affinités</button>
-      <ul class="factors" hidden>${chips}${!c.bothBdsm ? `<li class="tip">Test kink non partagé — l'alchimie intime n'est pas comptée.</li>` : ""}</ul>
       <button type="button" class="report-link" data-report="${c.id}" data-name="${esc(c.name)}">Signaler ce profil</button>
     </article>`;
   }
@@ -320,7 +307,7 @@
   function closeModal() { $("modal").hidden = true; $("modal-card").innerHTML = ""; document.body.style.overflow = ""; }
   function matchModal(c, matchId, priority) {
     openModal(`<div class="match-modal"><button type="button" class="close" data-close>✕</button>
-      <p class="mm-title">Vous matchez</p><div class="mm-faces"><div class="face big">${Avatar.face(c.avatarSeed)}</div></div>
+      <p class="mm-title">Vous matchez</p><div class="mm-faces"><div class="face big">${c.photo ? `<img src="${c.photo}" alt="">` : c.avatarSvg}</div></div>
       <h3>${esc(c.name)}, ${c.age} — ${c.score}% d'affinité</h3>
       ${priority ? `<p class="mm-prio">Super Like envoyé — vous êtes désormais <b>prioritaire</b> dans la liste de ${esc(c.name)}.</p>` : ""}
       <p class="mm-photo">Ses photos et la conversation sont maintenant débloquées.</p>
@@ -472,7 +459,7 @@
     if (!r.matches.length) { list.innerHTML = `<div class="empty card"><p class="big">Aucune conversation</p><h3>Pas encore de match.</h3><p>Filez découvrir des profils et likez ceux qui vous parlent !</p></div>`; return; }
     list.innerHTML = "";
     r.matches.forEach((m) => {
-      const av = m.other.photo ? `<img src="${m.other.photo}" alt="">` : Avatar.face(m.avatarSeed);
+      const av = m.other.photo ? `<img src="${m.other.photo}" alt="">` : m.avatarSvg;
       const d = document.createElement("button"); d.type = "button"; d.className = "match-row";
       d.innerHTML = `<div class="mr-face">${av}</div><div class="mr-info"><h4>${esc(m.other.name)}, ${m.other.age}${m.superd ? ' <span class="mr-super">Super Like</span>' : ""}</h4><p>${m.lastMessage ? (m.lastMessage.mine ? "Vous : " : "") + esc(m.lastMessage.body) : "<i>Dites bonjour…</i>"}</p></div>`;
       d.addEventListener("click", () => openChat(m.matchId));
@@ -500,7 +487,7 @@
         ? `${o.mbti} · photo nette dans ${Math.max(0, REVEAL_AT - count)} message(s)`
         : `${o.mbti} · ${o.city || "—"}`;
     } else {
-      $("chat-face").innerHTML = Avatar.face(r.match.avatarSeed);
+      $("chat-face").innerHTML = r.match.avatarSvg;
       $("chat-meta").textContent = `${o.mbti} · ${o.city || "—"} · photo pas encore partagée`;
     }
     $("chat-name").textContent = `${o.name}, ${o.age}`;
@@ -521,8 +508,6 @@
     tempMbti = me.mbti || null; refreshMbtiBadge();
     tempBdsm = me.bdsm || null;
     if (me.bdsm) { $("p-bdsm-optin").checked = true; $("bdsm-area").hidden = false; refreshBdsmBadge(); }
-    const target = document.querySelector(`.avatar-opt[data-avatar="${me.avatar}"]`);
-    if (target) { document.querySelectorAll(".avatar-opt").forEach((x) => x.classList.remove("selected")); target.classList.add("selected"); }
     if (me.photo) { const pv = $("p-photo-preview"); pv.src = me.photo; pv.hidden = false; }
     $("p-discover-photo").checked = !!me.discoverPhoto;
   }

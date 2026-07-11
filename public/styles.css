@@ -346,3 +346,5 @@ footer a { color: var(--soft); border-bottom: 1px solid var(--line); text-decora
 }
 
 .mr-super { font-size: .6rem; text-transform: uppercase; letter-spacing: .1em; color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); border-radius: 99px; padding: .1rem .4rem; vertical-align: middle; margin-left: .3rem; }
+
+.swipe .score-label { font-size: .62rem; text-transform: uppercase; letter-spacing: .16em; color: var(--faint); margin: 0 0 .3rem; }

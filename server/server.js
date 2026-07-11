@@ -7,6 +7,7 @@ require("../data.js");
 const { Engine, Data } = globalThis;
 const D = require("./db.js");
 const Storage = require("./storage.js");
+const Avatars = require("./avatars.js");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -177,7 +178,8 @@ app.delete("/api/account", auth, (req, res) => {
 });
 
 /* ---------------------------- Découvrir ---------------------------- */
-app.get("/api/discover", auth, (req, res) => {
+app.get("/api/discover", auth, async (req, res) => {
+  await Avatars.ready();
   const meRow = D.q.getProfile.get(req.user.id);
   if (!meRow) return res.status(400).json({ error: "Complétez votre profil d'abord." });
   const me = D.profileOut(meRow), meE = toEngine(me);
@@ -194,11 +196,10 @@ app.get("/api/discover", auth, (req, res) => {
       const r = Engine.compatibility(meE, toEngine(c));
       return {
         id: c.id, name: c.name, age: ageOf(c), city: c.city, distanceKm: distanceKm(me, c),
-        mbti: c.mbti, bio: c.bio, avatarSeed: "u" + c.id, score: r.score,
+        mbti: c.mbti, bio: c.bio, avatarSvg: Avatars.svgSync("u" + c.id), score: r.score,
         verdict: Engine.verdict(r.score),
         sun: r.b.sun.name, chinese: r.b.chinese.name, ascendant: r.b.ascendant ? r.b.ascendant.name : null,
-        factors: r.factors.map((f) => ({ label: f.label, value: f.value })),
-        bothBdsm: !!(me.bdsm && c.bdsm), superLikedYou: superSet.has(c.id),
+        superLikedYou: superSet.has(c.id),
         // Photo montrée en découverte seulement si l'utilisateur l'a choisi.
         photo: c.discoverPhoto && c.photo ? c.photo : null,
       };
@@ -246,17 +247,19 @@ function matchView(m, meId) {
   const other = D.profileOut(D.q.getProfile.get(otherId));
   const last = D.q.lastMessage.get(m.id);
   return {
-    matchId: m.id, superd: !!m.super, avatarSeed: "u" + otherId,
+    matchId: m.id, superd: !!m.super, avatarSvg: Avatars.svgSync("u" + otherId),
     other: { id: otherId, name: other.name, age: ageOf(other), city: other.city, mbti: other.mbti,
-      photo: other.photo, avatar: other.avatar, bio: other.bio },
+      photo: other.photo, bio: other.bio },
     lastMessage: last ? { body: last.body, mine: last.sender === meId, at: last.created_at } : null,
   };
 }
-app.get("/api/matches", auth, (req, res) => {
+app.get("/api/matches", auth, async (req, res) => {
+  await Avatars.ready();
   const rows = D.q.matchesFor.all(req.user.id, req.user.id);
   res.json({ matches: rows.map((m) => matchView(m, req.user.id)) });
 });
-app.get("/api/messages/:matchId", auth, (req, res) => {
+app.get("/api/messages/:matchId", auth, async (req, res) => {
+  await Avatars.ready();
   const m = D.q.matchById.get(+req.params.matchId);
   if (!m || (m.a !== req.user.id && m.b !== req.user.id)) return res.status(404).json({ error: "Conversation introuvable." });
   res.json({ match: matchView(m, req.user.id), messages: D.q.messagesFor.all(m.id).map((x) => ({ body: x.body, mine: x.sender === req.user.id, at: x.created_at })) });
@@ -351,4 +354,5 @@ app.use(express.static(PUBLIC));
 app.get("*", (req, res) => res.sendFile(path.join(PUBLIC, "index.html")));
 
 const PORT = process.env.PORT || 3000;
+Avatars.ready().catch(() => {}); // pré-charge le générateur d'avatars
 app.listen(PORT, () => console.log(`Âme Sœur en écoute sur http://localhost:${PORT}`));

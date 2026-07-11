@@ -112,11 +112,24 @@ généré apparaît. C'est le parti pris « personnalité d'abord ».
 - Dans une conversation, la photo se **dé-floute progressivement** au fil des
   messages échangés (nette après ~6 messages).
 
+## Stockage photos (S3) & PWA
+
+- **Photos sur S3** : si `S3_BUCKET` + identifiants sont définis, les photos
+  sont téléversées (AWS S3, Cloudflare R2, Scaleway, MinIO… via `S3_ENDPOINT`)
+  et seule leur URL est stockée ; sinon repli data-URL (démo). Voir `DEPLOY.md`.
+- **PWA** : le site est **installable sur mobile** (manifest, service worker,
+  icônes) — « Ajouter à l'écran d'accueil » l'ouvre en plein écran.
+
+## Mise en production
+
+Voir **[`DEPLOY.md`](DEPLOY.md)** : guide pas-à-pas pour brancher Stripe, SMTP,
+S3, l'hébergement (Docker/Render/Fly), et les mentions légales.
+
 ## Reste à faire pour une production complète
 
-- **Stockage photos** : passer des data-URLs en base à un stockage objet (S3) + CDN.
 - **Modération active** : interface d'administration pour traiter les signalements,
   et analyse automatique des images.
 - **Base gérée** : migrer de SQLite vers PostgreSQL pour l'échelle.
-- **Applications mobiles natives** (les rencontres sont mobile-first).
-- **Relecture juridique** de la politique de confidentialité.
+- **Apps mobiles natives** (au-delà de la PWA) : Capacitor autour de la PWA, ou
+  React Native réutilisant l'API et le moteur.
+- **Relecture juridique** de la politique par un professionnel.

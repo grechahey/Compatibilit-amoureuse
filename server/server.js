@@ -6,6 +6,7 @@ require("../engine.js");
 require("../data.js");
 const { Engine, Data } = globalThis;
 const D = require("./db.js");
+const Storage = require("./storage.js");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -22,8 +23,9 @@ app.use((req, res, next) => {
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.setHeader("Permissions-Policy", "geolocation=(), camera=(), microphone=()");
+  const imgHost = Storage.publicHost();
   res.setHeader("Content-Security-Policy",
-    "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+    `default-src 'self'; img-src 'self' data:${imgHost ? " " + imgHost : ""}; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; ` +
     "font-src https://fonts.gstatic.com; script-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'");
   if (PROD) res.setHeader("Strict-Transport-Security", "max-age=15552000; includeSubDomains");
   next();
@@ -145,13 +147,18 @@ app.post("/api/resend-verification", auth, async (req, res) => {
 });
 
 /* ----------------------------- Profil ------------------------------ */
-app.put("/api/profile", auth, (req, res) => {
+app.put("/api/profile", auth, async (req, res) => {
   const p = req.body || {};
   if (!p.name || !p.year || !p.mbti) return res.status(400).json({ error: "Prénom, date de naissance et MBTI requis." });
   // Données sensibles (Art. 9 RGPD) : consentement explicite obligatoire.
   if (p.bdsm) {
     if (!p.sensitiveConsent) return res.status(400).json({ error: "Le traitement des données kink exige votre consentement explicite." });
     D.stampSensitiveConsent(req.user.id);
+  }
+  // Photo : téléversée sur S3 si configuré, sinon conservée en base (data-URL).
+  if (p.photo) {
+    try { p.photo = await Storage.storePhoto(p.photo, req.user.id); }
+    catch (e) { return res.status(502).json({ error: "Échec du stockage de la photo." }); }
   }
   D.saveProfile(req.user.id, p);
   res.json({ profile: D.profileOut(D.q.getProfile.get(req.user.id)) });

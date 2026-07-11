@@ -542,4 +542,9 @@
     t.textContent = msg; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2600);
   }
   document.addEventListener("click", (e) => { if (e.target && e.target.id === "modal") closeModal(); });
+
+  // PWA : installation sur mobile + coquille hors-ligne.
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+  }
 })();

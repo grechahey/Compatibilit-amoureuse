@@ -218,6 +218,15 @@ app.post("/api/purchase", auth, (req, res) => {
   res.json({ credits: c });
 });
 
+/* ------------------ Configuration publique (RGPD, etc.) ------------ */
+const ORG = {
+  name: process.env.ORG_NAME || "Âme Sœur (démo)",
+  legal: process.env.ORG_LEGAL || "",
+  dpoEmail: process.env.DPO_EMAIL || "dpo@amesoeur.exemple",
+  contactEmail: process.env.CONTACT_EMAIL || "contact@amesoeur.exemple",
+};
+app.get("/api/config", (req, res) => res.json({ org: ORG }));
+
 /* --------------------- Statique + fichiers partagés ---------------- */
 ["engine.js", "avatar.js", "data.js"].forEach((f) =>
   app.get("/" + f, (req, res) => res.sendFile(path.join(ROOT, f))));

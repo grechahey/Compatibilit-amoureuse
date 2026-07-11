@@ -565,3 +565,7 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border: none;
 .privacy-doc h4 { color: var(--rose-deep); margin: 1rem 0 .2rem; font-size: .95rem; }
 .privacy-doc p { font-size: .86rem; color: #5b4150; line-height: 1.5; margin: 0 0 .4rem; }
 .privacy-doc .btn { margin-top: 1rem; }
+
+/* Photo */
+.photo-preview { width: 84px; height: 84px; object-fit: cover; border-radius: 14px; margin-top: .5rem; border: 2px solid #f2c7d6; }
+.photo-note { font-size: .72rem; color: #a07e8e; margin-top: .3rem; display: block; line-height: 1.35; }

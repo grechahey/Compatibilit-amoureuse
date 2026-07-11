@@ -26,7 +26,8 @@
   }
 
   let S = { user: null, profile: null, credits: { superLikes: 1, messages: 0, premium: false } };
-  let tempMbti = null, tempBdsm = null;
+  let CONFIG = { org: { name: "Âme Sœur", dpoEmail: "dpo@amesoeur.exemple", legal: "" } };
+  let tempMbti = null, tempBdsm = null, pendingPhoto = null;
   let candidates = [], deck = [], pos = 0;
   let authMode = "register";
   let currentChat = null;
@@ -34,9 +35,10 @@
 
   /* ============================ Boot ============================ */
   document.addEventListener("DOMContentLoaded", async () => {
-    initControls(); initFilters(); initAuth(); initMatches(); initRgpd();
+    initControls(); initFilters(); initAuth(); initMatches(); initRgpd(); initPhoto();
     $("quiz-form").addEventListener("submit", onQuizSubmit);
     hearts();
+    try { CONFIG = await api("/config"); } catch (_) {}
     try { const r = await api("/me"); S = r; afterAuth(); }
     catch (e) { showAuth(); }
   });
@@ -175,6 +177,7 @@
       time: $("p-time").value || null, city: $("p-city").value || null, mbti: tempMbti, bdsm: tempBdsm,
       sensitiveConsent: tempBdsm ? $("p-bdsm-optin").checked : false,
     };
+    if (pendingPhoto) body.photo = pendingPhoto;
     try { const r = await api("/profile", { method: "PUT", body }); S.profile = r.profile; toast("Profil enregistré ✅"); showView("discover"); }
     catch (ex) { fail(ex.message); }
   }
@@ -318,6 +321,30 @@
   }
   function refreshCredits() { $("credits-count").textContent = S.credits.premium ? "👑" : (S.credits.superLikes || 0); }
 
+  /* ============================ Photo ============================ */
+  function initPhoto() {
+    $("p-photo").addEventListener("change", (e) => {
+      const file = e.target.files[0]; if (!file) return;
+      if (!/^image\//.test(file.type)) { toast("Fichier image uniquement."); return; }
+      if (file.size > 12 * 1024 * 1024) { toast("Image trop lourde (12 Mo max)."); return; }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const max = 512, scale = Math.min(1, max / Math.max(img.width, img.height));
+          const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+          const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+          cv.getContext("2d").drawImage(img, 0, 0, w, h);
+          pendingPhoto = cv.toDataURL("image/jpeg", 0.82);
+          const pv = $("p-photo-preview"); pv.src = pendingPhoto; pv.hidden = false;
+        };
+        img.onerror = () => toast("Image illisible.");
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   /* ============================ RGPD ============================= */
   function initRgpd() {
     $("btn-privacy").addEventListener("click", openPrivacyModal);
@@ -352,7 +379,7 @@
       <p class="pv-date">Version du 11 juillet 2026</p>
       <p>Âme Sœur traite vos données personnelles dans le respect du RGPD. Voici l'essentiel, en clair.</p>
       <h4>1. Responsable de traitement</h4>
-      <p>Âme Sœur (prototype de démonstration). Contact / délégué à la protection des données : <b>dpo@amesoeur.exemple</b>.</p>
+      <p>${esc(CONFIG.org.name)}${CONFIG.org.legal ? " — " + esc(CONFIG.org.legal) : ""}. Contact / délégué à la protection des données : <b>${esc(CONFIG.org.dpoEmail)}</b>.</p>
       <h4>2. Données collectées</h4>
       <p>Email, mot de passe (haché, jamais lisible), prénom, genre, préférence de recherche, bio, avatar, éventuelle photo, date/heure/lieu de naissance, type MBTI, et — <b>uniquement si vous y consentez</b> — vos préférences intimes (kink), qui constituent des <b>données sensibles</b> (Art. 9 RGPD).</p>
       <h4>3. Finalités & base légale</h4>
@@ -429,6 +456,7 @@
     if (me.bdsm) { $("p-bdsm-optin").checked = true; $("bdsm-area").hidden = false; refreshBdsmBadge(); }
     const target = document.querySelector(`.avatar-opt[data-avatar="${me.avatar}"]`);
     if (target) { document.querySelectorAll(".avatar-opt").forEach((x) => x.classList.remove("selected")); target.classList.add("selected"); }
+    if (me.photo) { const pv = $("p-photo-preview"); pv.src = me.photo; pv.hidden = false; }
   }
 
   /* ======================= Décor & toast ======================== */

@@ -72,9 +72,32 @@ Variables d'environnement : `PORT` (défaut 3000), `DB_PATH` (défaut
 | GET  | `/api/gdpr/export` | Export RGPD de toutes ses données (JSON) |
 | DELETE | `/api/account` | Suppression du compte et effacement total |
 
-## Limites (prototype)
+## Configuration légale (RGPD)
 
-Les paiements sont **simulés** (aucune transaction réelle) et les 12 profils de
-démo sont des bots qui répondent selon l'affinité. Pour une mise en production :
-passerelle de paiement (Stripe), stockage des photos (S3), vérification email,
-modération, conformité RGPD, et une base gérée (PostgreSQL) plutôt que SQLite.
+Renseignez votre identité légale via des variables d'environnement (voir
+`.env.example`) — elles alimentent la politique de confidentialité :
+`ORG_NAME`, `ORG_LEGAL`, `DPO_EMAIL`, `CONTACT_EMAIL`.
+
+## Déploiement (Docker)
+
+```bash
+docker build -t amesoeur .
+docker run -p 3000:3000 -v $PWD/data:/app/data --env-file .env amesoeur
+```
+
+Le volume `/app/data` conserve la base SQLite entre les redémarrages.
+
+## Photos
+
+Les photos sont **facultatives**, redimensionnées côté client (max 512 px, JPEG)
+et **révélées uniquement à vos matchs** — jamais en découverte, où seul l'avatar
+généré apparaît. C'est le parti pris « personnalité d'abord ».
+
+## Reste à faire pour une production complète
+
+- **Paiements réels** : brancher Stripe (les routes `/api/purchase` et la logique
+  de crédits sont déjà en place, il reste à connecter la passerelle + webhooks).
+- **Stockage photos** : passer des data-URLs en base à un stockage objet (S3) + CDN.
+- **Vérification email** et **modération** des profils/photos.
+- **Base gérée** : migrer de SQLite vers PostgreSQL pour l'échelle.
+- **Relecture juridique** de la politique de confidentialité.

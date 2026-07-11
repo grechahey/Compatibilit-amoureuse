@@ -97,7 +97,7 @@
     { id: "s2", name: "Alex", avatar: "🦊", gender: "H", seeking: "T", bio: "Ingénieur, grimpeur, amateur de vin nature et de longues conversations.",
       year: 1990, month: 11, day: 3, time: "09:15", city: "Lyon", mbti: "ENTJ",
       bdsm: { dominant: 0.85, sadist: 0.6, rigger: 0.8, owner: 0.7, brattamer: 0.7, experimental: 0.6, switch: 0.2, voyeur: 0.5 } },
-    { id: "s3", name: "Sam", avatar: "🌙", gender: "NB", seeking: "T", bio: "Photographe nomade. Je collectionne les couchers de soleil et les vinyles.",
+    { id: "s3", name: "Sam", avatar: "🌙", gender: "NB", seeking: "T", superLikedYou: true, bio: "Photographe nomade. Je collectionne les couchers de soleil et les vinyles.",
       year: 1996, month: 2, day: 14, time: "18:40", city: "Bruxelles", mbti: "ENFP",
       bdsm: { switch: 0.85, dominant: 0.5, submissive: 0.5, experimental: 0.9, brat: 0.6, exhibitionist: 0.6, voyeur: 0.6 } },
     { id: "s4", name: "Léa", avatar: "🌻", gender: "F", seeking: "H", bio: "Médecin, marathonienne. Pragmatique mais grande romantique au fond.",
@@ -106,7 +106,7 @@
     { id: "s5", name: "Malik", avatar: "🦁", gender: "H", seeking: "F", bio: "Chef cuisinier. Je séduis à l'assiette. Team feu de bois et épices.",
       year: 1991, month: 4, day: 12, time: "22:10", city: "Marseille", mbti: "ESFP",
       bdsm: { dominant: 0.6, primalhunter: 0.7, sadist: 0.4, owner: 0.5, exhibitionist: 0.6, experimental: 0.7, switch: 0.4 } },
-    { id: "s6", name: "Nadia", avatar: "🦚", gender: "F", seeking: "T", bio: "Avocate le jour, potière le week-end. J'aime l'esprit vif et la tendresse.",
+    { id: "s6", name: "Nadia", avatar: "🦚", gender: "F", seeking: "T", superLikedYou: true, bio: "Avocate le jour, potière le week-end. J'aime l'esprit vif et la tendresse.",
       year: 1994, month: 12, day: 19, time: "07:25", city: "Genève", mbti: "INTJ",
       bdsm: { dominant: 0.75, brattamer: 0.65, rigger: 0.6, degrader: 0.4, owner: 0.6, experimental: 0.5, switch: 0.3 } },
     { id: "s7", name: "Théo", avatar: "🐬", gender: "H", seeking: "T", bio: "Prof de philo, plongeur, insomniaque poétique. On refait le monde ?",
@@ -115,10 +115,38 @@
     { id: "s8", name: "Inès", avatar: "🌊", gender: "F", seeking: "T", bio: "Développeuse et surfeuse. Introvertie assumée, humour très sec.",
       year: 1992, month: 1, day: 28, time: "15:05", city: "Nice", mbti: "ISTP",
       bdsm: { switch: 0.7, submissive: 0.5, dominant: 0.5, masochist: 0.5, sadist: 0.4, experimental: 0.7, ropebunny: 0.5 } },
+    { id: "s9", name: "Yanis", avatar: "🐺", gender: "H", seeking: "T", bio: "Kiné, boxeur du dimanche, papa d'un petit gars de 4 ans. La vie est belle.",
+      year: 1987, month: 5, day: 9, time: "11:30", city: "Toulouse", mbti: "ESTP",
+      bdsm: { dominant: 0.6, sadist: 0.5, rigger: 0.55, primalhunter: 0.6, owner: 0.5, experimental: 0.6, switch: 0.3 } },
+    { id: "s10", name: "Chloé", avatar: "🌸", gender: "F", seeking: "H", bio: "Vétérinaire, deux chats et un lévrier. Si tu es allergique, on trouvera une solution 😅",
+      year: 1997, month: 10, day: 2, time: "20:15", city: "Lille", mbti: "ENFJ",
+      bdsm: { submissive: 0.65, little: 0.6, masochist: 0.45, ropebunny: 0.5, pet: 0.55, experimental: 0.6, switch: 0.35 } },
+    { id: "s11", name: "Robin", avatar: "🍃", gender: "NB", seeking: "T", bio: "Libraire, poète du dimanche, fan de thé fumé et de longues balades.",
+      year: 1993, month: 3, day: 27, time: "05:45", city: "Strasbourg", mbti: "INFP",
+      bdsm: null },
+    { id: "s12", name: "Amara", avatar: "🕊️", gender: "F", seeking: "T", bio: "Sage-femme le jour, DJ occasionnelle. J'aime rire fort et aimer franchement.",
+      year: 1990, month: 7, day: 18, time: "23:40", city: "Dakar", mbti: "ESFJ",
+      bdsm: { dominant: 0.55, brattamer: 0.55, owner: 0.5, exhibitionist: 0.5, experimental: 0.55, switch: 0.45 } },
+  ];
+
+  /* --------- Petits textes « anti-mauvais-critères » (éparpillés) ------ */
+  const NUDGES = [
+    { icon: "🐾", title: "« Pas d'animaux » ?",
+      text: "Beaucoup d'histoires commencent par un chat qu'on finit par adorer. Écarter quelqu'un pour un poil, c'est parfois fermer la porte à un grand amour. Une allergie se gère ; une belle rencontre ne se remplace pas." },
+    { icon: "👶", title: "« Sans enfants », vraiment ?",
+      text: "Refuser d'emblée une personne qui a des enfants, c'est écarter quelqu'un qui sait déjà aimer, protéger et s'engager. Les familles se réinventent — l'amour ne se planifie pas sur un tableur." },
+    { icon: "🌱", title: "Besoin qu'on se dédie à 100 % ?",
+      text: "Un amour sain, c'est deux personnes entières — pas une qui se dissout dans l'autre. Le vrai « pour toujours » laisse à chacun de l'air pour respirer. Chercher une dévotion totale, c'est souvent la dépendance qui parle, pas le cœur." },
+    { icon: "💫", title: "Trop de critères physiques ?",
+      text: "Filtrer sur la taille, le poids ou la couleur des yeux, c'est trier des inconnus sur 2 % de ce qu'ils sont. Le charme, la voix, le rire, la manière d'écouter… rien de tout ça ne tient dans une case." },
+    { icon: "🔥", title: "Des exigences très précises… au lit ?",
+      text: "Le désir se construit, se parle, s'apprivoise à deux. Poser trop de conditions d'avance, c'est souvent la peur déguisée en cahier des charges. Laissez de la place à la surprise." },
+    { icon: "🧭", title: "Vos meilleurs matchs sont hors de vos filtres",
+      text: "L'âme sœur est peut-être à 2 ans ou à 20 km de vos réglages. Élargissez d'un cran : la compatibilité profonde ne coche pas toujours les cases qu'on avait prévues." },
   ];
 
   global.Data = {
     CITIES, CITY_BY_NAME, AVATARS,
-    MBTI_QUESTIONS, scoreMbti, BDSM_QUESTIONS, scoreBdsm, SEED,
+    MBTI_QUESTIONS, scoreMbti, BDSM_QUESTIONS, scoreBdsm, SEED, NUDGES,
   };
 })(typeof window !== "undefined" ? window : globalThis);

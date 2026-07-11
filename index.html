@@ -18,6 +18,7 @@
     <nav class="tabs" id="tabs" hidden>
       <button type="button" id="nav-discover" class="tab">Découvrir</button>
       <button type="button" id="nav-profile" class="tab">Mon profil</button>
+      <button type="button" id="nav-premium" class="tab premium-chip" title="Options premium">💛 <span id="credits-count">1</span></button>
     </nav>
   </header>
 
@@ -57,6 +58,7 @@
               <option value="H">Des hommes</option>
             </select>
           </label>
+          <p class="tip form-tip">💫 Astuce : plus votre recherche est ouverte, plus l'algorithme peut vous surprendre. Les critères trop étroits (physique, « type » précis) font passer à côté de belles rencontres.</p>
           <label class="field">Photo (optionnel)
             <input type="file" id="p-photo" accept="image/*" />
           </label>
@@ -106,15 +108,44 @@
       </form>
     </section>
 
-    <!-- ============ Vue Découvrir ============ -->
+    <!-- ============ Vue Découvrir (swipe) ============ -->
     <section id="view-discover" class="view" hidden>
       <div class="hero-mini">
-        <h1>Vos <span>matchs</span></h1>
+        <h1>À <span>découvrir</span></h1>
         <p class="subtitle" id="discover-sub"></p>
       </div>
-      <div id="match-list" class="match-list"></div>
+
+      <details class="filters card" id="filters">
+        <summary>Filtres — âge & distance</summary>
+        <div class="grid2">
+          <label class="field">Âge min : <b id="age-min-val">18</b>
+            <input type="range" id="f-age-min" min="18" max="80" value="18" />
+          </label>
+          <label class="field">Âge max : <b id="age-max-val">80</b>
+            <input type="range" id="f-age-max" min="18" max="80" value="80" />
+          </label>
+        </div>
+        <label class="field">Distance max : <b id="dist-val">∞</b>
+          <input type="range" id="f-dist" min="50" max="2050" step="50" value="2050" />
+        </label>
+        <p class="nudge-inline" id="filter-nudge" hidden></p>
+      </details>
+
+      <div id="deck" class="deck"></div>
+
+      <div class="deck-actions" id="deck-actions">
+        <button type="button" class="act pass" id="act-pass" title="Passer" aria-label="Passer">✕</button>
+        <button type="button" class="act msg" id="act-msg" title="Message direct (premium)" aria-label="Message direct">✍️</button>
+        <button type="button" class="act superlike" id="act-super" title="Super Like" aria-label="Super Like">💛</button>
+        <button type="button" class="act like" id="act-like" title="J'aime" aria-label="J'aime">♥</button>
+      </div>
     </section>
   </main>
+
+  <!-- ============ Modal générique (match / premium / message) ============ -->
+  <div id="modal" class="overlay" hidden>
+    <div class="overlay-card" id="modal-card"></div>
+  </div>
 
   <!-- ============ Overlay de test ============ -->
   <div id="overlay" class="overlay" hidden>
@@ -136,6 +167,7 @@
   </footer>
 
   <script src="engine.js"></script>
+  <script src="avatar.js"></script>
   <script src="data.js"></script>
   <script src="app.js"></script>
 </body>

@@ -197,11 +197,12 @@
     ["primalhunter", "primalprey"], ["daddy", "little"], ["voyeur", "exhibitionist"],
     // Candaulisme : celui/celle qui montre ↔ celui/celle qui s'expose.
     ["candauliste", "hotwife"],
+    // Admirateur·rice ↔ objet du désir (complémentarité miroir).
+    ["blackaddict", "blackdesired"], ["bigcock", "hung"],
     // Préférences partagées : l'accord se fait quand les deux sont élevés
     // (l'auto-paire récompense les valeurs mutuellement fortes).
-    ["polygame", "polygame"], ["blackaddict", "blackaddict"], ["bigcock", "bigcock"],
-    ["asexual", "asexual"], ["hypersexual", "hypersexual"], ["daddybaby", "daddybaby"],
-    ["echangiste", "echangiste"],
+    ["polygame", "polygame"], ["asexual", "asexual"], ["hypersexual", "hypersexual"],
+    ["daddybaby", "daddybaby"], ["echangiste", "echangiste"],
   ];
   function bdsmScore(a, b) {
     if (!a || !b) return null;

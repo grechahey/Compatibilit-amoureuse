@@ -14,13 +14,13 @@ async function ready() {
 const BG = ["ece4d9", "e6ded0", "ddd6ea", "d9e2df", "e8dcd9", "e9ddd6"];
 // Style d'avatar (DiceBear). Modifiable via AVATAR_STYLE : adventurer,
 // lorelei, micah, avataaars, openPeeps… « adventurer » = humain dessiné, sobre.
-const STYLE = process.env.AVATAR_STYLE || "adventurer";
+const STYLE = process.env.AVATAR_STYLE || "micah";
 const cache = new Map();
 
 function svgSync(seed) {
   if (!mod) return "";
   if (cache.has(seed)) return cache.get(seed);
-  const style = mod.col[STYLE] || mod.col.adventurer;
+  const style = mod.col[STYLE] || mod.col.micah;
   const svg = mod.core
     .createAvatar(style, { seed: String(seed), radius: 50, backgroundColor: BG })
     .toString();

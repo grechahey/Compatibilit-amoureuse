@@ -24,6 +24,11 @@
     </nav>
   </header>
 
+  <div id="verify-banner" class="verify-banner" hidden>
+    <span id="verify-text">✉️ Confirmez votre adresse email pour sécuriser votre compte.</span>
+    <button type="button" class="btn small" id="verify-resend">Renvoyer le lien</button>
+  </div>
+
   <main id="app">
     <!-- ============ Vue Authentification ============ -->
     <section id="view-auth" class="view" hidden>
@@ -90,9 +95,11 @@
           <label class="field">Photo (optionnel)
             <input type="file" id="p-photo" accept="image/*" />
             <img id="p-photo-preview" class="photo-preview" hidden alt="Aperçu de votre photo" />
-            <span class="photo-note">🔒 Votre photo n'est révélée qu'à vos matchs (jamais en découverte).</span>
+            <span class="photo-note">Par défaut, votre photo n'est révélée qu'à vos matchs (jamais en découverte).</span>
           </label>
         </div>
+        <label class="check"><input type="checkbox" id="p-discover-photo" />
+          Afficher ma photo dès la découverte (au lieu de l'avatar). Sinon, elle reste réservée à mes matchs.</label>
 
         <label class="field">Bio
           <textarea id="p-bio" rows="2" maxlength="180" placeholder="Quelques mots sur vous…"></textarea>

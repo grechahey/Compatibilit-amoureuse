@@ -8,9 +8,41 @@ const { Engine, Data } = globalThis;
 const D = require("./db.js");
 
 const app = express();
+app.set("trust proxy", 1);
 const ROOT = path.join(__dirname, "..");
 const PUBLIC = path.join(ROOT, "public");
+const PROD = process.env.NODE_ENV === "production";
+const BASE_URL = process.env.BASE_URL || "";
+
 app.use(express.json({ limit: "6mb" }));
+
+/* ----------------------- Sécurité : en-têtes ----------------------- */
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "geolocation=(), camera=(), microphone=()");
+  res.setHeader("Content-Security-Policy",
+    "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+    "font-src https://fonts.gstatic.com; script-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'");
+  if (PROD) res.setHeader("Strict-Transport-Security", "max-age=15552000; includeSubDomains");
+  next();
+});
+
+/* ----------------- Sécurité : limitation de débit ------------------ */
+const rlHits = new Map();
+function rateLimit(max, windowMs) {
+  return (req, res, next) => {
+    const key = req.path + "|" + (req.ip || req.socket.remoteAddress || "?");
+    const t = D.now();
+    const rec = rlHits.get(key) || { count: 0, reset: t + windowMs };
+    if (t > rec.reset) { rec.count = 0; rec.reset = t + windowMs; }
+    rec.count++; rlHits.set(key, rec);
+    if (rec.count > max) return res.status(429).json({ error: "Trop de tentatives, réessayez plus tard." });
+    next();
+  };
+}
+if (rlHits.size === 0) setInterval(() => { const t = D.now(); for (const [k, v] of rlHits) if (t > v.reset) rlHits.delete(k); }, 60000).unref();
 
 /* --------------------------- Utilitaires --------------------------- */
 function parseCookies(req) {
@@ -28,7 +60,24 @@ function auth(req, res, next) {
 }
 function setSession(res, userId) {
   const token = D.newSession(userId);
-  res.cookie("sid", token, { httpOnly: true, sameSite: "lax", maxAge: 1000 * 60 * 60 * 24 * 30 });
+  res.cookie("sid", token, { httpOnly: true, sameSite: "lax", secure: PROD, maxAge: 1000 * 60 * 60 * 24 * 30 });
+}
+
+// Envoi de l'email de vérification. Si un SMTP est configuré (nodemailer),
+// on l'utilise ; sinon (dev) on renvoie le lien pour pouvoir tester.
+async function sendVerificationEmail(email, token) {
+  const url = `${BASE_URL}/api/verify?token=${token}`;
+  if (process.env.SMTP_URL) {
+    try {
+      const nodemailer = require("nodemailer");
+      const t = nodemailer.createTransport(process.env.SMTP_URL);
+      await t.sendMail({ from: process.env.MAIL_FROM || "no-reply@amesoeur", to: email,
+        subject: "Confirmez votre adresse — Âme Sœur",
+        text: `Bienvenue ! Confirmez votre inscription : ${url}` });
+      return { sent: true };
+    } catch (e) { return { sent: false, url, error: e.message }; }
+  }
+  return { sent: false, url }; // mode démo : lien renvoyé au client
 }
 const toEngine = (p) => {
   const ci = p.city ? Data.CITY_BY_NAME[p.city] : null;
@@ -52,33 +101,47 @@ const mutual = (a, b) => (a.seeking === "T" || a.seeking === b.gender) && (b.see
 const emailOk = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
 /* ------------------------------ Auth ------------------------------- */
-app.post("/api/register", (req, res) => {
+const meView = (u) => ({ user: { id: u.id, email: u.email, emailVerified: !!u.email_verified },
+  profile: D.profileOut(D.q.getProfile.get(u.id)), credits: D.getCredits(u.id) });
+
+app.post("/api/register", rateLimit(15, 15 * 60 * 1000), async (req, res) => {
   const { email, password, acceptPrivacy, ageConfirmed } = req.body || {};
   if (!emailOk(email)) return res.status(400).json({ error: "Email invalide." });
   if (!password || password.length < 6) return res.status(400).json({ error: "Mot de passe : 6 caractères minimum." });
   if (!acceptPrivacy) return res.status(400).json({ error: "Vous devez accepter la politique de confidentialité." });
   if (!ageConfirmed) return res.status(400).json({ error: "Vous devez confirmer avoir 18 ans ou plus." });
   if (D.q.userByEmail.get(email.toLowerCase())) return res.status(409).json({ error: "Cet email est déjà inscrit." });
-  const id = D.createUser(email, password);
+  const { id, token } = D.createUser(email, password);
   D.botsSuperLike(id);
+  const mail = await sendVerificationEmail(email.toLowerCase(), token);
   setSession(res, id);
-  res.json({ user: { id, email: email.toLowerCase() }, profile: null, credits: D.getCredits(id) });
+  const u = D.q.userById.get(id);
+  res.json({ ...meView(u), verifyUrl: mail.sent ? undefined : mail.url });
 });
-app.post("/api/login", (req, res) => {
+app.post("/api/login", rateLimit(20, 15 * 60 * 1000), (req, res) => {
   const { email, password } = req.body || {};
   const u = email && D.q.userByEmail.get(email.toLowerCase());
   if (!u || u.is_bot || !D.verifyPassword(password || "", u.pw_hash, u.pw_salt))
     return res.status(401).json({ error: "Email ou mot de passe incorrect." });
   setSession(res, u.id);
-  res.json({ user: { id: u.id, email: u.email }, profile: D.profileOut(D.q.getProfile.get(u.id)), credits: D.getCredits(u.id) });
+  res.json(meView(u));
 });
 app.post("/api/logout", (req, res) => {
   const token = parseCookies(req).sid; if (token) D.q.delSession.run(token);
   res.clearCookie("sid").json({ ok: true });
 });
-app.get("/api/me", auth, (req, res) => {
-  res.json({ user: { id: req.user.id, email: req.user.email },
-    profile: D.profileOut(D.q.getProfile.get(req.user.id)), credits: D.getCredits(req.user.id) });
+app.get("/api/me", auth, (req, res) => res.json(meView(req.user)));
+
+// Vérification d'email : le lien du mail pointe ici, puis redirige vers l'app.
+app.get("/api/verify", (req, res) => {
+  const u = D.verifyEmailToken(req.query.token);
+  res.redirect(u ? "/?verified=1" : "/?verified=0");
+});
+app.post("/api/resend-verification", auth, async (req, res) => {
+  if (req.user.email_verified) return res.json({ alreadyVerified: true });
+  const token = D.regenerateVerifyToken(req.user.id);
+  const mail = await sendVerificationEmail(req.user.email, token);
+  res.json({ sent: mail.sent, verifyUrl: mail.sent ? undefined : mail.url });
 });
 
 /* ----------------------------- Profil ------------------------------ */
@@ -129,6 +192,8 @@ app.get("/api/discover", auth, (req, res) => {
         sun: r.b.sun.emoji, chinese: r.b.chinese.emoji, ascendant: r.b.ascendant ? r.b.ascendant.emoji : null,
         factors: r.factors.map((f) => ({ label: f.label, emoji: f.emoji, value: f.value })),
         bothBdsm: !!(me.bdsm && c.bdsm), superLikedYou: superSet.has(c.id),
+        // Photo montrée en découverte seulement si l'utilisateur l'a choisi.
+        photo: c.discoverPhoto && c.photo ? c.photo : null,
       };
     });
   cands.sort((x, y) => (y.superLikedYou - x.superLikedYou) || (y.score - x.score));
@@ -157,6 +222,15 @@ app.post("/api/swipe", auth, (req, res) => {
   }
   const m = D.tryMatch(req.user.id, targetId, kind === "super");
   res.json({ match: !!m, matchId: m ? m.id : null });
+});
+
+/* --------------------------- Modération ---------------------------- */
+app.post("/api/report", auth, (req, res) => {
+  const { targetId, reason } = req.body || {};
+  const target = D.q.getProfile.get(targetId);
+  if (!target || targetId === req.user.id) return res.status(404).json({ error: "Profil introuvable." });
+  D.createReport(req.user.id, targetId, reason);
+  res.json({ ok: true });
 });
 
 /* ----------------------------- Matchs ------------------------------ */
@@ -206,16 +280,52 @@ app.post("/api/message-direct", auth, (req, res) => {
   res.json({ ok: true, matchId: m.id });
 });
 
-/* ------------------------- Achats (simulés) ------------------------ */
-app.post("/api/purchase", auth, (req, res) => {
-  const c = D.getCredits(req.user.id);
+/* ---------------------------- Paiements ---------------------------- *
+ * Par défaut : crédits simulés (démo). Si des clés Stripe sont fournies
+ * (STRIPE_SECRET_KEY + STRIPE_PRICE_*), on crée une vraie session Checkout
+ * et le client est redirigé ; les crédits sont attribués via webhook. */
+const PLAN_GRANT = { message: (c) => (c.messages += 1), super: (c) => (c.superLikes += 5), premium: (c) => (c.premium = true) };
+const stripeConfigured = () => !!process.env.STRIPE_SECRET_KEY;
+
+app.post("/api/purchase", auth, async (req, res) => {
   const plan = req.body && req.body.plan;
-  if (plan === "message") c.messages += 1;
-  else if (plan === "super") c.superLikes += 5;
-  else if (plan === "premium") c.premium = true;
-  else return res.status(400).json({ error: "Offre inconnue." });
+  if (!PLAN_GRANT[plan]) return res.status(400).json({ error: "Offre inconnue." });
+
+  if (stripeConfigured()) {
+    // --- Chemin production (Stripe) ---
+    try {
+      const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+      const priceId = { message: process.env.STRIPE_PRICE_MESSAGE, super: process.env.STRIPE_PRICE_SUPER, premium: process.env.STRIPE_PRICE_PREMIUM }[plan];
+      if (!priceId) return res.status(500).json({ error: "Tarif Stripe non configuré pour cette offre." });
+      const session = await stripe.checkout.sessions.create({
+        mode: plan === "premium" ? "subscription" : "payment",
+        line_items: [{ price: priceId, quantity: 1 }],
+        client_reference_id: String(req.user.id), metadata: { userId: String(req.user.id), plan },
+        success_url: `${BASE_URL}/?paid=1`, cancel_url: `${BASE_URL}/?paid=0`,
+      });
+      return res.json({ checkoutUrl: session.url });
+    } catch (e) { return res.status(502).json({ error: "Paiement indisponible : " + e.message }); }
+  }
+
+  // --- Chemin démo (aucun paiement réel) ---
+  const c = D.getCredits(req.user.id);
+  PLAN_GRANT[plan](c);
   D.setCredits(req.user.id, c);
-  res.json({ credits: c });
+  res.json({ credits: c, simulated: true });
+});
+
+// Webhook Stripe : attribue les crédits après paiement confirmé (production).
+app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), (req, res) => {
+  if (!stripeConfigured() || !process.env.STRIPE_WEBHOOK_SECRET) return res.status(400).end();
+  try {
+    const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+    const event = stripe.webhooks.constructEvent(req.body, req.headers["stripe-signature"], process.env.STRIPE_WEBHOOK_SECRET);
+    if (event.type === "checkout.session.completed") {
+      const s = event.data.object, userId = +s.metadata.userId, plan = s.metadata.plan;
+      if (PLAN_GRANT[plan]) { const c = D.getCredits(userId); PLAN_GRANT[plan](c); D.setCredits(userId, c); }
+    }
+    res.json({ received: true });
+  } catch (e) { res.status(400).send("Webhook error: " + e.message); }
 });
 
 /* ------------------ Configuration publique (RGPD, etc.) ------------ */

@@ -93,11 +93,30 @@ Les photos sont **facultatives**, redimensionnées côté client (max 512 px, JP
 et **révélées uniquement à vos matchs** — jamais en découverte, où seul l'avatar
 généré apparaît. C'est le parti pris « personnalité d'abord ».
 
+## Sécurité & modération
+
+- En-têtes de sécurité (CSP, X-Frame-Options, nosniff, HSTS en prod), cookie de
+  session `Secure` en production, limitation de débit sur `login`/`register`.
+- **Vérification d'email** : jeton à l'inscription, route `/api/verify`, renvoi
+  possible ; envoi par SMTP si `SMTP_URL` est défini, sinon lien affiché (démo).
+- **Signalement** de profils (`/api/report`) : le profil est masqué au signaleur
+  et le signalement est conservé pour revue.
+- **Paiements Stripe** : si `STRIPE_SECRET_KEY` + `STRIPE_PRICE_*` sont définis,
+  `/api/purchase` crée une vraie session Checkout et les crédits sont attribués
+  via le webhook `/api/stripe/webhook` ; sinon, crédits simulés (démo).
+
+## Photos & révélation progressive
+
+- Photos facultatives, redimensionnées côté client, **révélées à vos matchs**.
+- Option **« afficher ma photo dès la découverte »** (sinon avatar généré).
+- Dans une conversation, la photo se **dé-floute progressivement** au fil des
+  messages échangés (nette après ~6 messages).
+
 ## Reste à faire pour une production complète
 
-- **Paiements réels** : brancher Stripe (les routes `/api/purchase` et la logique
-  de crédits sont déjà en place, il reste à connecter la passerelle + webhooks).
 - **Stockage photos** : passer des data-URLs en base à un stockage objet (S3) + CDN.
-- **Vérification email** et **modération** des profils/photos.
+- **Modération active** : interface d'administration pour traiter les signalements,
+  et analyse automatique des images.
 - **Base gérée** : migrer de SQLite vers PostgreSQL pour l'échelle.
+- **Applications mobiles natives** (les rencontres sont mobile-first).
 - **Relecture juridique** de la politique de confidentialité.

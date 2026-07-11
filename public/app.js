@@ -27,7 +27,7 @@
 
   let S = { user: null, profile: null, credits: { superLikes: 1, messages: 0, premium: false } };
   let CONFIG = { org: { name: "Âme Sœur", dpoEmail: "dpo@amesoeur.exemple", legal: "" } };
-  let tempMbti = null, tempBdsm = null, pendingPhoto = null;
+  let tempMbti = null, tempBdsm = null, pendingPhoto = null, devVerifyUrl = null;
   let candidates = [], deck = [], pos = 0;
   let authMode = "register";
   let currentChat = null;
@@ -38,8 +38,17 @@
     initControls(); initFilters(); initAuth(); initMatches(); initRgpd(); initPhoto();
     $("quiz-form").addEventListener("submit", onQuizSubmit);
     hearts();
+    const params = new URLSearchParams(location.search);
+    if (params.has("verified")) {
+      toast(params.get("verified") === "1" ? "Email confirmé ✅" : "Lien de vérification invalide ou expiré.");
+      history.replaceState(null, "", location.pathname);
+    }
+    if (params.has("paid")) {
+      toast(params.get("paid") === "1" ? "Paiement confirmé, merci 🙏" : "Paiement annulé.");
+      history.replaceState(null, "", location.pathname);
+    }
     try { CONFIG = await api("/config"); } catch (_) {}
-    try { const r = await api("/me"); S = r; afterAuth(); }
+    try { const r = await api("/me"); S = r; if (S.user && S.user.emailVerified) devVerifyUrl = null; afterAuth(); }
     catch (e) { showAuth(); }
   });
 
@@ -67,19 +76,39 @@
       try {
         const r = await api("/" + authMode, { method: "POST", body });
         S = { user: r.user, profile: r.profile, credits: r.credits };
+        if (r.verifyUrl) devVerifyUrl = r.verifyUrl;
         afterAuth();
       } catch (ex) { err.textContent = ex.message; err.hidden = false; }
     });
     $("nav-logout").addEventListener("click", async () => {
       try { await api("/logout", { method: "POST" }); } catch (_) {}
-      S = { user: null, profile: null, credits: {} };
+      S = { user: null, profile: null, credits: {} }; devVerifyUrl = null;
+      $("verify-banner").hidden = true;
       showAuth();
     });
+    $("verify-resend").addEventListener("click", async () => {
+      try {
+        const r = await api("/resend-verification", { method: "POST" });
+        if (r.alreadyVerified) { S.user.emailVerified = true; refreshVerify(); toast("Email déjà vérifié ✅"); return; }
+        if (r.verifyUrl) { devVerifyUrl = r.verifyUrl; refreshVerify(); toast("Lien de vérification prêt (démo)."); }
+        else toast("Email de vérification renvoyé ✉️");
+      } catch (e) { toast(e.message); }
+    });
+  }
+  function refreshVerify() {
+    const banner = $("verify-banner");
+    if (S.user && S.user.emailVerified === false) {
+      banner.hidden = false;
+      $("verify-text").innerHTML = devVerifyUrl
+        ? `✉️ Confirmez votre email : <a href="${devVerifyUrl}">cliquez ici</a> <span class="demo">(démo — en production, ce lien est envoyé par email)</span>`
+        : "✉️ Confirmez votre adresse email pour sécuriser votre compte.";
+    } else banner.hidden = true;
   }
   function showAuth() { $("tabs").hidden = true; showView("auth"); }
   function afterAuth() {
     $("tabs").hidden = false;
     refreshCredits();
+    refreshVerify();
     prefill();
     showView(S.profile ? "discover" : "profile");
   }
@@ -176,6 +205,7 @@
       year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate(),
       time: $("p-time").value || null, city: $("p-city").value || null, mbti: tempMbti, bdsm: tempBdsm,
       sensitiveConsent: tempBdsm ? $("p-bdsm-optin").checked : false,
+      discoverPhoto: $("p-discover-photo").checked,
     };
     if (pendingPhoto) body.photo = pendingPhoto;
     try { const r = await api("/profile", { method: "PUT", body }); S.profile = r.profile; toast("Profil enregistré ✅"); showView("discover"); }
@@ -236,6 +266,8 @@
     actions.hidden = false; el.innerHTML = renderProfile(item.c);
     const tog = el.querySelector(".chips-toggle");
     if (tog) tog.addEventListener("click", () => { const d = el.querySelector(".factors"); d.hidden = !d.hidden; tog.textContent = d.hidden ? "Voir le détail des affinités" : "Masquer"; });
+    const rep = el.querySelector(".report-link");
+    if (rep) rep.addEventListener("click", () => reportModal(+rep.dataset.report, rep.dataset.name));
   }
   function renderNudge(n) {
     return `<article class="nudge card"><p class="nudge-ic">${n.icon}</p><h3>${esc(n.title)}</h3><p>${esc(n.text)}</p><button type="button" class="btn btn-ghost small nudge-next">Continuer à découvrir</button></article>`;
@@ -245,7 +277,7 @@
     const chips = c.factors.map((f) => `<li><span class="fl">${f.emoji} ${esc(f.label)}</span><span class="fv">${Math.round(f.value * 100)}%</span><span class="bar"><i style="width:${Math.round(f.value * 100)}%"></i></span></li>`).join("");
     return `<article class="swipe card">
       ${c.superLikedYou ? `<div class="superbadge">💛 ${esc(c.name)} vous a super-liké·e</div>` : ""}
-      <div class="face">${Avatar.face(c.avatarSeed)}</div>
+      <div class="face">${c.photo ? `<img src="${c.photo}" alt="Photo de ${esc(c.name)}">` : Avatar.face(c.avatarSeed)}</div>
       <div class="score big"><svg viewBox="0 0 72 72" width="86" height="86"><circle cx="36" cy="36" r="30" class="rbg"/><circle cx="36" cy="36" r="30" class="rfg" style="stroke-dasharray:${circ};stroke-dashoffset:${off}"/></svg><b>${c.score}<small>%</small></b></div>
       <h3>${esc(c.name)}, ${c.age} <span class="sign">${c.sun} ${c.chinese}${c.ascendant ? " ⬆" + c.ascendant : ""}</span></h3>
       <p class="meta">${esc(c.mbti)} · ${esc(c.city || "—")}${c.distanceKm != null ? " · " + c.distanceKm + " km" : ""}</p>
@@ -254,6 +286,7 @@
       <p class="locked">🔒 Photos débloquées après un match mutuel.</p>
       <button type="button" class="btn btn-ghost small chips-toggle">Voir le détail des affinités</button>
       <ul class="factors" hidden>${chips}${!c.bothBdsm ? `<li class="tip">🔒 Test kink non partagé — l'alchimie intime n'est pas comptée.</li>` : ""}</ul>
+      <button type="button" class="report-link" data-report="${c.id}" data-name="${esc(c.name)}">Signaler ce profil</button>
     </article>`;
   }
 
@@ -316,8 +349,30 @@
     $("modal-card").querySelectorAll("[data-buy]").forEach((b) => b.addEventListener("click", () => buy(b.dataset.buy)));
   }
   async function buy(plan) {
-    try { const r = await api("/purchase", { method: "POST", body: { plan } }); S.credits = r.credits; refreshCredits(); closeModal(); toast(plan === "premium" ? "Premium activé 👑 (démo)" : "Achat effectué (démo)"); }
-    catch (e) { toast(e.message); }
+    try {
+      const r = await api("/purchase", { method: "POST", body: { plan } });
+      if (r.checkoutUrl) { window.location.href = r.checkoutUrl; return; } // paiement Stripe réel
+      S.credits = r.credits; refreshCredits(); closeModal();
+      toast(plan === "premium" ? "Premium activé 👑 (démo)" : "Achat effectué (démo)");
+    } catch (e) { toast(e.message); }
+  }
+  function reportModal(id, name) {
+    openModal(`<div class="report"><button type="button" class="close" data-close>✕</button>
+      <h3>Signaler ${esc(name)}</h3>
+      <p class="pr-note">Aidez-nous à garder Âme Sœur sûr. Que se passe-t-il ?</p>
+      <select id="rep-reason" class="wide">
+        <option value="Profil faux / usurpation">Profil faux / usurpation</option>
+        <option value="Contenu inapproprié">Contenu ou photo inapproprié</option>
+        <option value="Harcèlement / propos déplacés">Harcèlement / propos déplacés</option>
+        <option value="Mineur présumé">Mineur présumé</option>
+        <option value="Autre">Autre</option>
+      </select>
+      <button type="button" class="btn" data-send>Envoyer le signalement</button></div>`);
+    $("modal-card").querySelector("[data-close]").addEventListener("click", closeModal);
+    $("modal-card").querySelector("[data-send]").addEventListener("click", async () => {
+      try { await api("/report", { method: "POST", body: { targetId: id, reason: $("rep-reason").value } }); closeModal(); toast("Signalement envoyé. Merci."); advance(); }
+      catch (e) { toast(e.message); }
+    });
   }
   function refreshCredits() { $("credits-count").textContent = S.credits.premium ? "👑" : (S.credits.superLikes || 0); }
 
@@ -434,9 +489,19 @@
     if (isPoll && r.messages.length === lastMsgCount) return; // rien de neuf → pas de re-render
     lastMsgCount = r.messages.length;
     const o = r.match.other;
-    $("chat-face").innerHTML = o.photo ? `<img src="${o.photo}" alt="">` : Avatar.face(r.match.avatarSeed);
+    // Révélation progressive : la photo se dé-floute au fil de la conversation.
+    const REVEAL_AT = 6, count = r.messages.length;
+    if (o.photo) {
+      const blur = Math.max(0, (1 - count / REVEAL_AT) * 8);
+      $("chat-face").innerHTML = `<img src="${o.photo}" alt="" style="filter:blur(${blur.toFixed(1)}px)">`;
+      $("chat-meta").textContent = blur > 0.2
+        ? `${o.mbti} · photo nette dans ${Math.max(0, REVEAL_AT - count)} message(s)`
+        : `${o.mbti} · ${o.city || "—"}`;
+    } else {
+      $("chat-face").innerHTML = Avatar.face(r.match.avatarSeed);
+      $("chat-meta").textContent = `${o.mbti} · ${o.city || "—"} · 📷 pas encore de photo`;
+    }
     $("chat-name").textContent = `${o.name}, ${o.age}`;
-    $("chat-meta").textContent = `${o.mbti} · ${o.city || "—"}${o.photo ? "" : " · 📷 pas encore de photo"}`;
     const body = $("chat-body");
     body.innerHTML = r.messages.length ? r.messages.map((m) => `<div class="bubble ${m.mine ? "me" : "them"}">${esc(m.body)}</div>`).join("")
       : `<p class="chat-empty">Vous avez matché ! Lancez la conversation avec ${esc(o.name)}.</p>`;
@@ -457,6 +522,7 @@
     const target = document.querySelector(`.avatar-opt[data-avatar="${me.avatar}"]`);
     if (target) { document.querySelectorAll(".avatar-opt").forEach((x) => x.classList.remove("selected")); target.classList.add("selected"); }
     if (me.photo) { const pv = $("p-photo-preview"); pv.src = me.photo; pv.hidden = false; }
+    $("p-discover-photo").checked = !!me.discoverPhoto;
   }
 
   /* ======================= Décor & toast ======================== */

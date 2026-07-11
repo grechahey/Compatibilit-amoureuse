@@ -338,3 +338,23 @@ footer a { color: var(--muted); border-bottom: 1px solid var(--line); text-decor
   .brand { font-size: 1.3rem; }
   .tab { padding: .5rem .5rem; font-size: .78rem; }
 }
+
+/* ---------------------- Vérification / Modération ------------------- */
+.verify-banner {
+  width: 100%; max-width: 760px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap;
+  background: #fbf3e3; border-bottom: 1px solid var(--gold-soft);
+  padding: .6rem 1.2rem; font-size: .84rem; color: var(--ink);
+}
+.verify-banner a { color: var(--wine); font-weight: 600; }
+.verify-banner .demo { color: var(--faint); font-size: .74rem; }
+.verify-banner .btn { margin-top: 0; width: auto; padding: .4rem .9rem; }
+
+.report-link {
+  display: inline-block; margin-top: 1rem; background: none; border: none; cursor: pointer;
+  font: inherit; font-size: .76rem; color: var(--faint); text-decoration: underline; text-underline-offset: 2px;
+}
+.report-link:hover { color: var(--wine); }
+.report { text-align: left; position: relative; }
+.report h3 { font-family: var(--serif); color: var(--ink); font-weight: 600; margin: 0 0 .3rem; }
+.report select { width: 100%; margin: .6rem 0; }

@@ -19,13 +19,18 @@ CREATE TABLE IF NOT EXISTS users (
   is_bot INTEGER DEFAULT 0,
   created_at INTEGER,
   consent_at INTEGER, consent_version TEXT, age_confirmed INTEGER DEFAULT 0,
-  sensitive_consent_at INTEGER
+  sensitive_consent_at INTEGER,
+  email_verified INTEGER DEFAULT 0, verify_token TEXT
 );
 CREATE TABLE IF NOT EXISTS profiles (
   user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   name TEXT, gender TEXT, seeking TEXT, bio TEXT, avatar TEXT, photo TEXT,
   by INTEGER, bm INTEGER, bd INTEGER, btime TEXT, city TEXT,
-  mbti TEXT, bdsm TEXT, updated_at INTEGER
+  mbti TEXT, bdsm TEXT, updated_at INTEGER, discover_photo INTEGER DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS reports (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  reporter INTEGER, target INTEGER, reason TEXT, created_at INTEGER
 );
 CREATE TABLE IF NOT EXISTS sessions (
   token TEXT PRIMARY KEY, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, expires INTEGER
@@ -56,6 +61,9 @@ for (const alter of [
   "ALTER TABLE users ADD COLUMN consent_version TEXT",
   "ALTER TABLE users ADD COLUMN age_confirmed INTEGER DEFAULT 0",
   "ALTER TABLE users ADD COLUMN sensitive_consent_at INTEGER",
+  "ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0",
+  "ALTER TABLE users ADD COLUMN verify_token TEXT",
+  "ALTER TABLE profiles ADD COLUMN discover_photo INTEGER DEFAULT 0",
 ]) { try { db.exec(alter); } catch (_) { /* colonne déjà présente */ } }
 
 const CONSENT_VERSION = "2026-07-11";
@@ -78,10 +86,10 @@ const q = {
   insSession: db.prepare("INSERT INTO sessions (token, user_id, expires) VALUES (?, ?, ?)"),
   sessionByToken: db.prepare("SELECT * FROM sessions WHERE token = ?"),
   delSession: db.prepare("DELETE FROM sessions WHERE token = ?"),
-  upsertProfile: db.prepare(`INSERT INTO profiles (user_id,name,gender,seeking,bio,avatar,photo,by,bm,bd,btime,city,mbti,bdsm,updated_at)
-    VALUES (@user_id,@name,@gender,@seeking,@bio,@avatar,@photo,@by,@bm,@bd,@btime,@city,@mbti,@bdsm,@updated_at)
+  upsertProfile: db.prepare(`INSERT INTO profiles (user_id,name,gender,seeking,bio,avatar,photo,by,bm,bd,btime,city,mbti,bdsm,discover_photo,updated_at)
+    VALUES (@user_id,@name,@gender,@seeking,@bio,@avatar,@photo,@by,@bm,@bd,@btime,@city,@mbti,@bdsm,@discover_photo,@updated_at)
     ON CONFLICT(user_id) DO UPDATE SET name=@name,gender=@gender,seeking=@seeking,bio=@bio,avatar=@avatar,
-      photo=COALESCE(@photo,photo),by=@by,bm=@bm,bd=@bd,btime=@btime,city=@city,mbti=@mbti,bdsm=@bdsm,updated_at=@updated_at`),
+      photo=COALESCE(@photo,photo),by=@by,bm=@bm,bd=@bd,btime=@btime,city=@city,mbti=@mbti,bdsm=@bdsm,discover_photo=@discover_photo,updated_at=@updated_at`),
   getProfile: db.prepare("SELECT p.*, u.is_bot FROM profiles p JOIN users u ON u.id=p.user_id WHERE p.user_id = ?"),
   allProfiles: db.prepare("SELECT p.*, u.is_bot FROM profiles p JOIN users u ON u.id=p.user_id WHERE p.user_id != ?"),
   insSwipe: db.prepare("INSERT OR REPLACE INTO swipes (actor,target,kind,created_at) VALUES (?,?,?,?)"),
@@ -103,10 +111,31 @@ const q = {
 /* ----------------------------- Helpers ------------------------------ */
 function createUser(email, password) {
   const { hash, salt } = hashPassword(password);
-  const info = db.prepare(`INSERT INTO users (email, pw_hash, pw_salt, is_bot, created_at, consent_at, consent_version, age_confirmed)
-    VALUES (?, ?, ?, 0, ?, ?, ?, 1)`).run(email.toLowerCase(), hash, salt, now(), now(), CONSENT_VERSION);
+  const token = crypto.randomBytes(24).toString("hex");
+  const info = db.prepare(`INSERT INTO users (email, pw_hash, pw_salt, is_bot, created_at, consent_at, consent_version, age_confirmed, verify_token)
+    VALUES (?, ?, ?, 0, ?, ?, ?, 1, ?)`).run(email.toLowerCase(), hash, salt, now(), now(), CONSENT_VERSION, token);
   q.insCredits.run(info.lastInsertRowid);
-  return info.lastInsertRowid;
+  return { id: info.lastInsertRowid, token };
+}
+// Vérification d'email : marque l'utilisateur vérifié à partir de son jeton.
+function verifyEmailToken(token) {
+  if (!token) return null;
+  const u = db.prepare("SELECT * FROM users WHERE verify_token = ?").get(token);
+  if (!u) return null;
+  db.prepare("UPDATE users SET email_verified = 1, verify_token = NULL WHERE id = ?").run(u.id);
+  return u;
+}
+function regenerateVerifyToken(userId) {
+  const token = crypto.randomBytes(24).toString("hex");
+  db.prepare("UPDATE users SET verify_token = ? WHERE id = ? AND email_verified = 0").run(token, userId);
+  return token;
+}
+// Modération : signalement d'un profil (conservé pour revue).
+function createReport(reporter, target, reason) {
+  db.prepare("INSERT INTO reports (reporter, target, reason, created_at) VALUES (?, ?, ?, ?)")
+    .run(reporter, target, String(reason || "").slice(0, 500), now());
+  // Le profil signalé est aussi masqué au signaleur (enregistré comme "pass").
+  q.insSwipe.run(reporter, target, "pass", now());
 }
 // Consentement explicite (Art. 9 RGPD) au traitement des données sensibles (kink).
 function stampSensitiveConsent(userId) {
@@ -155,7 +184,8 @@ function saveProfile(userId, p) {
     user_id: userId, name: p.name, gender: p.gender, seeking: p.seeking, bio: p.bio || "",
     avatar: p.avatar || "⭐", photo: p.photo || null,
     by: p.year, bm: p.month, bd: p.day, btime: p.time || null, city: p.city || null,
-    mbti: p.mbti, bdsm: p.bdsm ? JSON.stringify(p.bdsm) : null, updated_at: now(),
+    mbti: p.mbti, bdsm: p.bdsm ? JSON.stringify(p.bdsm) : null,
+    discover_photo: p.discoverPhoto ? 1 : 0, updated_at: now(),
   });
 }
 function profileOut(row) {
@@ -164,7 +194,7 @@ function profileOut(row) {
     id: row.user_id, name: row.name, gender: row.gender, seeking: row.seeking, bio: row.bio,
     avatar: row.avatar, photo: row.photo, year: row.by, month: row.bm, day: row.bd,
     time: row.btime, city: row.city, mbti: row.mbti, bdsm: row.bdsm ? JSON.parse(row.bdsm) : null,
-    isBot: !!row.is_bot,
+    discoverPhoto: !!row.discover_photo, isBot: !!row.is_bot,
   };
 }
 function getCredits(userId) {
@@ -214,4 +244,5 @@ module.exports = {
   createUser, newSession, userForToken, saveProfile, profileOut,
   getCredits, setCredits, tryMatch, botsSuperLike,
   stampSensitiveConsent, deleteAccount, exportData,
+  verifyEmailToken, regenerateVerifyToken, createReport,
 };

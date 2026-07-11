@@ -260,12 +260,12 @@
   }
 
   function verdict(score) {
-    if (score >= 90) return "Une évidence cosmique. 💍";
-    if (score >= 78) return "Une alchimie rare — foncez. 💕";
-    if (score >= 66) return "Beaucoup de potentiel à cultiver. 🌹";
-    if (score >= 52) return "Des étincelles… et quelques défis. 🔥";
-    if (score >= 38) return "Opposés : à vous de créer le pont. 🌱";
-    return "Deux mondes différents. 🎲";
+    if (score >= 90) return "Une évidence";
+    if (score >= 78) return "Une alchimie rare";
+    if (score >= 66) return "Beaucoup de potentiel";
+    if (score >= 52) return "Des étincelles, quelques défis";
+    if (score >= 38) return "Les contraires s'attirent";
+    return "Deux mondes à rapprocher";
   }
 
   global.Engine = {

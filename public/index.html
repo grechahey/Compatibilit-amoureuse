@@ -6,16 +6,13 @@
   <meta name="description" content="Âme Sœur — le site de rencontres qui croise MBTI, astrologie, numérologie et affinités pour vous proposer vos meilleurs matchs." />
   <title>Âme Sœur · Rencontres par affinités profondes</title>
   <link rel="manifest" href="/manifest.webmanifest" />
-  <meta name="theme-color" content="#7b3350" />
+  <meta name="theme-color" content="#f6f3ed" />
   <link rel="icon" href="/icons/favicon-32.png" sizes="32x32" />
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Âme Sœur" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -26,14 +23,14 @@
     <nav class="tabs" id="tabs" hidden>
       <button type="button" id="nav-discover" class="tab">Découvrir</button>
       <button type="button" id="nav-matches" class="tab">Messages</button>
-      <button type="button" id="nav-profile" class="tab">Mon profil</button>
-      <button type="button" id="nav-premium" class="tab premium-chip" title="Options premium">💛 <span id="credits-count">1</span></button>
-      <button type="button" id="nav-logout" class="tab" title="Se déconnecter">⎋</button>
+      <button type="button" id="nav-profile" class="tab">Profil</button>
+      <button type="button" id="nav-premium" class="tab premium-chip" title="Options premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3.5l2.6 5.7 6.2.6-4.7 4.1 1.4 6.1L12 16.9 6.5 20.1l1.4-6.1L3.2 9.8l6.2-.6z"/></svg><span id="credits-count">1</span></button>
+      <button type="button" id="nav-logout" class="tab" title="Se déconnecter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-2"/><path d="M18 15l3-3-3-3M21 12H9"/></svg></button>
     </nav>
   </header>
 
   <div id="verify-banner" class="verify-banner" hidden>
-    <span id="verify-text">✉️ Confirmez votre adresse email pour sécuriser votre compte.</span>
+    <span id="verify-text">Confirmez votre adresse email pour sécuriser votre compte.</span>
     <button type="button" class="btn small" id="verify-resend">Renvoyer le lien</button>
   </div>
 
@@ -99,7 +96,7 @@
               <option value="H">Des hommes</option>
             </select>
           </label>
-          <p class="tip form-tip">💫 Astuce : plus votre recherche est ouverte, plus l'algorithme peut vous surprendre. Les critères trop étroits (physique, « type » précis) font passer à côté de belles rencontres.</p>
+          <p class="tip form-tip">Plus votre recherche est ouverte, plus l'algorithme peut vous surprendre. Les critères trop étroits (physique, « type » précis) font passer à côté de belles rencontres.</p>
           <label class="field">Photo (optionnel)
             <input type="file" id="p-photo" accept="image/*" />
             <img id="p-photo-preview" class="photo-preview" hidden alt="Aperçu de votre photo" />
@@ -149,7 +146,7 @@
         </div>
 
         <p class="error" id="form-error" role="alert" hidden></p>
-        <button type="submit" class="btn">Enregistrer & découvrir mes matchs 💘</button>
+        <button type="submit" class="btn">Enregistrer et découvrir mes matchs</button>
 
         <h2 class="section-title">Confidentialité <small>— vos droits (RGPD)</small></h2>
         <p class="hint">Vous pouvez à tout moment consulter, exporter ou supprimer vos données.</p>
@@ -187,10 +184,10 @@
       <div id="deck" class="deck"></div>
 
       <div class="deck-actions" id="deck-actions">
-        <button type="button" class="act pass" id="act-pass" title="Passer" aria-label="Passer">✕</button>
-        <button type="button" class="act msg" id="act-msg" title="Message direct (premium)" aria-label="Message direct">✍️</button>
-        <button type="button" class="act superlike" id="act-super" title="Super Like" aria-label="Super Like">💛</button>
-        <button type="button" class="act like" id="act-like" title="J'aime" aria-label="J'aime">♥</button>
+        <button type="button" class="act pass" id="act-pass" title="Passer" aria-label="Passer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        <button type="button" class="act msg" id="act-msg" title="Message direct" aria-label="Message direct"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="1.5"/><path d="M4.5 7.5l7.5 5.5 7.5-5.5"/></svg></button>
+        <button type="button" class="act superlike" id="act-super" title="Super Like" aria-label="Super Like"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M12 3.5l2.6 5.7 6.2.6-4.7 4.1 1.4 6.1L12 16.9 6.5 20.1l1.4-6.1L3.2 9.8l6.2-.6z"/></svg></button>
+        <button type="button" class="act like" id="act-like" title="J'aime" aria-label="J'aime"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 20.3l-1.4-1.3C5.4 14.2 2.5 11.6 2.5 8.3 2.5 5.8 4.5 3.9 7 3.9c1.5 0 2.9.7 3.8 1.8.9-1.1 2.3-1.8 3.8-1.8 2.5 0 4.5 1.9 4.5 4.4 0 3.3-2.9 5.9-8.1 10.7L12 20.3z"/></svg></button>
       </div>
     </section>
 
@@ -234,12 +231,12 @@
   </div>
 
   <footer>
-    <p>Fait avec ❤ — prototype de démonstration.</p>
+    <p>Âme Sœur — prototype de démonstration.</p>
     <p><a href="#" id="footer-privacy">Politique de confidentialité</a> · Responsable de traitement : Âme Sœur (démo)</p>
   </footer>
 
   <div id="cookie-banner" class="cookie-banner" hidden>
-    <p>🍪 Nous utilisons uniquement un cookie strictement nécessaire à votre connexion (aucun traceur publicitaire). <a href="#" id="cookie-privacy">En savoir plus</a>.</p>
+    <p>Nous utilisons uniquement un cookie strictement nécessaire à votre connexion, sans aucun traceur publicitaire. <a href="#" id="cookie-privacy">En savoir plus</a>.</p>
     <button type="button" class="btn small" id="cookie-ok">J'ai compris</button>
   </div>
 

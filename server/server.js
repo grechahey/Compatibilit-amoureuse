@@ -196,8 +196,8 @@ app.get("/api/discover", auth, (req, res) => {
         id: c.id, name: c.name, age: ageOf(c), city: c.city, distanceKm: distanceKm(me, c),
         mbti: c.mbti, bio: c.bio, avatarSeed: "u" + c.id, score: r.score,
         verdict: Engine.verdict(r.score),
-        sun: r.b.sun.emoji, chinese: r.b.chinese.emoji, ascendant: r.b.ascendant ? r.b.ascendant.emoji : null,
-        factors: r.factors.map((f) => ({ label: f.label, emoji: f.emoji, value: f.value })),
+        sun: r.b.sun.name, chinese: r.b.chinese.name, ascendant: r.b.ascendant ? r.b.ascendant.name : null,
+        factors: r.factors.map((f) => ({ label: f.label, value: f.value })),
         bothBdsm: !!(me.bdsm && c.bdsm), superLikedYou: superSet.has(c.id),
         // Photo montrée en découverte seulement si l'utilisateur l'a choisi.
         photo: c.discoverPhoto && c.photo ? c.photo : null,

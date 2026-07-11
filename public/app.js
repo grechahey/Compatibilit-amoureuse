@@ -40,11 +40,11 @@
     hearts();
     const params = new URLSearchParams(location.search);
     if (params.has("verified")) {
-      toast(params.get("verified") === "1" ? "Email confirmé ✅" : "Lien de vérification invalide ou expiré.");
+      toast(params.get("verified") === "1" ? "Email confirmé" : "Lien de vérification invalide ou expiré.");
       history.replaceState(null, "", location.pathname);
     }
     if (params.has("paid")) {
-      toast(params.get("paid") === "1" ? "Paiement confirmé, merci 🙏" : "Paiement annulé.");
+      toast(params.get("paid") === "1" ? "Paiement confirmé, merci" : "Paiement annulé.");
       history.replaceState(null, "", location.pathname);
     }
     try { CONFIG = await api("/config"); } catch (_) {}
@@ -89,9 +89,9 @@
     $("verify-resend").addEventListener("click", async () => {
       try {
         const r = await api("/resend-verification", { method: "POST" });
-        if (r.alreadyVerified) { S.user.emailVerified = true; refreshVerify(); toast("Email déjà vérifié ✅"); return; }
+        if (r.alreadyVerified) { S.user.emailVerified = true; refreshVerify(); toast("Email déjà vérifié"); return; }
         if (r.verifyUrl) { devVerifyUrl = r.verifyUrl; refreshVerify(); toast("Lien de vérification prêt (démo)."); }
-        else toast("Email de vérification renvoyé ✉️");
+        else toast("Email de vérification renvoyé");
       } catch (e) { toast(e.message); }
     });
   }
@@ -100,8 +100,8 @@
     if (S.user && S.user.emailVerified === false) {
       banner.hidden = false;
       $("verify-text").innerHTML = devVerifyUrl
-        ? `✉️ Confirmez votre email : <a href="${devVerifyUrl}">cliquez ici</a> <span class="demo">(démo — en production, ce lien est envoyé par email)</span>`
-        : "✉️ Confirmez votre adresse email pour sécuriser votre compte.";
+        ? `Confirmez votre email : <a href="${devVerifyUrl}">ouvrir le lien</a> <span class="demo">(démo — en production, ce lien est envoyé par email)</span>`
+        : "Confirmez votre adresse email pour sécuriser votre compte.";
     } else banner.hidden = true;
   }
   function showAuth() { $("tabs").hidden = true; showView("auth"); }
@@ -141,10 +141,10 @@
     $("quiz-close").addEventListener("click", closeOverlay);
     ["pass", "like", "super", "msg"].forEach((k) => $("act-" + k).addEventListener("click", () => act(k)));
   }
-  function refreshMbtiBadge() { const b = $("mbti-badge"); if (tempMbti) { b.hidden = false; b.textContent = `✅ Type retenu : ${tempMbti}`; } else b.hidden = true; }
+  function refreshMbtiBadge() { const b = $("mbti-badge"); if (tempMbti) { b.hidden = false; b.textContent = `Type retenu : ${tempMbti}`; } else b.hidden = true; }
   function refreshBdsmBadge() {
     const b = $("bdsm-badge");
-    if (tempBdsm) { b.hidden = false; b.textContent = "✅ Profil enregistré — " + Object.entries(tempBdsm).filter(([, v]) => v > 0).sort((a, c) => c[1] - a[1]).slice(0, 3).map(([k]) => BDSM_LABELS[k] || k).join(" · "); } else b.hidden = true;
+    if (tempBdsm) { b.hidden = false; b.textContent = "Retenu — " + Object.entries(tempBdsm).filter(([, v]) => v > 0).sort((a, c) => c[1] - a[1]).slice(0, 3).map(([k]) => BDSM_LABELS[k] || k).join(" · "); } else b.hidden = true;
   }
 
   /* ============================ Tests ============================ */
@@ -208,7 +208,7 @@
       discoverPhoto: $("p-discover-photo").checked,
     };
     if (pendingPhoto) body.photo = pendingPhoto;
-    try { const r = await api("/profile", { method: "PUT", body }); S.profile = r.profile; toast("Profil enregistré ✅"); showView("discover"); }
+    try { const r = await api("/profile", { method: "PUT", body }); S.profile = r.profile; toast("Profil enregistré"); showView("discover"); }
     catch (ex) { fail(ex.message); }
   }
 
@@ -234,7 +234,7 @@
       $("dist-val").textContent = filters.dist >= 2050 ? "∞" : filters.dist + " km";
       const narrow = (filters.ageMax - filters.ageMin) < 8 || filters.dist < 300;
       const fn = $("filter-nudge");
-      if (narrow) { fn.hidden = false; fn.textContent = "🧭 " + Data.NUDGES[5].text; } else fn.hidden = true;
+      if (narrow) { fn.hidden = false; fn.textContent = Data.NUDGES[5].text; } else fn.hidden = true;
       buildDeck();
     };
     ["f-age-min", "f-age-max", "f-dist"].forEach((id) => $(id).addEventListener("input", sync));
@@ -258,7 +258,7 @@
     const el = $("deck"), actions = $("deck-actions");
     if (pos >= deck.length) {
       actions.hidden = true;
-      el.innerHTML = `<div class="empty card"><p class="big">💌</p><h3>Vous avez tout vu pour l'instant.</h3><p>Élargissez vos filtres — vos meilleurs matchs sont souvent juste au-delà du cadre.</p></div>`;
+      el.innerHTML = `<div class="empty card"><p class="big">Fin de la sélection</p><h3>Vous avez tout vu pour l'instant.</h3><p>Élargissez vos filtres — vos meilleurs matchs sont souvent juste au-delà du cadre.</p></div>`;
       return;
     }
     const item = deck[pos];
@@ -270,22 +270,24 @@
     if (rep) rep.addEventListener("click", () => reportModal(+rep.dataset.report, rep.dataset.name));
   }
   function renderNudge(n) {
-    return `<article class="nudge card"><p class="nudge-ic">${n.icon}</p><h3>${esc(n.title)}</h3><p>${esc(n.text)}</p><button type="button" class="btn btn-ghost small nudge-next">Continuer à découvrir</button></article>`;
+    return `<article class="nudge card"><p class="nudge-ic">Un mot sur les critères</p><h3>${esc(n.title)}</h3><p>${esc(n.text)}</p><button type="button" class="btn btn-ghost small nudge-next">Continuer à découvrir</button></article>`;
   }
   function renderProfile(c) {
     const circ = 2 * Math.PI * 30, off = circ * (1 - c.score / 100);
-    const chips = c.factors.map((f) => `<li><span class="fl">${f.emoji} ${esc(f.label)}</span><span class="fv">${Math.round(f.value * 100)}%</span><span class="bar"><i style="width:${Math.round(f.value * 100)}%"></i></span></li>`).join("");
+    const chips = c.factors.map((f) => `<li><span class="fl">${esc(f.label)}</span><span class="fv">${Math.round(f.value * 100)}%</span><span class="bar"><i style="width:${Math.round(f.value * 100)}%"></i></span></li>`).join("");
+    const signs = [c.sun, c.chinese, c.ascendant ? "asc. " + c.ascendant : null].filter(Boolean).map(esc).join(" · ");
     return `<article class="swipe card">
-      ${c.superLikedYou ? `<div class="superbadge">💛 ${esc(c.name)} vous a super-liké·e</div>` : ""}
+      ${c.superLikedYou ? `<div class="superbadge">${esc(c.name)} vous a super-liké·e</div>` : ""}
       <div class="face">${c.photo ? `<img src="${c.photo}" alt="Photo de ${esc(c.name)}">` : Avatar.face(c.avatarSeed)}</div>
-      <div class="score big"><svg viewBox="0 0 72 72" width="86" height="86"><circle cx="36" cy="36" r="30" class="rbg"/><circle cx="36" cy="36" r="30" class="rfg" style="stroke-dasharray:${circ};stroke-dashoffset:${off}"/></svg><b>${c.score}<small>%</small></b></div>
-      <h3>${esc(c.name)}, ${c.age} <span class="sign">${c.sun} ${c.chinese}${c.ascendant ? " ⬆" + c.ascendant : ""}</span></h3>
+      <div class="score big"><svg viewBox="0 0 72 72" width="80" height="80"><circle cx="36" cy="36" r="30" class="rbg"/><circle cx="36" cy="36" r="30" class="rfg" style="stroke-dasharray:${circ};stroke-dashoffset:${off}"/></svg><b>${c.score}<small>%</small></b></div>
+      <h3>${esc(c.name)}, ${c.age}</h3>
+      <p class="sign">${signs}</p>
       <p class="meta">${esc(c.mbti)} · ${esc(c.city || "—")}${c.distanceKm != null ? " · " + c.distanceKm + " km" : ""}</p>
       <p class="bio">${esc(c.bio)}</p>
       <p class="verdict">${esc(c.verdict)}</p>
-      <p class="locked">🔒 Photos débloquées après un match mutuel.</p>
+      <p class="locked">Photos débloquées après un match mutuel</p>
       <button type="button" class="btn btn-ghost small chips-toggle">Voir le détail des affinités</button>
-      <ul class="factors" hidden>${chips}${!c.bothBdsm ? `<li class="tip">🔒 Test kink non partagé — l'alchimie intime n'est pas comptée.</li>` : ""}</ul>
+      <ul class="factors" hidden>${chips}${!c.bothBdsm ? `<li class="tip">Test kink non partagé — l'alchimie intime n'est pas comptée.</li>` : ""}</ul>
       <button type="button" class="report-link" data-report="${c.id}" data-name="${esc(c.name)}">Signaler ce profil</button>
     </article>`;
   }
@@ -299,7 +301,7 @@
     try {
       const r = await api("/swipe", { method: "POST", body: { targetId: c.id, kind } });
       if (kind === "super" && !S.credits.premium) { S.credits.superLikes = Math.max(0, S.credits.superLikes - 1); refreshCredits(); }
-      if (kind !== "pass") { if (r.match) matchModal(c, r.matchId, kind === "super"); else toast(`Votre ♥ est parti vers ${esc(c.name)}.`); }
+      if (kind !== "pass") { if (r.match) matchModal(c, r.matchId, kind === "super"); else toast(`Votre intérêt est envoyé à ${esc(c.name)}.`); }
       advance();
     } catch (e) {
       if (e.status === 402) openPremiumModal(e.data.needPremium);
@@ -308,7 +310,7 @@
   }
   function directMessage(c) {
     composeModal(c.name, async (text) => {
-      try { await api("/message-direct", { method: "POST", body: { targetId: c.id, body: text } }); closeModal(); toast(`Message envoyé à ${esc(c.name)} 💌`); }
+      try { await api("/message-direct", { method: "POST", body: { targetId: c.id, body: text } }); closeModal(); toast(`Message envoyé à ${esc(c.name)}`); }
       catch (e) { if (e.status === 402) { closeModal(); openPremiumModal(e.data.needPremium); } else throw e; }
     });
   }
@@ -318,10 +320,10 @@
   function closeModal() { $("modal").hidden = true; $("modal-card").innerHTML = ""; document.body.style.overflow = ""; }
   function matchModal(c, matchId, priority) {
     openModal(`<div class="match-modal"><button type="button" class="close" data-close>✕</button>
-      <p class="mm-title">✨ Match !</p><div class="mm-faces"><div class="face big">${Avatar.face(c.avatarSeed)}</div></div>
+      <p class="mm-title">Vous matchez</p><div class="mm-faces"><div class="face big">${Avatar.face(c.avatarSeed)}</div></div>
       <h3>${esc(c.name)}, ${c.age} — ${c.score}% d'affinité</h3>
-      ${priority ? `<p class="mm-prio">💛 Super Like envoyé — vous êtes désormais <b>prioritaire</b> dans la liste de ${esc(c.name)}.</p>` : ""}
-      <p class="mm-photo">📸 Ses photos et la conversation sont maintenant débloquées.</p>
+      ${priority ? `<p class="mm-prio">Super Like envoyé — vous êtes désormais <b>prioritaire</b> dans la liste de ${esc(c.name)}.</p>` : ""}
+      <p class="mm-photo">Ses photos et la conversation sont maintenant débloquées.</p>
       <div class="mm-actions"><button type="button" class="btn" data-chat>Écrire à ${esc(c.name)}</button><button type="button" class="btn btn-ghost" data-close>Continuer</button></div></div>`);
     $("modal-card").querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", closeModal));
     $("modal-card").querySelector("[data-chat]").addEventListener("click", () => { closeModal(); showView("matches"); openChat(matchId); });
@@ -329,7 +331,7 @@
   function composeModal(name, onSend) {
     openModal(`<div class="compose"><button type="button" class="close" data-close>✕</button><h3>Message à ${esc(name)}</h3>
       <textarea id="c-text" rows="4" maxlength="400" placeholder="Dites bonjour avec sincérité…"></textarea>
-      <p class="error" id="c-err" hidden></p><button type="button" class="btn" data-send>Envoyer 💌</button></div>`);
+      <p class="error" id="c-err" hidden></p><button type="button" class="btn" data-send>Envoyer</button></div>`);
     $("modal-card").querySelector("[data-close]").addEventListener("click", closeModal);
     $("modal-card").querySelector("[data-send]").addEventListener("click", async () => {
       const t = $("c-text").value.trim(); if (!t) { const e = $("c-err"); e.textContent = "Écrivez quelques mots."; e.hidden = false; return; }
@@ -338,12 +340,12 @@
   }
   function openPremiumModal(context) {
     const note = { super: "Vous n'avez plus de Super Like.", message: "Le message direct (sans match) est une option premium." }[context];
-    openModal(`<div class="premium"><button type="button" class="close" data-close>✕</button><p class="pr-title">👑 Âme Sœur Premium</p>
+    openModal(`<div class="premium"><button type="button" class="close" data-close>✕</button><p class="pr-title">Âme Sœur Premium</p>
       ${note ? `<p class="pr-note">${esc(note)}</p>` : ""}
       <div class="plans">
         <div class="plan"><h4>Message direct</h4><p class="price">2,99 €</p><p class="pd">Écrivez sans attendre le match.</p><button type="button" class="btn small" data-buy="message">Choisir</button></div>
-        <div class="plan"><h4>5 Super Likes 💛</h4><p class="price">4,99 €</p><p class="pd">Passez prioritaire dans leur liste.</p><button type="button" class="btn small" data-buy="super">Choisir</button></div>
-        <div class="plan featured"><h4>Premium mensuel 👑</h4><p class="price">12,99 €<small>/mois</small></p><p class="pd">Messages illimités, priorité, likes illimités.</p><button type="button" class="btn small" data-buy="premium">Choisir</button></div>
+        <div class="plan"><h4>5 Super Likes</h4><p class="price">4,99 €</p><p class="pd">Passez prioritaire dans leur liste.</p><button type="button" class="btn small" data-buy="super">Choisir</button></div>
+        <div class="plan featured"><h4>Premium mensuel</h4><p class="price">12,99 €<small>/mois</small></p><p class="pd">Messages illimités, priorité, likes illimités.</p><button type="button" class="btn small" data-buy="premium">Choisir</button></div>
       </div><p class="demo">Démo — aucun paiement réel n'est effectué.</p></div>`);
     $("modal-card").querySelector("[data-close]").addEventListener("click", closeModal);
     $("modal-card").querySelectorAll("[data-buy]").forEach((b) => b.addEventListener("click", () => buy(b.dataset.buy)));
@@ -353,7 +355,7 @@
       const r = await api("/purchase", { method: "POST", body: { plan } });
       if (r.checkoutUrl) { window.location.href = r.checkoutUrl; return; } // paiement Stripe réel
       S.credits = r.credits; refreshCredits(); closeModal();
-      toast(plan === "premium" ? "Premium activé 👑 (démo)" : "Achat effectué (démo)");
+      toast(plan === "premium" ? "Premium activé (démo)" : "Achat effectué (démo)");
     } catch (e) { toast(e.message); }
   }
   function reportModal(id, name) {
@@ -374,7 +376,7 @@
       catch (e) { toast(e.message); }
     });
   }
-  function refreshCredits() { $("credits-count").textContent = S.credits.premium ? "👑" : (S.credits.superLikes || 0); }
+  function refreshCredits() { $("credits-count").textContent = S.credits.premium ? "∞" : (S.credits.superLikes || 0); }
 
   /* ============================ Photo ============================ */
   function initPhoto() {
@@ -419,13 +421,13 @@
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a"); a.href = url; a.download = "mes-donnees-amesoeur.json"; a.click();
-      URL.revokeObjectURL(url); toast("Vos données ont été exportées 📦");
+      URL.revokeObjectURL(url); toast("Vos données ont été exportées");
     } catch (e) { toast(e.message); }
   }
   async function deleteAccount() {
     if (!confirm("Supprimer définitivement votre compte et toutes vos données ? Cette action est irréversible.")) return;
     if (!confirm("Dernière confirmation : cette suppression est définitive et immédiate.")) return;
-    try { await api("/account", { method: "DELETE" }); S = { user: null, profile: null, credits: {} }; toast("Compte supprimé. Au revoir 👋"); showAuth(); }
+    try { await api("/account", { method: "DELETE" }); S = { user: null, profile: null, credits: {} }; toast("Compte supprimé. Au revoir."); showAuth(); }
     catch (e) { toast(e.message); }
   }
   function openPrivacyModal() {
@@ -467,12 +469,12 @@
   async function renderMatchesList() {
     const list = $("matches-list"); list.hidden = false;
     let r; try { r = await api("/matches"); } catch (e) { toast(e.message); return; }
-    if (!r.matches.length) { list.innerHTML = `<div class="empty card"><p class="big">🫶</p><h3>Pas encore de match.</h3><p>Filez découvrir des profils et likez ceux qui vous parlent !</p></div>`; return; }
+    if (!r.matches.length) { list.innerHTML = `<div class="empty card"><p class="big">Aucune conversation</p><h3>Pas encore de match.</h3><p>Filez découvrir des profils et likez ceux qui vous parlent !</p></div>`; return; }
     list.innerHTML = "";
     r.matches.forEach((m) => {
       const av = m.other.photo ? `<img src="${m.other.photo}" alt="">` : Avatar.face(m.avatarSeed);
       const d = document.createElement("button"); d.type = "button"; d.className = "match-row";
-      d.innerHTML = `<div class="mr-face">${av}</div><div class="mr-info"><h4>${esc(m.other.name)}, ${m.other.age} ${m.superd ? "💛" : ""}</h4><p>${m.lastMessage ? (m.lastMessage.mine ? "Vous : " : "") + esc(m.lastMessage.body) : "<i>Dites bonjour…</i>"}</p></div>`;
+      d.innerHTML = `<div class="mr-face">${av}</div><div class="mr-info"><h4>${esc(m.other.name)}, ${m.other.age}${m.superd ? ' <span class="mr-super">Super Like</span>' : ""}</h4><p>${m.lastMessage ? (m.lastMessage.mine ? "Vous : " : "") + esc(m.lastMessage.body) : "<i>Dites bonjour…</i>"}</p></div>`;
       d.addEventListener("click", () => openChat(m.matchId));
       list.appendChild(d);
     });
@@ -499,7 +501,7 @@
         : `${o.mbti} · ${o.city || "—"}`;
     } else {
       $("chat-face").innerHTML = Avatar.face(r.match.avatarSeed);
-      $("chat-meta").textContent = `${o.mbti} · ${o.city || "—"} · 📷 pas encore de photo`;
+      $("chat-meta").textContent = `${o.mbti} · ${o.city || "—"} · photo pas encore partagée`;
     }
     $("chat-name").textContent = `${o.name}, ${o.age}`;
     const body = $("chat-body");

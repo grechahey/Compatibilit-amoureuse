@@ -87,6 +87,7 @@ input[type="file"] { font-size: .82rem; padding: .5rem 0; color: var(--muted); b
 .badge-line b { font-weight: 700; }
 .mbti-axes { color: var(--muted); font-weight: 400; font-size: .8rem; }
 .hint { font-size: .78rem; color: var(--faint); line-height: 1.5; margin: -.1rem 0 .7rem; font-weight: 400; }
+.legal-note { font-size: .68rem; color: var(--faint); line-height: 1.5; margin: .1rem 0 .5rem; font-weight: 400; opacity: .85; }
 .form-tip { grid-column: 1 / -1; }
 .error { color: #ff7a7a; font-size: .86rem; margin: 1rem 0 0; text-align: center; }
 #btn-mbti-test, #btn-bdsm-test { margin-top: .3rem; }

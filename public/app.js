@@ -151,8 +151,8 @@
   /* ============================ Tests ============================ */
   let quizMode = null;
   function openMbtiQuiz() {
-    quizMode = "mbti"; $("quiz-title").textContent = "Test de personnalité (MBTI)";
-    $("quiz-intro").textContent = `Notez chaque énoncé de 1 (pas du tout) à 5 (tout à fait). ${Data.MBTI_QUESTIONS.length} questions. Aucune bonne réponse.`;
+    quizMode = "mbti"; $("quiz-title").textContent = "Test de personnalité (inspiré du MBTI®)";
+    $("quiz-intro").textContent = `Test indépendant inspiré du modèle MBTI®. Notez chaque énoncé de 1 (pas du tout) à 5 (tout à fait). ${Data.MBTI_QUESTIONS.length} questions. Aucune bonne réponse.`;
     const body = $("quiz-body"); body.innerHTML = "";
     Data.MBTI_QUESTIONS.forEach((q, i) => {
       const scale = [1, 2, 3, 4, 5].map((v) => `<label class="lk"><input type="radio" name="q${i}" value="${v}"><span>${v}</span></label>`).join("");
@@ -505,6 +505,8 @@
       <p>Un seul cookie est utilisé, strictement nécessaire à votre connexion (session). Aucun traceur publicitaire, aucune mesure d'audience tierce.</p>
       <h4>8. Sécurité</h4>
       <p>Les mots de passe sont hachés (scrypt) et les échanges se font via votre session authentifiée.</p>
+      <h4>9. Tests de personnalité & marques</h4>
+      <p>Nos tests sont des instruments <b>indépendants</b>, inspirés des 16 types jungiens à titre pédagogique et de développement personnel. Âme Sœur n'est ni affilié à, ni approuvé par, <b>The Myers-Briggs Company</b>. « MBTI® » et « Myers-Briggs® » sont des marques déposées de leurs détenteurs respectifs. Nos tests ne constituent ni un diagnostic ni un avis médical ou psychologique.</p>
       <button type="button" class="btn" data-close>Fermer</button></div>`);
     $("modal-card").querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", closeModal));
   }

@@ -75,11 +75,16 @@
     { dim: 2, sign: -1, t: "Je fais passer les gens avant les principes." },
     { dim: 3, sign: -1, t: "Je carbure souvent à la dernière minute." },
   ];
+  // Courtes descriptions originales (pas les noms de marque d'un test tiers).
   const MBTI_TYPE_NAMES = {
-    INTJ: "L'Architecte", INTP: "Le Logicien", ENTJ: "Le Commandant", ENTP: "L'Innovateur",
-    INFJ: "L'Avocat", INFP: "Le Médiateur", ENFJ: "Le Protagoniste", ENFP: "L'Inspirateur",
-    ISTJ: "Le Logisticien", ISFJ: "Le Défenseur", ESTJ: "Le Directeur", ESFJ: "Le Consul",
-    ISTP: "Le Virtuose", ISFP: "L'Aventurier", ESTP: "L'Entrepreneur", ESFP: "L'Amuseur",
+    INTJ: "visionnaire et stratège", INTP: "analytique et curieux·se",
+    ENTJ: "meneur·se et déterminé·e", ENTP: "inventif·ve et vif·ve d'esprit",
+    INFJ: "idéaliste et profond·e", INFP: "sensible et rêveur·se",
+    ENFJ: "chaleureux·se et fédérateur·rice", ENFP: "enthousiaste et libre",
+    ISTJ: "fiable et méthodique", ISFJ: "dévoué·e et attentionné·e",
+    ESTJ: "organisé·e et franc·he", ESFJ: "sociable et bienveillant·e",
+    ISTP: "pragmatique et indépendant·e", ISFP: "artiste et spontané·e",
+    ESTP: "audacieux·se et énergique", ESFP: "festif·ve et généreux·se",
   };
   // Solde signé par axe : positif → 1re lettre. answers : entiers 1..5.
   function mbtiBalances(answers) {
@@ -225,7 +230,7 @@
     { icon: "👶", title: "« Sans enfants », vraiment ?",
       text: "Refuser d'emblée une personne qui a des enfants, c'est écarter quelqu'un qui sait déjà aimer, protéger et s'engager. Les familles se réinventent — l'amour ne se planifie pas sur un tableur." },
     { icon: "🌱", title: "Besoin qu'on se dédie à 100 % ?",
-      text: "Un amour sain, c'est deux personnes entières — pas une qui se dissout dans l'autre. Le vrai « pour toujours » laisse à chacun de l'air pour respirer. Chercher une dévotion totale, c'est souvent la dépendance qui parle, pas le cœur." },
+      text: "Un amour sain, c'est deux personnes entières — pas une qui se dissout dans l'autre. Le vrai « pour toujours » laisse à chacun de l'air pour respirer. Chercher une dévotion totale, c'est souvent la dépendance affective qui parle, pas le cœur. Bonne nouvelle : ces schémas se retravaillent — les thérapies cognitives et comportementales (TCC) sont reconnues pour aider à retrouver un attachement plus serein." },
     { icon: "💫", title: "Trop de critères physiques ?",
       text: "Filtrer sur la taille, le poids ou la couleur des yeux, c'est trier des inconnus sur 2 % de ce qu'ils sont. Le charme, la voix, le rire, la manière d'écouter… rien de tout ça ne tient dans une case." },
     { icon: "🔥", title: "Des exigences très précises… au lit ?",

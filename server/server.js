@@ -8,6 +8,7 @@ const { Engine, Data } = globalThis;
 const D = require("./db.js");
 const Storage = require("./storage.js");
 const Avatars = require("./avatars.js");
+const Notify = require("./notify.js");
 
 const app = express();
 app.set("trust proxy", 1);
@@ -118,7 +119,7 @@ const mutual = (a, b) => (a.seeking === "T" || a.seeking === b.gender) && (b.see
 const emailOk = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
 /* ------------------------------ Auth ------------------------------- */
-const meView = (u) => ({ user: { id: u.id, email: u.email, emailVerified: !!u.email_verified },
+const meView = (u) => ({ user: { id: u.id, email: u.email, emailVerified: !!u.email_verified, notifyEmail: u.notify_email !== 0 },
   profile: D.profileOut(D.q.getProfile.get(u.id)), credits: D.getCredits(u.id) });
 
 app.post("/api/register", rateLimit(15, 15 * 60 * 1000), async (req, res) => {
@@ -199,7 +200,22 @@ app.put("/api/profile", auth, async (req, res) => {
     catch (e) { return res.status(502).json({ error: "Échec du stockage de la photo." }); }
   }
   D.saveProfile(req.user.id, p);
+  if (typeof p.notifyEmail === "boolean") D.setNotifyEmail(req.user.id, p.notifyEmail);
   res.json({ profile: D.profileOut(D.q.getProfile.get(req.user.id)) });
+});
+
+/* -------------------------- Notifications push --------------------- */
+app.get("/api/push/pubkey", auth, (req, res) => res.json({ key: Notify.vapidPublicKey() }));
+app.post("/api/push/subscribe", auth, (req, res) => {
+  const sub = req.body && req.body.subscription;
+  if (!sub || !sub.endpoint) return res.status(400).json({ error: "Abonnement invalide." });
+  D.addPushSub(req.user.id, sub);
+  res.json({ ok: true });
+});
+app.post("/api/push/unsubscribe", auth, (req, res) => {
+  const ep = req.body && req.body.endpoint;
+  if (ep) D.delPushSub(ep);
+  res.json({ ok: true });
 });
 
 // Résultats personnels : thème astral, chinois, numérologie, MBTI, kink.
@@ -370,7 +386,23 @@ app.post("/api/swipe", auth, (req, res) => {
     const r = Engine.compatibility(toEngine(D.profileOut(D.q.getProfile.get(req.user.id))), toEngine(D.profileOut(target)));
     if (kind === "super" || r.score >= 55) D.q.insSwipe.run(targetId, req.user.id, "like", D.now());
   }
+  const [pa, pb] = req.user.id < targetId ? [req.user.id, targetId] : [targetId, req.user.id];
+  const matchExisted = !!D.q.matchByPair.get(pa, pb);
   const m = D.tryMatch(req.user.id, targetId, kind === "super");
+  // Notifications au destinataire (jamais les bots ; match notifié une seule fois).
+  if (!target.is_bot) {
+    const meName = (D.profileOut(D.q.getProfile.get(req.user.id)) || {}).name || "Quelqu'un";
+    if (m && !matchExisted) Notify.notify(targetId, {
+      subject: "Vous avez un match ✨ — Âme Sœur",
+      text: `${meName} et vous, c'est réciproque ! Ouvrez Âme Sœur pour lancer la conversation. ${BASE_URL}`,
+      push: { title: "Nouveau match ✨", body: `${meName} et vous matchez !`, url: "/" },
+    });
+    else if (kind === "super" && !m) Notify.notify(targetId, {
+      subject: "Un Super Like pour vous ⭐ — Âme Sœur",
+      text: `${meName} vous a envoyé un Super Like. Découvrez son profil sur Âme Sœur. ${BASE_URL}`,
+      push: { title: "Super Like reçu ⭐", body: `${meName} vous a super-liké·e !`, url: "/" },
+    });
+  }
   res.json({ match: !!m, matchId: m ? m.id : null });
 });
 
@@ -445,6 +477,17 @@ app.post("/api/messages/:matchId", auth, (req, res) => {
   const body = (req.body && req.body.body || "").trim();
   if (!body) return res.status(400).json({ error: "Message vide." });
   D.q.insMessage.run(m.id, req.user.id, body.slice(0, 800), D.now());
+  // Notifier le destinataire (email limité à 1/15 min/conversation ; push à chaque fois).
+  const otherId = m.a === req.user.id ? m.b : m.a;
+  const otherRow = D.q.getProfile.get(otherId);
+  if (otherRow && !otherRow.is_bot) {
+    const meName = (D.profileOut(D.q.getProfile.get(req.user.id)) || {}).name || "Quelqu'un";
+    Notify.notify(otherId, {
+      subject: Notify.messageThrottle(otherId, m.id) ? `Nouveau message de ${meName} — Âme Sœur` : null,
+      text: `${meName} vous a écrit sur Âme Sœur. ${BASE_URL}`,
+      push: { title: `${meName} vous a écrit`, body: body.slice(0, 80), url: "/" },
+    });
+  }
   res.json({ ok: true });
 });
 
@@ -462,6 +505,14 @@ app.post("/api/message-direct", auth, (req, res) => {
   D.q.insMatch.run(a, b, D.now(), 0);
   const m = D.q.matchByPair.get(a, b);
   D.q.insMessage.run(m.id, req.user.id, text.slice(0, 800), D.now());
+  if (!target.is_bot) {
+    const meName = (D.profileOut(D.q.getProfile.get(req.user.id)) || {}).name || "Quelqu'un";
+    Notify.notify(targetId, {
+      subject: `Un message de ${meName} — Âme Sœur`,
+      text: `${meName} vous a écrit sur Âme Sœur. ${BASE_URL}`,
+      push: { title: `${meName} vous a écrit`, body: text.slice(0, 80), url: "/" },
+    });
+  }
   res.json({ ok: true, matchId: m.id });
 });
 

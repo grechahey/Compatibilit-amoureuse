@@ -29,7 +29,16 @@ photos stockées en base).
 1. Récupérez une URL SMTP, ex. `smtps://utilisateur:motdepasse@smtp.fournisseur.com:465`.
 2. `SMTP_URL=...` et `MAIL_FROM=no-reply@votredomaine.fr`.
 3. `npm install nodemailer` (utilisé seulement si `SMTP_URL` est défini).
-4. Redémarrez : les liens de vérification partent désormais par email.
+4. Redémarrez : liens de vérification **et notifications** (nouveau match,
+   message, Super Like) partent par email. Sans SMTP, ils sont journalisés.
+
+## 2 ter. Notifications push (Web Push)
+
+1. Générez une paire de clés VAPID : `npx web-push generate-vapid-keys`.
+2. `.env` : `VAPID_PUBLIC_KEY=…`, `VAPID_PRIVATE_KEY=…`, `VAPID_SUBJECT=mailto:contact@votredomaine.fr`.
+3. `npm install web-push`. Redémarrez.
+4. Les membres peuvent alors activer le push depuis leur profil (section
+   Notifications). Sans clés VAPID, le push reste simplement inactif.
 
 ## 2 bis. Back office admin
 

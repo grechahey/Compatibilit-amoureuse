@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS users (
   created_at INTEGER,
   consent_at INTEGER, consent_version TEXT, age_confirmed INTEGER DEFAULT 0,
   sensitive_consent_at INTEGER,
-  email_verified INTEGER DEFAULT 0, verify_token TEXT
+  email_verified INTEGER DEFAULT 0, verify_token TEXT,
+  notify_email INTEGER DEFAULT 1
 );
 CREATE TABLE IF NOT EXISTS profiles (
   user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -60,6 +61,11 @@ CREATE TABLE IF NOT EXISTS admin_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER, email TEXT, action TEXT, ip TEXT, created_at INTEGER
 );
+CREATE TABLE IF NOT EXISTS push_subs (
+  endpoint TEXT PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  sub TEXT, created_at INTEGER
+);
 `);
 
 // Migrations défensives (bases existantes créées avant l'ajout du RGPD).
@@ -73,6 +79,7 @@ for (const alter of [
   "ALTER TABLE profiles ADD COLUMN discover_photo INTEGER DEFAULT 0",
   "ALTER TABLE profiles ADD COLUMN interests TEXT",
   "ALTER TABLE profiles ADD COLUMN avatar_feat TEXT",
+  "ALTER TABLE users ADD COLUMN notify_email INTEGER DEFAULT 1",
 ]) { try { db.exec(alter); } catch (_) { /* colonne déjà présente */ } }
 
 const CONSENT_VERSION = "2026-07-11";
@@ -230,6 +237,17 @@ function logAdmin(userId, email, action, ip) {
 function getAdminLog(limit = 100) {
   return db.prepare("SELECT email, action, ip, created_at FROM admin_log ORDER BY id DESC LIMIT ?").all(Math.min(500, limit));
 }
+// Préférence de notification email (opt-out) + abonnements push par utilisateur.
+function setNotifyEmail(userId, on) { db.prepare("UPDATE users SET notify_email=? WHERE id=?").run(on ? 1 : 0, userId); }
+function addPushSub(userId, sub) {
+  const endpoint = sub && sub.endpoint; if (!endpoint) return;
+  db.prepare("INSERT INTO push_subs (endpoint,user_id,sub,created_at) VALUES (?,?,?,?) ON CONFLICT(endpoint) DO UPDATE SET user_id=excluded.user_id, sub=excluded.sub")
+    .run(endpoint, userId, JSON.stringify(sub), now());
+}
+function delPushSub(endpoint) { db.prepare("DELETE FROM push_subs WHERE endpoint=?").run(endpoint); }
+function pushSubsFor(userId) {
+  return db.prepare("SELECT sub FROM push_subs WHERE user_id=?").all(userId).map((r) => { try { return JSON.parse(r.sub); } catch (_) { return null; } }).filter(Boolean);
+}
 function getCredits(userId) {
   q.insCredits.run(userId);
   const c = q.getCredits.get(userId);
@@ -280,4 +298,5 @@ module.exports = {
   stampSensitiveConsent, deleteAccount, exportData,
   verifyEmailToken, regenerateVerifyToken, createReport,
   getSetting, setSetting, logAdmin, getAdminLog,
+  setNotifyEmail, addPushSub, delPushSub, pushSubsFor,
 };

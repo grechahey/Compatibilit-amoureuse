@@ -31,7 +31,7 @@
 
   let S = { user: null, profile: null, credits: { superLikes: 1, messages: 0, premium: false } };
   let CONFIG = { org: { name: "Âme Sœur", dpoEmail: "dpo@amesoeur.exemple", legal: "" } };
-  let tempMbti = null, tempMbtiDetail = null, tempBdsm = null, pendingPhoto = null, devVerifyUrl = null, pendingAvatarFeat = null;
+  let tempMbti = null, tempMbtiDetail = null, tempBdsm = null, pendingPhoto = null, devVerifyUrl = null, pendingAvatarFeat = null, pushKey = null;
   let candidates = [], deck = [], pos = 0;
   let authMode = "register";
   let currentChat = null;
@@ -113,7 +113,40 @@
     refreshCredits();
     refreshVerify();
     prefill();
+    initPush();
     showView(S.profile ? "discover" : "profile");
+  }
+
+  /* ========================= Notifications push =================== */
+  async function initPush() {
+    const row = $("push-row"); if (!row) return;
+    if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) return;
+    try { pushKey = (await api("/push/pubkey")).key; } catch (_) { return; }
+    if (!pushKey) return; // push non configuré côté serveur (pas de clés VAPID)
+    row.hidden = false;
+    if (Notification.permission === "granted") { subscribePush().then(reflectPush); } else reflectPush();
+  }
+  function reflectPush() {
+    const btn = $("btn-push"), note = $("push-note");
+    if (Notification.permission === "granted") { btn.textContent = "Notifications activées ✓"; btn.disabled = true; note.textContent = "Vous recevrez les alertes, même app fermée."; }
+    else if (Notification.permission === "denied") { btn.textContent = "Notifications bloquées"; btn.disabled = true; note.textContent = "Réautorisez-les dans les réglages du navigateur."; }
+    else { btn.textContent = "Activer les notifications push"; btn.disabled = false; note.textContent = "Recevez une alerte même quand l'app est fermée."; }
+  }
+  async function enablePush() { const r = await subscribePush(); reflectPush(); if (r && r.reason === "denied") toast("Notifications refusées."); }
+  async function subscribePush() {
+    try {
+      if (Notification.permission !== "granted") { const p = await Notification.requestPermission(); if (p !== "granted") return { ok: false, reason: "denied" }; }
+      const reg = await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8(pushKey) });
+      await api("/push/subscribe", { method: "POST", body: { subscription: sub.toJSON() } });
+      return { ok: true };
+    } catch (e) { return { ok: false, reason: e.message }; }
+  }
+  function urlB64ToUint8(b64) {
+    const pad = "=".repeat((4 - b64.length % 4) % 4);
+    const raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
+    const a = new Uint8Array(raw.length); for (let i = 0; i < raw.length; i++) a[i] = raw.charCodeAt(i); return a;
   }
 
   /* ====================== Contrôles du profil ====================== */
@@ -125,6 +158,7 @@
     $("p-bdsm-optin").addEventListener("change", (e) => { $("bdsm-area").hidden = !e.target.checked; if (!e.target.checked) { tempBdsm = null; refreshBdsmBadge(); } });
     $("btn-mbti-test").addEventListener("click", openMbtiQuiz);
     $("btn-bdsm-test").addEventListener("click", openBdsmQuiz);
+    $("btn-push").addEventListener("click", enablePush);
     $("profile-form").addEventListener("submit", onSave);
     $("nav-discover").addEventListener("click", () => showView("discover"));
     $("nav-matches").addEventListener("click", () => showView("matches"));
@@ -209,10 +243,11 @@
       time: $("p-time").value || null, city: $("p-city").value || null, mbti: tempMbti, bdsm: tempBdsm,
       sensitiveConsent: tempBdsm ? $("p-bdsm-optin").checked : false,
       discoverPhoto: $("p-discover-photo").checked,
+      notifyEmail: $("p-notify-email").checked,
     };
     if (pendingPhoto) body.photo = pendingPhoto;
     if (pendingAvatarFeat) body.avatarFeat = pendingAvatarFeat;
-    try { const r = await api("/profile", { method: "PUT", body }); S.profile = r.profile; toast("Profil enregistré"); showView("discover"); }
+    try { const r = await api("/profile", { method: "PUT", body }); S.profile = r.profile; if (S.user) S.user.notifyEmail = body.notifyEmail; toast("Profil enregistré"); showView("discover"); }
     catch (ex) { fail(ex.message); }
   }
 
@@ -694,6 +729,7 @@
     if (me.bdsm) { $("p-bdsm-optin").checked = true; $("bdsm-area").hidden = false; refreshBdsmBadge(); }
     if (me.photo) { const pv = $("p-photo-preview"); pv.src = me.photo; pv.hidden = false; }
     $("p-discover-photo").checked = !!me.discoverPhoto;
+    $("p-notify-email").checked = !(S.user && S.user.notifyEmail === false);
     pendingAvatarFeat = me.avatarFeat || null;
     refreshAvatarPreview(pendingAvatarFeat);
   }

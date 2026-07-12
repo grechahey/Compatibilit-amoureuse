@@ -29,26 +29,34 @@ Ouvre-le dans un navigateur (double-clic) ou héberge-le (GitHub Pages, etc.).
   `handle,name,platform,followers,avgLikes,avgComments,country,tags,email`.
   (Un bouton « Charger un exemple » montre le format attendu.)
 
-## Ce que la v1 ne fait PAS encore
+## Le hub « Sourcing » — 4 voies pour trouver des créateurs (toutes gratuites)
 
-L'outil ne va **pas** chercher tout seul les influenceurs sur Instagram/TikTok : il **qualifie**
-les données qu'on lui fournit. La collecte automatique des créateurs (Phase 2) nécessite de
-choisir une **source de données** :
+Bouton « ✦ Sourcer des créateurs ». Chaque voie alimente le même moteur de qualification.
+Détails pas-à-pas dans **[`SOURCING.md`](./SOURCING.md)**.
 
-| Voie | Coût indicatif | Légalité | Qualité |
-|------|----------------|----------|---------|
-| API tierce (Modash, HypeAuditor, Phyllo, TikTok Creator Marketplace) | ~50–300 €/mois | ✅ propre | démographie, faux followers… |
-| Scraping (Apify, EnsembleData) | ~30–100 €/mois | ⚠️ zone grise (CGU) | correct mais fragile |
-| Semi-manuel | gratuit | ✅ | dépend de ce qu'on colle |
+- **Voie A — Canaux officiels** : TikTok Creator Marketplace + Meta Creator Marketplace
+  (gratuits, mais uniquement les créateurs inscrits ≥ 10k abonnés → pas de nano/micro).
+- **Voie B — Marketplaces DACH** : ReachHero, eqolot, Reachbird (recherche gratuite, créateurs allemands).
+- **Voie C — Premier cercle** : coller les comptes qui taguent/commentent déjà la marque
+  (ou ses concurrents) — aucun filtre d'éligibilité, meilleur ROI.
+- **Voie D — Recherche web** : un **vivier de ~30 créateurs beauté DACH** compilé depuis des
+  sources publiques est intégré, chargeable en un clic (chiffres à vérifier, engagement à enrichir).
 
-Le moteur de scoring est déjà conçu pour brancher n'importe laquelle de ces sources ensuite
-(il suffit d'alimenter la liste de créateurs au même format).
+Quand l'engagement d'un créateur est inconnu (voies C/D), il est marqué **« à enrichir »** et le
+score se calcule sur les autres critères — sans jamais inventer de données.
+
+## Ce que l'outil ne fait PAS
+
+Il ne se connecte pas encore **en direct** aux API d'Instagram/TikTok pour rapatrier
+automatiquement les chiffres d'engagement. Ça, c'est la **Phase 2** (nécessite de choisir une
+source de données), et le moteur est déjà prêt à la recevoir.
 
 ## Feuille de route
 
 - **Phase 1 (fait)** : moteur de qualification + interface + messages allemands + export.
-- **Phase 2** : connecter une source de données pour la découverte automatique des créateurs.
-- **Phase 3** : suivi de campagne (comptes contactés, réponses, statut), et données d'audience
-  (âge, genre, pays des abonnés) pour affiner le ciblage.
+- **Phase 2 (fait)** : hub de sourcing (voies A/B/C/D) + vivier beauté DACH + gestion des
+  données d'engagement manquantes.
+- **Phase 3** : enrichissement automatique de l'engagement + suivi de campagne (comptes
+  contactés, réponses, statut) + données d'audience (âge, genre, pays des abonnés).
 - **Content Engine** (outil séparé) : plan marketing automatisé pour la vente de sa propre
   formation (calendrier éditorial IG/TikTok en allemand, tunnel de vente).

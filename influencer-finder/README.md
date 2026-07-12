@@ -45,6 +45,14 @@ Détails pas-à-pas dans **[`SOURCING.md`](./SOURCING.md)**.
 Quand l'engagement d'un créateur est inconnu (voies C/D), il est marqué **« à enrichir »** et le
 score se calcule sur les autres critères — sans jamais inventer de données.
 
+## Enrichir l'engagement
+
+Ouvre la fiche d'un créateur → panneau **« Enrichir l'engagement »** :
+- colle les **likes/commentaires de ses derniers posts** → moyenne + taux calculés, re-notation en direct ;
+- ou **« Estimer (benchmark) »** pour un chiffrage provisoire clairement marqué **« ≈ »** ;
+- **« Enregistrer et suivant »** pour enchaîner (compteur « à enrichir » dans la barre d'outils) ;
+- tout est **sauvegardé dans le navigateur** et survit aux rechargements.
+
 ## Ce que l'outil ne fait PAS
 
 Il ne se connecte pas encore **en direct** aux API d'Instagram/TikTok pour rapatrier
@@ -56,7 +64,8 @@ source de données), et le moteur est déjà prêt à la recevoir.
 - **Phase 1 (fait)** : moteur de qualification + interface + messages allemands + export.
 - **Phase 2 (fait)** : hub de sourcing (voies A/B/C/D) + vivier beauté DACH + gestion des
   données d'engagement manquantes.
-- **Phase 3** : enrichissement automatique de l'engagement + suivi de campagne (comptes
-  contactés, réponses, statut) + données d'audience (âge, genre, pays des abonnés).
+- **Phase 3 (en cours)** : enrichissement de l'engagement — **fait en manuel/estimation avec
+  persistance locale** ; reste l'enrichissement *automatique* (via une source de données) et le
+  suivi de campagne (comptes contactés, réponses, statut) + données d'audience.
 - **Content Engine** (outil séparé) : plan marketing automatisé pour la vente de sa propre
   formation (calendrier éditorial IG/TikTok en allemand, tunnel de vente).

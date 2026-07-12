@@ -78,10 +78,21 @@ classements, et compléter le CSV.
 ## Enrichir l'engagement (les données manquantes)
 
 Les voies C et D donnent l'**identité** (qui + niche + taille), pas l'engagement.
-Pour renseigner `avgLikes` / `avgComments` :
-- **À la main** : ouvrir le profil, faire la moyenne des likes/commentaires sur ~6 posts récents.
-- **Semi-automatique** : dès qu'une source de données est choisie (Phase 2), on remplit ces
-  colonnes automatiquement.
+L'outil intègre désormais un **enrichisseur** : ouvrir la fiche d'un créateur (clic sur sa ligne)
+→ panneau **« Enrichir l'engagement »**.
+
+- **Saisie mesurée** : ouvrir le profil, coller les **likes et commentaires des derniers posts**
+  (séparés par des virgules). L'outil fait la moyenne, calcule le taux d'engagement et re-note en direct.
+- **Estimation provisoire** : bouton **« Estimer (benchmark) »** → chiffrage basé sur le taux typique
+  de sa taille de compte. Toujours affiché avec un **« ≈ »** et un drapeau *estimé*, jamais confondu
+  avec du mesuré. Utile pour prioriser avant vérification.
+- **Enregistrer et suivant →** : enchaîne les fiches non renseignées (compteur « à enrichir »
+  visible dans la barre d'outils).
+- **Persistance** : l'enrichissement est sauvegardé dans le navigateur et **survit aux
+  rechargements** (et au rechargement du vivier). Le bouton « Effacer » restaure la valeur d'origine.
+
+Dès qu'une source de données sera branchée (enrichissement automatique), ces colonnes se
+rempliront toutes seules — le moteur est déjà prêt.
 
 ## Note RGPD (marché allemand)
 

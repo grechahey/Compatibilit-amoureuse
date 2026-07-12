@@ -190,6 +190,19 @@ td{padding:11px 14px; vertical-align:middle}
 .chip{display:inline-block; font-size:12.5px; font-weight:600; padding:6px 11px; border-radius:20px; border:1px solid var(--line); background:var(--surface); color:var(--accent); text-decoration:none}
 .chip:hover{border-color:var(--accent)}
 .src-tag{display:inline-block; font-size:10px; font-weight:700; letter-spacing:.03em; padding:1px 7px; border-radius:20px; background:var(--surface-2); color:var(--muted); margin-top:3px; text-transform:uppercase}
+.enrich{border:1px solid var(--accent-soft); background:var(--accent-soft); border-radius:12px; padding:14px 16px; margin-bottom:22px}
+:root[data-theme="dark"] .enrich,@media (prefers-color-scheme:dark){.enrich{background:var(--accent-soft); border-color:var(--line)}}
+.enrich h4{margin:0 0 3px; font-family:var(--serif); font-size:15px; font-weight:600; color:var(--ink)}
+.enrich .sub{font-size:12px; color:var(--muted); margin-bottom:12px}
+.enrich .en-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px}
+.enrich .en-grid.f3{grid-template-columns:1fr 1fr 1fr}
+.enrich label{display:block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin-bottom:4px}
+.enrich input{background:var(--surface); border-color:var(--line)}
+.en-preview{display:flex; align-items:center; gap:8px; font-size:13px; margin:2px 0 12px; font-weight:600}
+.en-preview b{font-variant-numeric:tabular-nums; color:var(--accent); font-size:15px}
+.en-actions{display:flex; gap:8px; flex-wrap:wrap}
+.btn.ghost{background:transparent}
+.done-badge{font-size:12px; color:var(--good); font-weight:700}
 
 @media (max-width:860px){
   .wrap{grid-template-columns:1fr}
@@ -351,6 +364,8 @@ td{padding:11px 14px; vertical-align:middle}
       <div class="breakdown" id="dBreakdown"></div>
 
       <div class="meta-grid" id="dMeta"></div>
+
+      <div id="enrichPanel"></div>
 
       <h3 class="subhead">Message de contact (allemand)</h3>
       <div class="msg-tabs" id="msgTabs">
@@ -548,7 +563,8 @@ function scoreCreator(c, brief){
   if(hasEng && er < tier.bench*0.35) flags.push({icon:"🚩", t:"Engagement faible pour sa taille"});
   if(hasEng && er > 0.20) flags.push({icon:"⚠️", t:"Engagement anormalement élevé (à vérifier)"});
   if(!hasEng) flags.push({icon:"🧪", t:"Engagement à enrichir (donnée manquante)"});
-  if(hasEng && er >= tier.bench && coreHits>0 && total>=70) flags.push({icon:"✨", t:"Match fort"});
+  if(hasEng && c.estimated) flags.push({icon:"≈", t:"Engagement estimé (benchmark, à confirmer)"});
+  if(hasEng && !c.estimated && er >= tier.bench && coreHits>0 && total>=70) flags.push({icon:"✨", t:"Match fort"});
 
   return {er, hasEng, tier, total:Math.max(0,Math.min(100,total)),
     parts:{relevance:Math.round(relevance), engagement:hasEng?Math.round(engagement):null, geo, audienceFit, authenticity},
@@ -593,8 +609,27 @@ const DACH_VIVIER = [
   V("@ginaa.24","Gina Virahya","Instagram",1100000,"CH",["beauty","makeup"]),
 ];
 
+/* ---------------- Enrichissement persistant (localStorage) ---------------- */
+const ENRICH_KEY = "if_enrich_v1";
+function loadEnrich(){ try{ return JSON.parse(localStorage.getItem(ENRICH_KEY))||{}; }catch(e){ return {}; } }
+function saveEnrich(){ try{ localStorage.setItem(ENRICH_KEY, JSON.stringify(ENRICH)); }catch(e){} }
+let ENRICH = loadEnrich();
+function ckey(c){ return (c.platform+"|"+c.handle).toLowerCase().trim(); }
+function applyEnrich(list){
+  return list.map(c=>{
+    const base = {followers:c.followers, avgLikes:c.avgLikes, avgComments:c.avgComments};
+    const e = ENRICH[ckey(c)];
+    if(!e) return {...c, _base:base, estimated:false};
+    return {...c, _base:base,
+      followers: e.followers!=null ? e.followers : c.followers,
+      avgLikes: e.avgLikes!=null ? e.avgLikes : c.avgLikes,
+      avgComments: e.avgComments!=null ? e.avgComments : c.avgComments,
+      estimated: !!e.estimated };
+  });
+}
+
 /* ---------------- State ---------------- */
-let DATA = DEMO.map(c=>({...c, source:"Démo"}));
+let DATA = applyEnrich(DEMO.map(c=>({...c, source:"Démo"})));
 let sortKey = "score", sortDir = -1, currentDetail = null, msgVariant = 0, importSource = "Import manuel";
 
 function brief(){
@@ -665,7 +700,8 @@ function renderStats(rows){
 
 function renderRows(rows){
   const tb = document.getElementById("rows");
-  document.getElementById("count").innerHTML = `<b>${rows.length}</b> créateur(s) · triés par ${({score:"score",engagement:"engagement",followers:"abonnés",name:"nom"})[sortKey]}`;
+  const pend = rows.filter(r=>!r.s.hasEng).length;
+  document.getElementById("count").innerHTML = `<b>${rows.length}</b> créateur(s) · triés par ${({score:"score",engagement:"engagement",followers:"abonnés",name:"nom"})[sortKey]}${pend?` · <b style="color:var(--accent)">${pend}</b> à enrichir`:""}`;
   if(!rows.length){
     tb.innerHTML = `<tr><td colspan="7"><div class="empty"><h3>Aucun créateur ne correspond</h3><p>Assouplissez les filtres, ou importez votre propre liste via « ＋ Importer une liste ».</p></div></td></tr>`;
     return;
@@ -679,7 +715,7 @@ function renderRows(rows){
       </div></td>
       <td><span class="plat ${c.platform==="Instagram"?"ig":"tt"}">${c.platform==="Instagram"?"Instagram":"TikTok"}</span></td>
       <td class="tnum">${c.followers?fmt(c.followers):'<span class="hint">?</span>'}</td>
-      <td class="tnum">${s.hasEng?pct(s.er):'<span class="hint">à enrichir</span>'}</td>
+      <td class="tnum">${s.hasEng?(c.estimated?"≈ ":"")+pct(s.er):'<span class="hint">à enrichir</span>'}</td>
       <td><span class="badge">${s.tier.label}</span></td>
       <td><div class="flags">${s.flags.map(f=>`<span class="flag" title="${f.t}">${f.icon}</span>`).join("")||'<span class="hint">—</span>'}</div></td>
       <td><span class="score-chip ${scoreClass(s.total)}"><span class="dot ${scoreClass(s.total)}"></span>${s.total}</span></td>
@@ -725,16 +761,86 @@ function openDetail({c,s}){
 
   document.getElementById("dMeta").innerHTML = `
     <div class="mi"><div class="k">Abonnés</div><div class="v tnum">${c.followers?fmt(c.followers):"—"}</div></div>
-    <div class="mi"><div class="k">Engagement</div><div class="v tnum">${s.hasEng?pct(s.er):"à enrichir"}</div></div>
+    <div class="mi"><div class="k">Engagement</div><div class="v tnum">${s.hasEng?(c.estimated?"≈ ":"")+pct(s.er):"à enrichir"}</div></div>
     <div class="mi"><div class="k">Taille</div><div class="v">${s.tier.label}</div></div>
     <div class="mi"><div class="k">Source</div><div class="v" style="font-size:13px">${c.source||"—"}</div></div>
     <div class="mi"><div class="k">Contact</div><div class="v" style="font-size:13px">${c.email||"—"}</div></div>
     <div class="mi"><div class="k">Marché</div><div class="v" style="font-size:13px">${MARKET[c.country]||c.country||"—"}</div></div>
     <div class="mi" style="grid-column:1/-1"><div class="k">Thèmes</div><div class="v" style="font-size:13px;font-weight:600">${(c.tags||[]).join(" · ")||"—"}</div></div>
   `;
+  renderEnrich(c);
   document.querySelectorAll(".msg-tab").forEach((t,idx)=>t.classList.toggle("active",idx===0));
   renderMsg();
   document.getElementById("detailOverlay").classList.add("open");
+}
+
+/* ---------------- Enrichissement de l'engagement ---------------- */
+function parseNums(str){ return (String(str).match(/\d[\d\s]*/g)||[]).map(x=>parseInt(x.replace(/\D/g,""),10)).filter(n=>!isNaN(n)); }
+function mean(arr){ return arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : 0; }
+function reopen(key){ const it=DATA.find(x=>ckey(x)===key); if(it) openDetail({c:it, s:scoreCreator(it,brief())}); }
+
+function openNextToEnrich(){
+  const {rows}=compute();
+  const pending=rows.filter(r=>!r.s.hasEng);
+  if(!pending.length){ toast("Tout est enrichi ✓"); closeOverlay("detailOverlay"); return; }
+  openDetail(pending[0]);
+}
+
+function renderEnrich(c){
+  const el = document.getElementById("enrichPanel");
+  const key = ckey(c);
+  const hasEng = (c.avgLikes + c.avgComments) > 0;
+  const enriched = !!ENRICH[key];
+  el.innerHTML = `
+    <h4>Enrichir l'engagement ${hasEng ? '<span class="done-badge">✓ '+(c.estimated?'estimé':'renseigné')+'</span>' : ''}</h4>
+    <div class="sub">Ouvre le profil <b>${c.handle}</b>, relève les likes et commentaires de ses derniers posts et colle-les ici (séparés par des virgules). La moyenne et le taux d'engagement sont calculés automatiquement.</div>
+    <div class="en-grid f3">
+      <div><label>Abonnés</label><input type="text" id="enFollowers" inputmode="numeric" value="${c.followers||''}" placeholder="ex. 45000"></div>
+      <div><label>Likes récents</label><input type="text" id="enLikes" inputmode="numeric" placeholder="2500, 3100, 1900…" value="${hasEng&&!c.estimated?c.avgLikes:''}"></div>
+      <div><label>Commentaires récents</label><input type="text" id="enComments" inputmode="numeric" placeholder="180, 210, 90…" value="${hasEng&&!c.estimated?c.avgComments:''}"></div>
+    </div>
+    <div class="en-preview">Engagement calculé : <b id="enPreview">—</b> <span class="hint" id="enTier"></span></div>
+    <div class="en-actions">
+      <button class="btn primary" id="enSave">Enregistrer</button>
+      <button class="btn" id="enNext">Enregistrer et suivant →</button>
+      <button class="btn ghost" id="enEstimate" title="Chiffrage provisoire basé sur le benchmark de sa taille — clairement marqué ≈">Estimer (benchmark)</button>
+      ${enriched ? '<button class="btn ghost" id="enClear">Effacer</button>' : ''}
+    </div>`;
+  const fEl=document.getElementById("enFollowers"), lEl=document.getElementById("enLikes"), cEl=document.getElementById("enComments");
+  function calc(){
+    const followers=parseInt((fEl.value||"").replace(/\D/g,""))||0;
+    const likes=mean(parseNums(lEl.value)), comments=mean(parseNums(cEl.value));
+    const er=(followers>0 && (likes+comments)>0) ? (likes+comments)/followers : null;
+    document.getElementById("enPreview").textContent = er===null ? "—" : (er*100).toFixed(2).replace(".",",")+" %";
+    document.getElementById("enTier").textContent = (er!==null) ? `— réf. ${tierOf(followers).label} ≈ ${(tierOf(followers).bench*100).toFixed(1).replace(".",",")} %` : "";
+    return {followers, likes, comments};
+  }
+  [fEl,lEl,cEl].forEach(x=>x.addEventListener("input",calc)); calc();
+
+  function persist(estimated){
+    const v=calc();
+    ENRICH[key]={followers:v.followers||c.followers||0, avgLikes:v.likes, avgComments:v.comments, estimated:!!estimated};
+    saveEnrich();
+    const item=DATA.find(x=>ckey(x)===key);
+    if(item){ item.followers=ENRICH[key].followers; item.avgLikes=v.likes; item.avgComments=v.comments; item.estimated=!!estimated; }
+    render();
+  }
+  document.getElementById("enSave").addEventListener("click",()=>{ persist(false); toast("Engagement enregistré ✓"); reopen(key); });
+  document.getElementById("enNext").addEventListener("click",()=>{ persist(false); toast("Enregistré ✓"); openNextToEnrich(); });
+  document.getElementById("enEstimate").addEventListener("click",()=>{
+    const followers=parseInt((fEl.value||"").replace(/\D/g,""))||c.followers||0;
+    if(!followers){ toast("Renseigne d'abord le nombre d'abonnés"); return; }
+    const total=Math.round(followers*tierOf(followers).bench);
+    lEl.value=Math.round(total*0.92); cEl.value=Math.max(1,Math.round(total*0.08)); calc();
+    persist(true); toast("Estimation appliquée (≈) ✓"); reopen(key);
+  });
+  const clearBtn=document.getElementById("enClear");
+  if(clearBtn) clearBtn.addEventListener("click",()=>{
+    delete ENRICH[key]; saveEnrich();
+    const item=DATA.find(x=>ckey(x)===key);
+    if(item && item._base){ item.followers=item._base.followers; item.avgLikes=item._base.avgLikes; item.avgComments=item._base.avgComments; item.estimated=false; }
+    render(); toast("Enrichissement effacé"); reopen(key);
+  });
 }
 
 function firstName(n){ return n.split(" ")[0]; }
@@ -823,7 +929,7 @@ document.getElementById("doImport").addEventListener("click",()=>{
       };
     }).filter(c=>c.handle && c.name);
     if(!parsed.length) throw new Error("Aucune ligne valide.");
-    DATA = parsed;
+    DATA = applyEnrich(parsed);
     closeOverlay("importOverlay");
     document.getElementById("csvInput").value="";
     hint.textContent="";
@@ -878,7 +984,7 @@ document.getElementById("voieC").addEventListener("click",()=>{
 // Voie D : charger le vivier compilé
 document.getElementById("voieD").addEventListener("click",()=>{
   if(!DACH_VIVIER.length){ toast("Vivier en préparation…"); return; }
-  DATA = DACH_VIVIER.map(c=>({...c, source:c.source||"Recherche web"}));
+  DATA = applyEnrich(DACH_VIVIER.map(c=>({...c, source:c.source||"Recherche web"})));
   closeOverlay("sourceOverlay");
   document.getElementById("fSource").value = "all";
   render();

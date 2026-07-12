@@ -3,11 +3,15 @@
 const { DatabaseSync } = require("node:sqlite");
 const crypto = require("crypto");
 const path = require("path");
+const fs = require("fs");
 require("../engine.js");
 require("../data.js");
 const { Data } = globalThis;
 
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, "..", "data", "amesoeur.db");
+// Crée le dossier de la base au besoin (première exécution, clone frais) —
+// sinon SQLite échoue avec « unable to open database file ».
+fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 const db = new DatabaseSync(DB_PATH);
 db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;");
 

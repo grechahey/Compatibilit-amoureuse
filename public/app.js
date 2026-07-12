@@ -128,6 +128,7 @@
     $("profile-form").addEventListener("submit", onSave);
     $("nav-discover").addEventListener("click", () => showView("discover"));
     $("nav-matches").addEventListener("click", () => showView("matches"));
+    $("nav-insights").addEventListener("click", () => showView("insights"));
     $("nav-profile").addEventListener("click", () => showView("profile"));
     $("nav-premium").addEventListener("click", () => openPremiumModal());
     $("quiz-close").addEventListener("click", closeOverlay);
@@ -218,11 +219,13 @@
   /* ============================= Vues ============================= */
   function showView(v) {
     if (v !== "matches") { stopChatPoll(); currentChat = null; }
-    ["auth", "profile", "discover", "matches"].forEach((k) => { const el = $("view-" + k); if (el) el.hidden = k !== v; });
+    ["auth", "profile", "discover", "insights", "matches"].forEach((k) => { const el = $("view-" + k); if (el) el.hidden = k !== v; });
     $("nav-discover").classList.toggle("active", v === "discover");
     $("nav-matches").classList.toggle("active", v === "matches");
+    $("nav-insights").classList.toggle("active", v === "insights");
     $("nav-profile").classList.toggle("active", v === "profile");
     if (v === "discover") buildDeck();
+    if (v === "insights") loadInsights();
     if (v === "matches") { $("chat").hidden = true; renderMatchesList(); }
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -290,6 +293,93 @@
       <p class="locked">Personnalité, signes et affinités se dévoilent au fil de vos échanges.</p>
       <button type="button" class="report-link" data-report="${c.id}" data-name="${esc(c.name)}">Signaler ce profil</button>
     </article>`;
+  }
+
+  /* ====================== Vos résultats (Moi) ===================== */
+  let insightsData = null;
+  async function loadInsights() {
+    const hub = $("insights-hub"), detail = $("insights-detail");
+    detail.hidden = true; hub.hidden = false; hub.innerHTML = `<p class="chat-empty">Chargement…</p>`;
+    try { insightsData = await api("/me/insights"); }
+    catch (e) { if (e.status === 400) { showView("profile"); return; } hub.innerHTML = `<p class="chat-empty">${esc(e.message)}</p>`; return; }
+    buildInsightsHub();
+  }
+  const topKinks = (bdsm, n) => Object.entries(bdsm).filter(([, v]) => v > 0.05).sort((a, b) => b[1] - a[1]).slice(0, n);
+  function insightTile(theme, icon, label, headline) {
+    return `<button type="button" class="insight-tile" data-theme="${theme}">
+      <span class="it-ic">${icon}</span>
+      <span class="it-txt"><b>${esc(label)}</b><span>${esc(headline)}</span></span>
+      <span class="it-arrow" aria-hidden="true">›</span></button>`;
+  }
+  function buildInsightsHub() {
+    const d = insightsData, hub = $("insights-hub");
+    const kinkHead = d.bdsm ? (topKinks(d.bdsm, 2).map(([k]) => BDSM_LABELS[k] || k).join(" · ") || "Sans dominante") : "Non renseigné";
+    hub.innerHTML = [
+      insightTile("astro", "☀️", "Astrologie", `${d.sun.emoji} ${d.sun.name}`),
+      insightTile("chinese", "🐉", "Astro chinoise", `${d.chinese.emoji} ${d.chinese.name}`),
+      insightTile("numero", "🔢", "Numérologie", `Chemin de vie ${d.lifePath}`),
+      insightTile("mbti", "🧠", "Personnalité", d.mbti || "À découvrir"),
+      insightTile("kink", "🔥", "Kinks", kinkHead),
+    ].join("");
+    hub.querySelectorAll(".insight-tile").forEach((t) => t.addEventListener("click", () => showInsightDetail(t.dataset.theme)));
+  }
+  function insHead(icon, title, sub) {
+    return `<div class="ins-head"><span class="ins-ic">${icon}</span><div><h2>${esc(title)}</h2>${sub ? `<p>${esc(sub)}</p>` : ""}</div></div>`;
+  }
+  const insChips = (arr) => `<div class="chips">${arr.map((k) => `<span class="chip">${esc(k)}</span>`).join("")}</div>`;
+  const insLove = (t) => `<p class="ins-love"><b>En amour</b><br>${esc(t)}</p>`;
+  function renderInsight(theme, d) {
+    const C = window.Content;
+    if (theme === "astro") {
+      const w = C.WESTERN[d.sun.name] || {};
+      let h = insHead(d.sun.emoji, `${d.sun.name} — soleil`, `${C.ELEMENT_LABEL[d.sun.element] || d.sun.element}${w.dates ? " · " + w.dates : ""}`);
+      h += `<section class="pcard">${w.keywords ? insChips(w.keywords) : ""}<p class="ins-p">${esc(w.portrait || "")}</p>${w.amour ? insLove(w.amour) : ""}</section>`;
+      if (d.cusp) h += `<p class="hint">Né·e à la cuspide <b>${esc(d.cusp.from.name)} / ${esc(d.cusp.to.name)}</b> : vous mêlez des traits des deux signes.</p>`;
+      if (d.ascendant) {
+        const wa = C.WESTERN[d.ascendant.name] || {};
+        h += insHead(d.ascendant.emoji, `${d.ascendant.name} — ascendant`, "L'image que vous renvoyez au premier regard");
+        h += `<section class="pcard"><p class="ins-p">${esc(wa.portrait || "")}</p></section>`;
+      } else if (!d.hasBirthTime) {
+        h += `<p class="hint">Ajoutez votre <b>heure</b> et votre <b>ville</b> de naissance dans le profil pour calculer votre <b>ascendant</b>.</p>`;
+      }
+      return h;
+    }
+    if (theme === "chinese") {
+      const c = C.CHINESE[d.chinese.name] || {};
+      return insHead(d.chinese.emoji, d.chinese.name, "Votre signe astrologique chinois") +
+        `<section class="pcard">${c.keywords ? insChips(c.keywords) : ""}<p class="ins-p">${esc(c.portrait || "")}</p>${c.amour ? insLove(c.amour) : ""}</section>`;
+    }
+    if (theme === "numero") {
+      const n = C.LIFEPATH[d.lifePath] || {};
+      return insHead("🔢", `Chemin de vie ${d.lifePath}`, n.title || "") +
+        `<section class="pcard"><p class="ins-p">${esc(n.portrait || "")}</p>${n.amour ? insLove(n.amour) : ""}</section>` +
+        `<p class="hint">Le chemin de vie se calcule à partir de votre date de naissance : il éclaire votre tempérament de fond.</p>`;
+    }
+    if (theme === "mbti") {
+      if (!d.mbti) return insHead("🧠", "Personnalité", "") + `<section class="pcard"><p class="ins-p">Vous n'avez pas encore passé le test. Rendez-vous dans votre profil pour le découvrir.</p></section>`;
+      const m = C.MBTI[d.mbti] || {}, name = Data.MBTI_TYPE_NAMES[d.mbti] || "";
+      let h = insHead("🧠", d.mbti, name);
+      h += `<section class="pcard"><p class="ins-p">${esc(m.portrait || "")}</p>${m.amour ? insLove(m.amour) : ""}</section>`;
+      h += `<section class="pcard"><div class="pcard-head">Vos 4 dimensions</div><ul class="ins-letters">${d.mbti.split("").map((L) => `<li><b>${esc(L)}</b> ${esc(C.MBTI_AXIS[L] || "")}</li>`).join("")}</ul></section>`;
+      return h;
+    }
+    if (theme === "kink") {
+      if (!d.bdsm) return insHead("🔥", "Kinks", "") + `<section class="pcard"><p class="ins-p">Vous n'avez pas rempli le test kink (facultatif). Vous pouvez le faire depuis votre profil.</p></section>`;
+      const traits = topKinks(d.bdsm, 99);
+      return insHead("🔥", "Votre profil kink", `${traits.length} tendance${traits.length > 1 ? "s" : ""}`) +
+        `<section class="pcard"><ul class="ins-kinks">${traits.map(([k, v]) => {
+          const pct = Math.round(v * 100);
+          return `<li><div class="ik-row"><b>${esc(BDSM_LABELS[k] || k)}</b><span>${pct}%</span></div><div class="ik-bar"><i style="width:${pct}%"></i></div><p>${esc((C.KINK && C.KINK[k]) || "")}</p></li>`;
+        }).join("")}</ul></section>`;
+    }
+    return "";
+  }
+  function showInsightDetail(theme) {
+    const box = $("insights-detail");
+    $("insights-hub").hidden = true; box.hidden = false;
+    box.innerHTML = `<button type="button" class="btn btn-ghost small insight-back">← Tous mes résultats</button>${renderInsight(theme, insightsData)}<p class="legal-note">Contenu à but de découverte de soi et de divertissement — ni diagnostic, ni vérité absolue.</p>`;
+    box.querySelector(".insight-back").addEventListener("click", () => { box.hidden = true; $("insights-hub").hidden = false; window.scrollTo({ top: 0, behavior: "smooth" }); });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   /* ========================= Actions swipe ======================== */

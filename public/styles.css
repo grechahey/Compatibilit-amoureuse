@@ -247,6 +247,41 @@ input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border: none;
 .privacy-doc h4 { color: var(--pink); margin: 1.2rem 0 .3rem; font-size: .92rem; font-weight: 600; }
 .privacy-doc p { font-size: .9rem; color: var(--muted); line-height: 1.65; margin: 0 0 .5rem; }
 
+/* ------------------------- Vos résultats ---------------------------- */
+.insights-hub { display: flex; flex-direction: column; gap: .6rem; }
+.insight-tile { display: flex; align-items: center; gap: 1rem; width: 100%; text-align: left; cursor: pointer; font: inherit;
+  background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 1rem 1.1rem; transition: border-color .15s, transform .12s; }
+.insight-tile:hover { transform: translateY(-1px); border-color: var(--muted); }
+.it-ic { font-size: 1.5rem; flex: 0 0 auto; width: 2.2rem; text-align: center; }
+.it-txt { display: flex; flex-direction: column; gap: .15rem; min-width: 0; flex: 1; }
+.it-txt b { color: var(--text); font-weight: 600; font-size: 1rem; }
+.it-txt span { color: var(--muted); font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.it-arrow { color: var(--faint); font-size: 1.4rem; flex: 0 0 auto; }
+
+.insights-detail .insight-back { margin: 0 0 1.1rem; }
+.ins-head { display: flex; align-items: center; gap: .9rem; margin: 1.4rem 0 .8rem; }
+.ins-head:first-of-type { margin-top: 0; }
+.ins-ic { font-size: 2.1rem; flex: 0 0 auto; }
+.ins-head h2 { margin: 0; font-weight: 700; font-size: 1.35rem; letter-spacing: -0.02em; color: var(--text); }
+.ins-head p { margin: .15rem 0 0; font-size: .84rem; color: var(--muted); }
+.ins-p { font-size: 1.02rem; line-height: 1.6; color: var(--text); margin: 0; font-weight: 400; }
+.ins-p + .ins-love, .chips + .ins-p { margin-top: .9rem; }
+.ins-love { font-size: .96rem; line-height: 1.55; color: var(--muted); margin: .9rem 0 0; padding-top: .9rem; border-top: 1px solid var(--line); }
+.ins-love b { color: var(--pink); font-weight: 600; }
+.ins-letters { list-style: none; padding: 0; margin: 0; }
+.ins-letters li { padding: .6rem 0; border-top: 1px solid var(--line); font-size: .92rem; color: var(--muted); line-height: 1.5; }
+.ins-letters li:first-child { border-top: none; padding-top: 0; }
+.ins-letters b { display: inline-block; width: 1.6rem; color: var(--pink); font-weight: 700; font-size: 1.05rem; }
+.ins-kinks { list-style: none; padding: 0; margin: 0; }
+.ins-kinks li { padding: .85rem 0; border-top: 1px solid var(--line); }
+.ins-kinks li:first-child { border-top: none; padding-top: 0; }
+.ik-row { display: flex; justify-content: space-between; align-items: baseline; }
+.ik-row b { color: var(--text); font-weight: 600; font-size: .98rem; }
+.ik-row span { color: var(--pink); font-weight: 700; font-size: .88rem; }
+.ik-bar { height: 3px; border-radius: 3px; background: var(--card-2); margin: .4rem 0 .5rem; overflow: hidden; }
+.ik-bar i { display: block; height: 100%; background: var(--grad); border-radius: 3px; }
+.ins-kinks p { margin: 0; font-size: .86rem; color: var(--muted); line-height: 1.5; }
+
 /* Messagerie */
 .matches-list { display: flex; flex-direction: column; gap: .5rem; }
 .match-row { display: flex; align-items: center; gap: 1rem; width: 100%; text-align: left; cursor: pointer; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: .8rem 1rem; transition: border-color .15s, transform .12s; font: inherit; }

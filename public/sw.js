@@ -1,8 +1,8 @@
 "use strict";
 /* Service worker — coquille hors-ligne + installabilité (PWA).
  * Statique : cache-first. API : réseau uniquement (jamais mis en cache). */
-const CACHE = "amesoeur-v1";
-const SHELL = ["/", "/index.html", "/styles.css", "/engine.js", "/avatar.js", "/data.js", "/app.js", "/manifest.webmanifest"];
+const CACHE = "amesoeur-v2";
+const SHELL = ["/", "/index.html", "/styles.css", "/data.js", "/content.js", "/app.js", "/manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

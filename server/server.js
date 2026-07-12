@@ -188,6 +188,18 @@ app.put("/api/profile", auth, async (req, res) => {
   res.json({ profile: D.profileOut(D.q.getProfile.get(req.user.id)) });
 });
 
+// Résultats personnels : thème astral, chinois, numérologie, MBTI, kink.
+app.get("/api/me/insights", auth, (req, res) => {
+  const me = D.profileOut(D.q.getProfile.get(req.user.id));
+  if (!me) return res.status(400).json({ error: "Complétez votre profil d'abord." });
+  const ap = Engine.astroProfile(toEngine(me));
+  res.json({
+    sun: ap.sun, cusp: ap.cusp, chinese: ap.chinese, ascendant: ap.ascendant,
+    lifePath: ap.lifePath, hasBirthTime: !!(me.time && me.city),
+    mbti: me.mbti || null, bdsm: me.bdsm || null,
+  });
+});
+
 /* ------------------------------ RGPD ------------------------------- */
 app.get("/api/gdpr/export", auth, (req, res) => {
   res.setHeader("Content-Disposition", 'attachment; filename="mes-donnees-amesoeur.json"');

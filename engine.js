@@ -303,7 +303,17 @@
   /* --------------------- Compatibilité combinée ---------------------- *
    * Matching précis sur 5 items pondérés (numérologie plafonnée à 10 %).
    * Quand le kink n'est pas renseigné, son poids est redistribué. */
-  const WEIGHTS = { mbti: 0.30, astro: 0.25, chinese: 0.15, numero: 0.10, bdsm: 0.20 };
+  let WEIGHTS = { mbti: 0.30, astro: 0.25, chinese: 0.15, numero: 0.10, bdsm: 0.20 };
+  const WEIGHT_KEYS = ["mbti", "astro", "chinese", "numero", "bdsm"];
+  function getWeights() { return { ...WEIGHTS }; }
+  function setWeights(w) {
+    if (!w) return getWeights();
+    for (const k of WEIGHT_KEYS) {
+      const v = Number(w[k]);
+      if (Number.isFinite(v)) WEIGHTS[k] = Math.max(0, Math.min(1, v));
+    }
+    return getWeights();
+  }
   function compatibility(A, B) {
     const a = astroProfile(A), b = astroProfile(B);
     const factors = [];
@@ -334,5 +344,6 @@
   global.Engine = {
     ZODIAC, CHINESE, sunSign, ascendant, chineseSign, lifePath, cuspInfo,
     astroProfile, compatibility, verdict, bdsmScore, mbtiScore,
+    getWeights, setWeights, WEIGHT_KEYS,
   };
 })(typeof window !== "undefined" ? window : globalThis);

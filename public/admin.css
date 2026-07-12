@@ -1,0 +1,72 @@
+/* Back office — s'appuie sur les tokens de styles.css (thème sombre). */
+body { display: block; }
+.admin-wrap { max-width: 1040px; margin: 0 auto; padding: 0 1.1rem 5rem; }
+.admin-top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem .2rem; background: rgba(8, 8, 10, .85); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); margin-bottom: 1.4rem; }
+.admin-top .brand span { color: var(--pink); }
+.admin-applink { color: var(--muted); text-decoration: none; font-size: .86rem; }
+.admin-applink:hover { color: var(--text); }
+
+.admin-gate { text-align: center; padding: 4rem 1rem; }
+.admin-gate h2 { font-weight: 700; color: var(--text); }
+.admin-gate p { color: var(--muted); max-width: 40ch; margin: .6rem auto 1.4rem; line-height: 1.6; }
+.admin-gate .btn { display: inline-block; width: auto; padding: .8rem 1.6rem; text-decoration: none; }
+
+.admin-h { font-weight: 700; color: var(--text); font-size: 1.15rem; letter-spacing: -0.02em; margin: 2rem 0 .9rem; }
+.admin-h small { font-weight: 400; font-size: .8rem; color: var(--faint); }
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .7rem; }
+.kpi { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 1rem 1.1rem; }
+.kpi b { display: block; font-size: 1.9rem; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1.1; }
+.kpi span { font-size: .8rem; color: var(--muted); }
+.kpi.hot b { color: var(--pink); }
+
+.admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: .9rem; }
+.acard { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem 1.3rem; }
+.acard h3 { margin: 0 0 1rem; font-size: .95rem; font-weight: 600; color: var(--text); }
+
+.bar-row { display: grid; grid-template-columns: 8.5rem 1fr auto; align-items: center; gap: .6rem; margin: .5rem 0; font-size: .85rem; }
+.bar-row .bl { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-track { height: 8px; border-radius: 6px; background: var(--card-2); overflow: hidden; }
+.bar-fill { height: 100%; background: var(--grad); border-radius: 6px; }
+.bar-row .bv { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.signups { display: flex; align-items: flex-end; gap: 3px; height: 120px; }
+.signups .sb { flex: 1; background: var(--grad); border-radius: 3px 3px 0 0; min-height: 2px; opacity: .9; }
+.signups .sb.empty { background: var(--card-2); }
+
+.table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: .84rem; min-width: 760px; }
+.admin-table th { text-align: left; padding: .7rem .8rem; color: var(--faint); font-weight: 600; border-bottom: 1px solid var(--line); white-space: nowrap; position: sticky; top: 0; background: var(--card); }
+.admin-table td { padding: .6rem .8rem; border-bottom: 1px solid var(--line); color: var(--text); white-space: nowrap; }
+.admin-table tr:last-child td { border-bottom: none; }
+.admin-table .muted { color: var(--muted); }
+.pill-yes { color: var(--hi-text); background: var(--hi-bg); border-radius: 99px; padding: .1rem .5rem; font-size: .72rem; font-weight: 600; }
+.pill-no { color: var(--faint); }
+
+.audit-pick { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .8rem; margin-bottom: 1rem; }
+.audit-pick .field { margin: 0; min-width: 190px; flex: 1; }
+.audit-pick .btn { margin-top: 0; flex: 0 0 auto; }
+.audit-score { display: flex; align-items: baseline; gap: .7rem; margin: .4rem 0 1rem; }
+.audit-score b { font-size: 2rem; font-weight: 700; color: var(--pink); letter-spacing: -0.03em; }
+.audit-score span { color: var(--muted); }
+.af { padding: .8rem 0; border-top: 1px solid var(--line); }
+.af:first-child { border-top: none; }
+.af-head { display: flex; justify-content: space-between; align-items: baseline; }
+.af-head b { color: var(--text); font-weight: 600; }
+.af-head em { font-style: normal; color: var(--faint); font-size: .78rem; }
+.af-head .afv { color: var(--pink); font-weight: 700; }
+.af-bar { height: 4px; border-radius: 4px; background: var(--card-2); margin: .45rem 0; overflow: hidden; }
+.af-bar i { display: block; height: 100%; background: var(--grad); }
+.af-parts { display: flex; flex-wrap: wrap; gap: .3rem .9rem; }
+.af-parts span { font-size: .76rem; color: var(--faint); }
+.af-parts b { color: var(--muted); font-weight: 600; }
+.af-top { font-size: .76rem; color: var(--muted); margin: .35rem 0 0; }
+
+.weights-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: .9rem; margin: .4rem 0 1rem; }
+.wrow label { font-size: .82rem; color: var(--muted); display: flex; justify-content: space-between; margin-bottom: .4rem; }
+.wrow label b { color: var(--pink); }
+.wrow input[type="range"] { width: 100%; }
+.weights-actions { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+.weights-actions .btn { margin-top: 0; }
+.weights-msg { font-size: .84rem; color: var(--muted); }

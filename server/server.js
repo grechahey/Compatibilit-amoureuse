@@ -66,6 +66,20 @@ function setSession(res, userId) {
   res.cookie("sid", token, { httpOnly: true, sameSite: "lax", secure: PROD, maxAge: 1000 * 60 * 60 * 24 * 30 });
 }
 
+// Accès admin : réservé aux emails listés dans ADMIN_EMAILS (séparés par des
+// virgules). Vide => aucun admin (back office désactivé, sûr par défaut).
+const ADMIN_EMAILS = new Set((process.env.ADMIN_EMAILS || "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean));
+function adminAuth(req, res, next) {
+  auth(req, res, () => {
+    if (!ADMIN_EMAILS.has((req.user.email || "").toLowerCase()))
+      return res.status(403).json({ error: "Accès réservé à l'administration." });
+    next();
+  });
+}
+
+// Restaure les pondérations du matching enregistrées (persistées via l'admin).
+try { const w = D.getSetting("matchWeights"); if (w) Engine.setWeights(w); } catch (_) {}
+
 // Envoi de l'email de vérification. Si un SMTP est configuré (nodemailer),
 // on l'utilise ; sinon (dev) on renvoie le lien pour pouvoir tester.
 async function sendVerificationEmail(email, token) {
@@ -198,6 +212,72 @@ app.get("/api/me/insights", auth, (req, res) => {
     lifePath: ap.lifePath, hasBirthTime: !!(me.time && me.city),
     mbti: me.mbti || null, bdsm: me.bdsm || null,
   });
+});
+
+/* ------------------------- Back office admin ----------------------- */
+app.get("/api/admin/stats", adminAuth, (req, res) => {
+  const one = (sql, ...a) => D.db.prepare(sql).get(...a).c;
+  const all = (sql, ...a) => D.db.prepare(sql).all(...a);
+  const P = "FROM profiles p JOIN users u ON u.id=p.user_id WHERE u.is_bot=0";
+  const births = all(`SELECT p.by y, p.bm m, p.bd d ${P} AND p.by IS NOT NULL`);
+  const ageBuckets = { "18-24": 0, "25-34": 0, "35-44": 0, "45-54": 0, "55+": 0 };
+  for (const b of births) { const a = ageOf({ year: b.y, month: b.m, day: b.d }); ageBuckets[a < 25 ? "18-24" : a < 35 ? "25-34" : a < 45 ? "35-44" : a < 55 ? "45-54" : "55+"]++; }
+  res.json({
+    users: one("SELECT COUNT(*) c FROM users WHERE is_bot=0"),
+    verified: one("SELECT COUNT(*) c FROM users WHERE is_bot=0 AND email_verified=1"),
+    withProfile: one(`SELECT COUNT(*) c ${P}`),
+    premium: one("SELECT COUNT(*) c FROM credits c JOIN users u ON u.id=c.user_id WHERE u.is_bot=0 AND c.premium=1"),
+    matches: one("SELECT COUNT(*) c FROM matches"),
+    messages: one("SELECT COUNT(*) c FROM messages"),
+    kinkOptin: one(`SELECT COUNT(*) c ${P} AND p.bdsm IS NOT NULL`),
+    byGender: all(`SELECT gender k, COUNT(*) c ${P} GROUP BY gender`),
+    bySeeking: all(`SELECT seeking k, COUNT(*) c ${P} GROUP BY seeking`),
+    byCity: all(`SELECT city k, COUNT(*) c ${P} AND city IS NOT NULL GROUP BY city ORDER BY c DESC LIMIT 12`),
+    byMbti: all(`SELECT mbti k, COUNT(*) c ${P} AND mbti IS NOT NULL GROUP BY mbti ORDER BY c DESC`),
+    ageBuckets,
+    signups: all("SELECT date(created_at/1000,'unixepoch') k, COUNT(*) c FROM users WHERE is_bot=0 AND created_at >= ? GROUP BY k ORDER BY k", D.now() - 30 * 864e5),
+  });
+});
+app.get("/api/admin/users", adminAuth, (req, res) => {
+  const limit = Math.min(500, +req.query.limit || 100), offset = Math.max(0, +req.query.offset || 0);
+  const rows = D.db.prepare(`SELECT u.id, u.email, u.created_at, u.email_verified,
+    p.name, p.gender, p.seeking, p.city, p.mbti, p.by, p.bm, p.bd, (p.bdsm IS NOT NULL) hasKink,
+    (SELECT premium FROM credits c WHERE c.user_id=u.id) premium
+    FROM users u LEFT JOIN profiles p ON p.user_id=u.id
+    WHERE u.is_bot=0 ORDER BY u.created_at DESC LIMIT ? OFFSET ?`).all(limit, offset);
+  res.json({
+    total: D.db.prepare("SELECT COUNT(*) c FROM users WHERE is_bot=0").get().c, limit, offset,
+    users: rows.map((r) => ({
+      id: r.id, email: r.email, createdAt: r.created_at, verified: !!r.email_verified,
+      name: r.name || null, gender: r.gender || null, seeking: r.seeking || null, city: r.city || null,
+      mbti: r.mbti || null, age: r.by ? ageOf({ year: r.by, month: r.bm, day: r.bd }) : null,
+      hasKink: !!r.hasKink, premium: !!r.premium,
+    })),
+  });
+});
+app.get("/api/admin/members", adminAuth, (req, res) => {
+  const rows = D.db.prepare("SELECT u.id, p.name, p.by y, p.bm m, p.bd d FROM users u JOIN profiles p ON p.user_id=u.id ORDER BY p.name").all();
+  res.json({ members: rows.map((r) => ({ id: r.id, name: r.name, age: r.y ? ageOf({ year: r.y, month: r.m, day: r.d }) : null })) });
+});
+app.get("/api/admin/match", adminAuth, (req, res) => {
+  const a = D.profileOut(D.q.getProfile.get(+req.query.a)), b = D.profileOut(D.q.getProfile.get(+req.query.b));
+  if (!a || !b) return res.status(404).json({ error: "Profil introuvable." });
+  const r = Engine.compatibility(toEngine(a), toEngine(b));
+  res.json({
+    a: { id: a.id, name: a.name }, b: { id: b.id, name: b.name },
+    score: r.score, verdict: Engine.verdict(r.score),
+    factors: r.factors.map((f) => ({
+      key: f.key, label: f.label, emoji: f.emoji, weight: Math.round(f.weight * 100), value: Math.round(f.value * 100),
+      parts: (f.parts || []).map((p) => ({ label: p.label, value: Math.round(p.value * 100) })),
+      top: (f.top || []).map((t) => ({ pair: t.pair, value: Math.round(t.value * 100) })),
+    })),
+  });
+});
+app.get("/api/admin/weights", adminAuth, (req, res) => res.json({ weights: Engine.getWeights() }));
+app.post("/api/admin/weights", adminAuth, (req, res) => {
+  const w = Engine.setWeights(req.body || {});
+  D.setSetting("matchWeights", w);
+  res.json({ weights: w });
 });
 
 /* ------------------------------ RGPD ------------------------------- */
@@ -418,6 +498,8 @@ app.get("/api/config", (req, res) => res.json({ org: ORG }));
 /* --------------------- Statique + fichiers partagés ---------------- */
 ["engine.js", "avatar.js", "data.js"].forEach((f) =>
   app.get("/" + f, (req, res) => res.sendFile(path.join(ROOT, f))));
+// Back office admin (la page est publique ; les données sont protégées par adminAuth).
+app.get("/admin", (req, res) => res.sendFile(path.join(PUBLIC, "admin.html")));
 app.use(express.static(PUBLIC));
 app.get("*", (req, res) => res.sendFile(path.join(PUBLIC, "index.html")));
 

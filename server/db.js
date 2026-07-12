@@ -53,6 +53,9 @@ CREATE TABLE IF NOT EXISTS credits (
   user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   super_likes INTEGER DEFAULT 1, messages INTEGER DEFAULT 0, premium INTEGER DEFAULT 0
 );
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY, value TEXT
+);
 `);
 
 // Migrations défensives (bases existantes créées avant l'ajout du RGPD).
@@ -205,6 +208,16 @@ function profileOut(row) {
     isBot: !!row.is_bot,
   };
 }
+// Réglages persistants (ex. pondérations du matching), clé → JSON.
+function getSetting(key) {
+  const r = db.prepare("SELECT value FROM settings WHERE key=?").get(key);
+  if (!r) return null;
+  try { return JSON.parse(r.value); } catch (_) { return null; }
+}
+function setSetting(key, value) {
+  db.prepare("INSERT INTO settings (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value")
+    .run(key, JSON.stringify(value));
+}
 function getCredits(userId) {
   q.insCredits.run(userId);
   const c = q.getCredits.get(userId);
@@ -254,4 +267,5 @@ module.exports = {
   getCredits, setCredits, tryMatch, botsSuperLike,
   stampSensitiveConsent, deleteAccount, exportData,
   verifyEmailToken, regenerateVerifyToken, createReport,
+  getSetting, setSetting,
 };

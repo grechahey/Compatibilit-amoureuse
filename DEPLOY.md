@@ -31,6 +31,16 @@ photos stockées en base).
 3. `npm install nodemailer` (utilisé seulement si `SMTP_URL` est défini).
 4. Redémarrez : les liens de vérification partent désormais par email.
 
+## 2 bis. Back office admin
+
+1. Dans `.env`, listez les emails autorisés : `ADMIN_EMAILS=vous@votredomaine.fr`
+   (plusieurs séparés par des virgules). Vide = back office désactivé.
+2. Créez-vous un compte normal dans l'app avec cet email, puis ouvrez **`/admin`**.
+3. Vous y trouverez : statistiques marketing (âge, sexe, villes, MBTI,
+   inscriptions), liste des membres, **audit détaillé d'un match** entre deux
+   membres, et le réglage des **pondérations du matching** (persistées, sans
+   redéploiement). Les données sont protégées par `ADMIN_EMAILS`.
+
 ## 3. Photos — S3 (ou compatible)
 
 > Fonctionne avec AWS S3, **Cloudflare R2**, Scaleway, Backblaze B2, MinIO.

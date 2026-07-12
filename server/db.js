@@ -56,6 +56,10 @@ CREATE TABLE IF NOT EXISTS credits (
 CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY, value TEXT
 );
+CREATE TABLE IF NOT EXISTS admin_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER, email TEXT, action TEXT, ip TEXT, created_at INTEGER
+);
 `);
 
 // Migrations défensives (bases existantes créées avant l'ajout du RGPD).
@@ -218,6 +222,14 @@ function setSetting(key, value) {
   db.prepare("INSERT INTO settings (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value")
     .run(key, JSON.stringify(value));
 }
+// Journal des accès admin (RGPD / sécurité) : qui, quoi, quand, IP.
+function logAdmin(userId, email, action, ip) {
+  db.prepare("INSERT INTO admin_log (user_id,email,action,ip,created_at) VALUES (?,?,?,?,?)")
+    .run(userId, email || null, String(action || "").slice(0, 300), String(ip || "").slice(0, 60), now());
+}
+function getAdminLog(limit = 100) {
+  return db.prepare("SELECT email, action, ip, created_at FROM admin_log ORDER BY id DESC LIMIT ?").all(Math.min(500, limit));
+}
 function getCredits(userId) {
   q.insCredits.run(userId);
   const c = q.getCredits.get(userId);
@@ -267,5 +279,5 @@ module.exports = {
   getCredits, setCredits, tryMatch, botsSuperLike,
   stampSensitiveConsent, deleteAccount, exportData,
   verifyEmailToken, regenerateVerifyToken, createReport,
-  getSetting, setSetting,
+  getSetting, setSetting, logAdmin, getAdminLog,
 };

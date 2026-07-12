@@ -24,6 +24,28 @@
     return data;
   }
   const fmtDate = (ms) => { try { return new Date(ms).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" }); } catch (_) { return "—"; } };
+  const fmtDateTime = (ms) => { try { return new Date(ms).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" }); } catch (_) { return "—"; } };
+
+  async function exportCsv() {
+    const btn = $("export-csv"); const label = btn.textContent; btn.textContent = "Export…";
+    try {
+      const res = await fetch("/api/admin/export.csv", { credentials: "same-origin" });
+      if (!res.ok) throw new Error("Export refusé (" + res.status + ")");
+      const blob = await res.blob(), url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = "membres-amesoeur.csv"; a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) { alert(e.message); }
+    finally { btn.textContent = label; renderLog(); }
+  }
+  async function renderLog() {
+    let r; try { r = await api("/admin/log"); } catch (_) { return; }
+    $("log-body").innerHTML = r.log.length ? r.log.map((e) => `<tr>
+      <td class="muted">${fmtDateTime(e.at)}</td>
+      <td>${esc(e.email || "—")}</td>
+      <td>${esc(e.action)}</td>
+      <td class="muted">${esc(e.ip || "—")}</td></tr>`).join("")
+      : `<tr><td colspan="4" class="muted">Aucun accès enregistré.</td></tr>`;
+  }
 
   function barChart(el, items, opts = {}) {
     const total = opts.total != null ? opts.total : items.reduce((s, i) => s + i.value, 0);
@@ -132,8 +154,10 @@
     }
     $("admin-main").hidden = false;
     renderKpis(stats); renderCharts(stats);
+    $("export-csv").addEventListener("click", exportCsv);
     try { await renderMembers(); } catch (_) {}
     try { await initAudit(); } catch (_) {}
     try { await initWeights(); } catch (_) {}
+    try { await renderLog(); } catch (_) {}
   });
 })();

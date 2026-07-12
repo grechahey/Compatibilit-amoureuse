@@ -215,7 +215,9 @@ app.get("/api/me/insights", auth, (req, res) => {
 });
 
 /* ------------------------- Back office admin ----------------------- */
+const csvCell = (v) => { const s = v == null ? "" : String(v); return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
 app.get("/api/admin/stats", adminAuth, (req, res) => {
+  D.logAdmin(req.user.id, req.user.email, "Tableau de bord consulté", req.ip);
   const one = (sql, ...a) => D.db.prepare(sql).get(...a).c;
   const all = (sql, ...a) => D.db.prepare(sql).all(...a);
   const P = "FROM profiles p JOIN users u ON u.id=p.user_id WHERE u.is_bot=0";
@@ -259,9 +261,33 @@ app.get("/api/admin/members", adminAuth, (req, res) => {
   const rows = D.db.prepare("SELECT u.id, p.name, p.by y, p.bm m, p.bd d FROM users u JOIN profiles p ON p.user_id=u.id ORDER BY p.name").all();
   res.json({ members: rows.map((r) => ({ id: r.id, name: r.name, age: r.y ? ageOf({ year: r.y, month: r.m, day: r.d }) : null })) });
 });
+// Export CSV des membres (marketing / CRM). Extraction PII → journalisée.
+app.get("/api/admin/export.csv", adminAuth, (req, res) => {
+  const rows = D.db.prepare(`SELECT u.id, u.email, u.created_at, u.email_verified,
+    p.name, p.gender, p.seeking, p.city, p.mbti, p.by, p.bm, p.bd, (p.bdsm IS NOT NULL) hasKink,
+    (SELECT premium FROM credits c WHERE c.user_id=u.id) premium
+    FROM users u LEFT JOIN profiles p ON p.user_id=u.id WHERE u.is_bot=0 ORDER BY u.created_at DESC`).all();
+  const G = { F: "Femme", H: "Homme", NB: "Non-binaire" }, S = { T: "Tout le monde", F: "Des femmes", H: "Des hommes" };
+  const head = ["id", "email", "prenom", "age", "genre", "recherche", "ville", "mbti", "kink", "premium", "verifie", "inscription"];
+  const lines = [head.join(",")];
+  for (const r of rows) {
+    const age = r.by ? ageOf({ year: r.by, month: r.bm, day: r.bd }) : "";
+    lines.push([r.id, r.email, r.name || "", age, G[r.gender] || "", S[r.seeking] || "", r.city || "",
+      r.mbti || "", r.hasKink ? "oui" : "non", r.premium ? "oui" : "non", r.email_verified ? "oui" : "non",
+      new Date(r.created_at).toISOString().slice(0, 10)].map(csvCell).join(","));
+  }
+  D.logAdmin(req.user.id, req.user.email, `Export CSV des membres (${rows.length})`, req.ip);
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", 'attachment; filename="membres-amesoeur.csv"');
+  res.send("﻿" + lines.join("\n")); // BOM pour Excel
+});
+app.get("/api/admin/log", adminAuth, (req, res) => {
+  res.json({ log: D.getAdminLog(150).map((r) => ({ email: r.email, action: r.action, ip: r.ip, at: r.created_at })) });
+});
 app.get("/api/admin/match", adminAuth, (req, res) => {
   const a = D.profileOut(D.q.getProfile.get(+req.query.a)), b = D.profileOut(D.q.getProfile.get(+req.query.b));
   if (!a || !b) return res.status(404).json({ error: "Profil introuvable." });
+  D.logAdmin(req.user.id, req.user.email, `Audit du match : ${a.name} × ${b.name}`, req.ip);
   const r = Engine.compatibility(toEngine(a), toEngine(b));
   res.json({
     a: { id: a.id, name: a.name }, b: { id: b.id, name: b.name },
@@ -277,6 +303,7 @@ app.get("/api/admin/weights", adminAuth, (req, res) => res.json({ weights: Engin
 app.post("/api/admin/weights", adminAuth, (req, res) => {
   const w = Engine.setWeights(req.body || {});
   D.setSetting("matchWeights", w);
+  D.logAdmin(req.user.id, req.user.email, `Pondérations modifiées : ${Engine.WEIGHT_KEYS.map((k) => k + "=" + Math.round(w[k] * 100)).join(" ")}`, req.ip);
   res.json({ weights: w });
 });
 

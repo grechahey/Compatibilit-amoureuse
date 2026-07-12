@@ -190,6 +190,50 @@ td{padding:11px 14px; vertical-align:middle}
 .chip{display:inline-block; font-size:12.5px; font-weight:600; padding:6px 11px; border-radius:20px; border:1px solid var(--line); background:var(--surface); color:var(--accent); text-decoration:none}
 .chip:hover{border-color:var(--accent)}
 .src-tag{display:inline-block; font-size:10px; font-weight:700; letter-spacing:.03em; padding:1px 7px; border-radius:20px; background:var(--surface-2); color:var(--muted); margin-top:3px; text-transform:uppercase}
+/* ---- Statuts de campagne ---- */
+.st-todo{color:#6b7280; background:rgba(120,122,132,.15)}
+.st-sent{color:#2f6fb0; background:rgba(47,111,176,.15)}
+.st-reply{color:#b07d1c; background:rgba(184,121,31,.17)}
+.st-nego{color:#7a53a8; background:rgba(122,83,168,.17)}
+.st-won{color:#237a54; background:rgba(46,125,91,.17)}
+.st-lost{color:#b23a2c; background:rgba(192,57,43,.14)}
+@media (prefers-color-scheme:dark){
+  .st-todo{color:#aab0bb} .st-sent{color:#7db4ee} .st-reply{color:#e6b45a}
+  .st-nego{color:#c3a0ec} .st-won{color:#6bd6a2} .st-lost{color:#ef8477}
+}
+:root[data-theme="dark"] .st-todo{color:#aab0bb}
+:root[data-theme="dark"] .st-sent{color:#7db4ee}
+:root[data-theme="dark"] .st-reply{color:#e6b45a}
+:root[data-theme="dark"] .st-nego{color:#c3a0ec}
+:root[data-theme="dark"] .st-won{color:#6bd6a2}
+:root[data-theme="dark"] .st-lost{color:#ef8477}
+:root[data-theme="light"] .st-todo{color:#6b7280}
+:root[data-theme="light"] .st-sent{color:#2f6fb0}
+:root[data-theme="light"] .st-reply{color:#b07d1c}
+:root[data-theme="light"] .st-nego{color:#7a53a8}
+:root[data-theme="light"] .st-won{color:#237a54}
+:root[data-theme="light"] .st-lost{color:#b23a2c}
+.st-select{appearance:none; -webkit-appearance:none; border:none; font-family:inherit; font-weight:700; font-size:11.5px; letter-spacing:.01em; padding:4px 24px 4px 11px; border-radius:20px; cursor:pointer; width:auto; max-width:150px;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='3'><path d='M6 9l6 6 6-6'/></svg>");
+  background-repeat:no-repeat; background-position:right 8px center;}
+.st-select:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+
+/* ---- Pipeline / entonnoir ---- */
+.pipeline{display:grid; grid-template-columns:repeat(6,1fr); gap:8px; margin-bottom:20px}
+.pl-seg{border:1px solid var(--line); border-radius:10px; padding:9px 11px; background:var(--surface); cursor:pointer; text-align:left; transition:border-color .15s, transform .05s}
+.pl-seg:hover{border-color:var(--accent)}
+.pl-seg:active{transform:translateY(1px)}
+.pl-seg.active{border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent)}
+.pl-seg .plk{font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; font-weight:700; display:flex; align-items:center; gap:5px}
+.pl-seg .plk::before{content:""; width:8px; height:8px; border-radius:50%; flex:none; background:currentColor}
+.pl-seg .plv{font-family:var(--serif); font-size:22px; font-weight:600; color:var(--ink); margin-top:3px; font-variant-numeric:tabular-nums}
+@media (max-width:860px){ .pipeline{grid-template-columns:repeat(3,1fr)} }
+
+.campaign{border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-bottom:22px; background:var(--ground)}
+.campaign h4{margin:0 0 10px; font-family:var(--serif); font-size:15px; font-weight:600}
+.campaign .cp-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px}
+.campaign textarea{min-height:60px}
+.cp-updated{font-size:12px; color:var(--muted)}
 .enrich{border:1px solid var(--accent-soft); background:var(--accent-soft); border-radius:12px; padding:14px 16px; margin-bottom:22px}
 :root[data-theme="dark"] .enrich,@media (prefers-color-scheme:dark){.enrich{background:var(--accent-soft); border-color:var(--line)}}
 .enrich h4{margin:0 0 3px; font-family:var(--serif); font-size:15px; font-weight:600; color:var(--ink)}
@@ -308,6 +352,7 @@ td{padding:11px 14px; vertical-align:middle}
 
   <main>
     <div class="stats" id="stats"></div>
+    <div class="pipeline" id="pipeline"></div>
 
     <div class="toolbar">
       <div class="count" id="count"></div>
@@ -315,6 +360,7 @@ td{padding:11px 14px; vertical-align:middle}
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
         <input type="text" id="search" placeholder="Rechercher un nom, un thème…">
       </div>
+      <select class="mini-select" id="fStatus"><option value="all">Tous statuts</option></select>
       <select class="mini-select" id="fSource"><option value="all">Toutes sources</option></select>
       <select class="mini-select" id="sortBy">
         <option value="score">Trier : Score</option>
@@ -335,6 +381,7 @@ td{padding:11px 14px; vertical-align:middle}
             <th>Taille</th>
             <th>Signaux</th>
             <th class="sortable" data-sort="score">Score</th>
+            <th>Suivi</th>
           </tr>
         </thead>
         <tbody id="rows"></tbody>
@@ -364,6 +411,8 @@ td{padding:11px 14px; vertical-align:middle}
       <div class="breakdown" id="dBreakdown"></div>
 
       <div class="meta-grid" id="dMeta"></div>
+
+      <div id="campaignPanel"></div>
 
       <div id="enrichPanel"></div>
 
@@ -628,6 +677,31 @@ function applyEnrich(list){
   });
 }
 
+/* ---------------- Suivi de campagne (localStorage) ---------------- */
+const CAMPAIGN_KEY = "if_campaign_v1";
+const STATUSES = [
+  {key:"a_contacter", label:"À contacter",         cls:"st-todo",  color:"#8a8f98"},
+  {key:"contacte",    label:"Contacté",            cls:"st-sent",  color:"#3f83c4"},
+  {key:"repondu",     label:"Répondu",             cls:"st-reply", color:"#c08a2e"},
+  {key:"nego",        label:"En négociation",      cls:"st-nego",  color:"#8a63bd"},
+  {key:"signe",       label:"Signé",               cls:"st-won",   color:"#2e9d6e"},
+  {key:"refuse",      label:"Refusé / Sans suite", cls:"st-lost",  color:"#cf5443"},
+];
+const ST_BY = Object.fromEntries(STATUSES.map(s=>[s.key,s]));
+function loadCampaign(){ try{ return JSON.parse(localStorage.getItem(CAMPAIGN_KEY))||{}; }catch(e){ return {}; } }
+function saveCampaign(){ try{ localStorage.setItem(CAMPAIGN_KEY, JSON.stringify(CAMPAIGN)); }catch(e){} }
+let CAMPAIGN = loadCampaign();
+function todayISO(){ try{ return new Date().toISOString().slice(0,10); }catch(e){ return ""; } }
+function frDate(iso){ if(!iso) return ""; try{ return new Date(iso+"T00:00:00").toLocaleDateString("fr-FR"); }catch(e){ return iso; } }
+function getCampaign(c){ return CAMPAIGN[ckey(c)] || {status:"a_contacter", note:"", updated:""}; }
+function getStatus(c){ const e=CAMPAIGN[ckey(c)]; return e&&e.status ? e.status : "a_contacter"; }
+function setCampaign(c, status, note){
+  const key=ckey(c), prev=CAMPAIGN[key]||{};
+  CAMPAIGN[key]={ status: status!=null?status:(prev.status||"a_contacter"),
+                  note: note!=null?note:(prev.note||""), updated: todayISO() };
+  saveCampaign();
+}
+
 /* ---------------- State ---------------- */
 let DATA = applyEnrich(DEMO.map(c=>({...c, source:"Démo"})));
 let sortKey = "score", sortDir = -1, currentDetail = null, msgVariant = 0, importSource = "Import manuel";
@@ -639,6 +713,7 @@ function brief(){
     market: val("fMarket"), platform: val("fPlatform"),
     tier: val("fTier"),
     source: val("fSource"),
+    status: val("fStatus"),
     minEng: parseFloat(val("fEng"))/100,
     minScore: parseFloat(val("fScore")),
     search: val("search").trim().toLowerCase(),
@@ -664,6 +739,7 @@ function compute(){
     if(b.market==="DACH"){ if(!MARKET[c.country]) { /* keep, will rank low */ } }
     if(b.tier!=="all" && s.tier.key!==b.tier) return false;
     if(b.source!=="all" && (c.source||"—")!==b.source) return false;
+    if(b.status!=="all" && getStatus(c)!==b.status) return false;
     if(b.minEng>0 && (s.er===null || s.er < b.minEng)) return false;
     if(s.total < b.minScore) return false;
     if(b.search){
@@ -703,7 +779,7 @@ function renderRows(rows){
   const pend = rows.filter(r=>!r.s.hasEng).length;
   document.getElementById("count").innerHTML = `<b>${rows.length}</b> créateur(s) · triés par ${({score:"score",engagement:"engagement",followers:"abonnés",name:"nom"})[sortKey]}${pend?` · <b style="color:var(--accent)">${pend}</b> à enrichir`:""}`;
   if(!rows.length){
-    tb.innerHTML = `<tr><td colspan="7"><div class="empty"><h3>Aucun créateur ne correspond</h3><p>Assouplissez les filtres, ou importez votre propre liste via « ＋ Importer une liste ».</p></div></td></tr>`;
+    tb.innerHTML = `<tr><td colspan="8"><div class="empty"><h3>Aucun créateur ne correspond</h3><p>Assouplissez les filtres, ou importez votre propre liste via « ＋ Importer ».</p></div></td></tr>`;
     return;
   }
   tb.innerHTML = rows.map(({c,s},i)=>{
@@ -719,10 +795,19 @@ function renderRows(rows){
       <td><span class="badge">${s.tier.label}</span></td>
       <td><div class="flags">${s.flags.map(f=>`<span class="flag" title="${f.t}">${f.icon}</span>`).join("")||'<span class="hint">—</span>'}</div></td>
       <td><span class="score-chip ${scoreClass(s.total)}"><span class="dot ${scoreClass(s.total)}"></span>${s.total}</span></td>
+      <td>${statusSelect(c)}</td>
     </tr>`;
   }).join("");
   Array.from(tb.querySelectorAll("tr")).forEach((tr)=>{
-    tr.addEventListener("click",()=>openDetail(rows[+tr.dataset.i]));
+    tr.addEventListener("click",e=>{ if(e.target.closest(".st-select")) return; openDetail(rows[+tr.dataset.i]); });
+  });
+  Array.from(tb.querySelectorAll(".st-select")).forEach(sel=>{
+    sel.addEventListener("click",e=>e.stopPropagation());
+    sel.addEventListener("change",e=>{
+      e.stopPropagation();
+      const c=DATA.find(x=>ckey(x)===sel.dataset.key);
+      if(c){ setCampaign(c, sel.value, null); render(); }
+    });
   });
 }
 
@@ -734,10 +819,33 @@ function refreshSources(){
   sel.value = uniq.includes(cur)||cur==="all" ? cur : "all";
 }
 
+function renderPipeline(rows){
+  const counts={}; STATUSES.forEach(s=>counts[s.key]=0);
+  rows.forEach(r=>counts[getStatus(r.c)]++);
+  const cur=document.getElementById("fStatus").value;
+  document.getElementById("pipeline").innerHTML = STATUSES.map(s=>`
+    <button class="pl-seg ${cur===s.key?'active':''}" data-st="${s.key}" title="Filtrer : ${s.label}">
+      <div class="plk" style="color:${s.color}">${s.label}</div>
+      <div class="plv">${counts[s.key]}</div>
+    </button>`).join("");
+  document.querySelectorAll(".pl-seg").forEach(btn=>btn.addEventListener("click",()=>{
+    const f=document.getElementById("fStatus");
+    f.value = (f.value===btn.dataset.st) ? "all" : btn.dataset.st;
+    render();
+  }));
+}
+
+function statusSelect(c){
+  const cur=getStatus(c);
+  const opts=STATUSES.map(s=>`<option value="${s.key}" ${s.key===cur?"selected":""}>${s.label}</option>`).join("");
+  return `<select class="st-select ${ST_BY[cur].cls}" data-key="${ckey(c)}" aria-label="Statut de suivi">${opts}</select>`;
+}
+
 function render(){
   refreshSources();
   const {rows} = compute();
   renderStats(rows);
+  renderPipeline(rows);
   renderRows(rows);
 }
 
@@ -768,10 +876,41 @@ function openDetail({c,s}){
     <div class="mi"><div class="k">Marché</div><div class="v" style="font-size:13px">${MARKET[c.country]||c.country||"—"}</div></div>
     <div class="mi" style="grid-column:1/-1"><div class="k">Thèmes</div><div class="v" style="font-size:13px;font-weight:600">${(c.tags||[]).join(" · ")||"—"}</div></div>
   `;
+  renderCampaign(c);
   renderEnrich(c);
   document.querySelectorAll(".msg-tab").forEach((t,idx)=>t.classList.toggle("active",idx===0));
   renderMsg();
   document.getElementById("detailOverlay").classList.add("open");
+}
+
+/* ---------------- Suivi de campagne (fiche) ---------------- */
+function renderCampaign(c){
+  const el=document.getElementById("campaignPanel");
+  const cp=getCampaign(c); const st=cp.status||"a_contacter";
+  el.innerHTML=`
+    <div class="campaign">
+      <h4>Suivi de campagne</h4>
+      <div class="cp-row">
+        <select class="st-select ${ST_BY[st].cls}" id="cpStatus">
+          ${STATUSES.map(s=>`<option value="${s.key}" ${s.key===st?"selected":""}>${s.label}</option>`).join("")}
+        </select>
+        <span class="cp-updated" id="cpUpdated">${cp.updated?("Mis à jour le "+frDate(cp.updated)):"Pas encore suivi"}</span>
+      </div>
+      <textarea id="cpNote" placeholder="Notes : budget proposé, date de relance, conditions négociées…">${(cp.note||"").replace(/</g,"&lt;")}</textarea>
+      <div class="msg-actions"><button class="btn" id="cpSaveNote">Enregistrer la note</button></div>
+    </div>`;
+  const stSel=document.getElementById("cpStatus");
+  stSel.addEventListener("change",()=>{
+    setCampaign(c, stSel.value, null);
+    stSel.className="st-select "+ST_BY[stSel.value].cls;
+    document.getElementById("cpUpdated").textContent="Mis à jour le "+frDate(todayISO());
+    render();
+  });
+  document.getElementById("cpSaveNote").addEventListener("click",()=>{
+    setCampaign(c, null, document.getElementById("cpNote").value);
+    document.getElementById("cpUpdated").textContent="Mis à jour le "+frDate(todayISO());
+    toast("Note enregistrée ✓"); render();
+  });
 }
 
 /* ---------------- Enrichissement de l'engagement ---------------- */
@@ -942,12 +1081,13 @@ document.getElementById("doImport").addEventListener("click",()=>{
 document.getElementById("exportBtn").addEventListener("click",()=>{
   const {rows}=compute();
   if(!rows.length){toast("Rien à exporter"); return;}
-  const head=["score","name","handle","platform","country","followers","engagement_%","tier","source","email","tags","flags"];
-  const body=rows.map(({c,s})=>[
+  const head=["score","name","handle","platform","country","followers","engagement_%","tier","source","statut","note","suivi_maj","email","tags","flags"];
+  const body=rows.map(({c,s})=>{ const cp=getCampaign(c); return [
     s.total, c.name, c.handle, c.platform, c.country, c.followers,
-    s.hasEng?(s.er*100).toFixed(2):"", s.tier.label, c.source||"",  c.email||"",
+    s.hasEng?(s.er*100).toFixed(2):"", s.tier.label, c.source||"",
+    ST_BY[getStatus(c)].label, '"'+((cp.note||"").replace(/"/g,"'"))+'"', cp.updated||"", c.email||"",
     '"'+(c.tags||[]).join("; ")+'"', '"'+s.flags.map(f=>f.t).join("; ")+'"'
-  ].join(","));
+  ].join(","); });
   const csv=[head.join(","),...body].join("\n");
   const blob=new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8"});
   const url=URL.createObjectURL(blob);
@@ -1000,6 +1140,8 @@ function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg
 document.getElementById("fEng").addEventListener("input",e=>{ document.getElementById("fEngVal").textContent=e.target.value.replace(".",",")+" %"; render(); });
 document.getElementById("fScore").addEventListener("input",e=>{ document.getElementById("fScoreVal").textContent=e.target.value; render(); });
 document.getElementById("fSource").addEventListener("change",render);
+document.getElementById("fStatus").innerHTML = '<option value="all">Tous statuts</option>'+STATUSES.map(s=>`<option value="${s.key}">${s.label}</option>`).join("");
+document.getElementById("fStatus").addEventListener("change",render);
 document.getElementById("sortBy").addEventListener("change",e=>{ sortKey=e.target.value; sortDir=(sortKey==="name")?1:-1; render(); });
 document.querySelectorAll("th.sortable").forEach(th=>th.addEventListener("click",()=>{
   const k=th.dataset.sort; if(sortKey===k) sortDir*=-1; else {sortKey=k; sortDir=-1;}

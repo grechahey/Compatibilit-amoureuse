@@ -45,6 +45,17 @@ Détails pas-à-pas dans **[`SOURCING.md`](./SOURCING.md)**.
 Quand l'engagement d'un créateur est inconnu (voies C/D), il est marqué **« à enrichir »** et le
 score se calcule sur les autres critères — sans jamais inventer de données.
 
+## Suivi de campagne
+
+Chaque créateur porte un **statut** modifiable directement dans le tableau (menu déroulant
+coloré) ou dans sa fiche : **À contacter → Contacté → Répondu → En négociation → Signé**
+(ou **Refusé / Sans suite**).
+
+- **Entonnoir** en haut : le nombre de créateurs par étape, **cliquable** pour filtrer.
+- **Filtre par statut** dans la barre d'outils.
+- **Notes** par créateur (budget proposé, date de relance, conditions) + date de dernière mise à jour.
+- **Persistant** (navigateur) et **exporté** dans le CSV (colonnes `statut`, `note`, `suivi_maj`).
+
 ## Enrichir l'engagement
 
 Ouvre la fiche d'un créateur → panneau **« Enrichir l'engagement »** :
@@ -64,8 +75,8 @@ source de données), et le moteur est déjà prêt à la recevoir.
 - **Phase 1 (fait)** : moteur de qualification + interface + messages allemands + export.
 - **Phase 2 (fait)** : hub de sourcing (voies A/B/C/D) + vivier beauté DACH + gestion des
   données d'engagement manquantes.
-- **Phase 3 (en cours)** : enrichissement de l'engagement — **fait en manuel/estimation avec
-  persistance locale** ; reste l'enrichissement *automatique* (via une source de données) et le
-  suivi de campagne (comptes contactés, réponses, statut) + données d'audience.
+- **Phase 3 (fait)** : enrichissement de l'engagement (manuel/estimation, persistant) +
+  **suivi de campagne** (statut, entonnoir, notes, export). Reste l'enrichissement *automatique*
+  (via une source de données) et les données d'audience (âge, genre, pays des abonnés).
 - **Content Engine** (outil séparé) : plan marketing automatisé pour la vente de sa propre
   formation (calendrier éditorial IG/TikTok en allemand, tunnel de vente).

@@ -37,6 +37,26 @@
     } catch (e) { alert(e.message); }
     finally { btn.textContent = label; renderLog(); }
   }
+  async function renderReports() {
+    let r; try { r = await api("/admin/reports"); } catch (_) { return; }
+    const body = $("reports-body");
+    if (!r.reports.length) { body.innerHTML = `<tr><td colspan="7" class="muted">Aucun signalement.</td></tr>`; return; }
+    body.innerHTML = r.reports.map((x) => `<tr${x.flagged && !x.banned ? ' class="flagged"' : ""}>
+      <td>${esc(x.name || "—")} <span class="muted">#${x.target}</span></td>
+      <td><b>${x.reporters}</b></td>
+      <td>${x.count}</td>
+      <td class="muted">${esc(x.reasons.join(", "))}</td>
+      <td class="muted">${fmtDate(x.last)}</td>
+      <td>${x.banned ? '<span class="pill-ban">Banni</span>' : x.flagged ? '<span class="pill-flag">Auto-masqué</span>' : '<span class="muted">actif</span>'}</td>
+      <td><button type="button" class="btn btn-ghost small ban-btn" data-id="${x.target}" data-ban="${x.banned ? 0 : 1}">${x.banned ? "Réactiver" : "Bannir"}</button></td>
+    </tr>`).join("");
+    body.querySelectorAll(".ban-btn").forEach((b) => b.addEventListener("click", async () => {
+      const id = +b.dataset.id, ban = b.dataset.ban === "1";
+      if (ban && !confirm("Bannir ce membre ? Il sera déconnecté et masqué.")) return;
+      try { await api("/admin/ban", { method: "POST", body: { userId: id, banned: ban } }); renderReports(); renderMembers(); renderLog(); }
+      catch (e) { alert(e.message); }
+    }));
+  }
   async function renderLog() {
     let r; try { r = await api("/admin/log"); } catch (_) { return; }
     $("log-body").innerHTML = r.log.length ? r.log.map((e) => `<tr>
@@ -156,6 +176,7 @@
     renderKpis(stats); renderCharts(stats);
     $("export-csv").addEventListener("click", exportCsv);
     try { await renderMembers(); } catch (_) {}
+    try { await renderReports(); } catch (_) {}
     try { await initAudit(); } catch (_) {}
     try { await initWeights(); } catch (_) {}
     try { await renderLog(); } catch (_) {}

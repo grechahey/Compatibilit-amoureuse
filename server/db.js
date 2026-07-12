@@ -243,6 +243,23 @@ function blockedSet(userId) {
 function isBlocked(a, b) {
   return !!db.prepare("SELECT 1 FROM blocks WHERE (blocker=? AND blocked=?) OR (blocker=? AND blocked=?) LIMIT 1").get(a, b, b, a);
 }
+// Modération : bannissement, auto-masquage des profils très signalés, revue admin.
+function setBanned(userId, banned) {
+  db.prepare("UPDATE users SET banned=? WHERE id=?").run(banned ? 1 : 0, userId);
+  if (banned) db.prepare("DELETE FROM sessions WHERE user_id=?").run(userId); // déconnecte
+}
+function flaggedUserIds(minReporters) {
+  const s = new Set();
+  db.prepare("SELECT target FROM reports GROUP BY target HAVING COUNT(DISTINCT reporter) >= ?").all(minReporters).forEach((r) => s.add(r.target));
+  return s;
+}
+function adminReports() {
+  return db.prepare(`SELECT r.target, COUNT(*) n, COUNT(DISTINCT r.reporter) reporters,
+      GROUP_CONCAT(DISTINCT r.reason) reasons, MAX(r.created_at) last,
+      p.name, u.banned
+    FROM reports r LEFT JOIN profiles p ON p.user_id=r.target LEFT JOIN users u ON u.id=r.target
+    GROUP BY r.target ORDER BY reporters DESC, n DESC`).all();
+}
 // Réglages persistants (ex. pondérations du matching), clé → JSON.
 function getSetting(key) {
   const r = db.prepare("SELECT value FROM settings WHERE key=?").get(key);
@@ -341,5 +358,5 @@ module.exports = {
   getSetting, setSetting, logAdmin, getAdminLog,
   setNotifyEmail, addPushSub, delPushSub, pushSubsFor,
   markRead, matchUnread, unreadCount, touchActive,
-  addBlock, blockedSet, isBlocked,
+  addBlock, blockedSet, isBlocked, setBanned, flaggedUserIds, adminReports,
 };

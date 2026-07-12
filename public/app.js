@@ -518,10 +518,12 @@
         <option value="Mineur présumé">Mineur présumé</option>
         <option value="Autre">Autre</option>
       </select>
+      <label class="check" style="margin:.9rem 0 .2rem"><input type="checkbox" id="rep-block" checked />
+        Bloquer aussi cette personne (vous ne vous verrez plus).</label>
       <button type="button" class="btn" data-send>Envoyer le signalement</button></div>`);
     $("modal-card").querySelector("[data-close]").addEventListener("click", closeModal);
     $("modal-card").querySelector("[data-send]").addEventListener("click", async () => {
-      try { await api("/report", { method: "POST", body: { targetId: id, reason: $("rep-reason").value } }); closeModal(); toast("Signalement envoyé. Merci."); advance(); }
+      try { await api("/report", { method: "POST", body: { targetId: id, reason: $("rep-reason").value, block: $("rep-block").checked } }); closeModal(); toast("Signalement envoyé. Merci."); advance(); }
       catch (e) { toast(e.message); }
     });
   }

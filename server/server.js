@@ -148,6 +148,7 @@ app.post("/api/login", rateLimit(20, 15 * 60 * 1000), (req, res) => {
   const u = email && D.q.userByEmail.get(email.toLowerCase());
   if (!u || u.is_bot || !D.verifyPassword(password || "", u.pw_hash, u.pw_salt))
     return res.status(401).json({ error: "Email ou mot de passe incorrect." });
+  if (u.banned) return res.status(403).json({ error: "Ce compte a été suspendu." });
   setSession(res, u.id);
   res.json(meView(u));
 });
@@ -322,6 +323,23 @@ app.get("/api/admin/match", adminAuth, (req, res) => {
     })),
   });
 });
+app.get("/api/admin/reports", adminAuth, (req, res) => {
+  res.json({
+    reports: D.adminReports().map((r) => ({
+      target: r.target, name: r.name || null, reporters: r.reporters, count: r.n,
+      reasons: r.reasons ? r.reasons.split(",") : [], last: r.last, banned: !!r.banned,
+      flagged: r.reporters >= 3,
+    })),
+  });
+});
+app.post("/api/admin/ban", adminAuth, (req, res) => {
+  const userId = +req.body.userId, banned = !!req.body.banned;
+  const u = D.q.userById.get(userId);
+  if (!u || u.is_bot) return res.status(404).json({ error: "Membre introuvable." });
+  D.setBanned(userId, banned);
+  D.logAdmin(req.user.id, req.user.email, `${banned ? "Bannissement" : "Réactivation"} du membre #${userId} (${u.email})`, req.ip);
+  res.json({ ok: true, banned });
+});
 app.get("/api/admin/weights", adminAuth, (req, res) => res.json({ weights: Engine.getWeights() }));
 app.post("/api/admin/weights", adminAuth, (req, res) => {
   const w = Engine.setWeights(req.body || {});
@@ -353,10 +371,11 @@ app.get("/api/discover", auth, async (req, res) => {
   const swiped = new Set(D.q.swipedTargets.all(req.user.id).map((r) => r.target));
   const superSet = new Set(D.q.superLikers.all(req.user.id).map((r) => r.actor));
 
-  const blocked = D.blockedSet(req.user.id); // masqués dans les deux sens (feature modération)
+  const blocked = D.blockedSet(req.user.id); // masqués dans les deux sens (modération)
+  const flagged = D.flaggedUserIds(3);       // auto-masqués (≥ 3 signaleurs) en attente de revue
   const ACTIVE_MS = 48 * 3600 * 1000, tnow = D.now();
   const cands = D.q.allProfiles.all(req.user.id).map(D.profileOut)
-    .filter((c) => !c.banned && !swiped.has(c.id) && !blocked.has(c.id) && mutual(me, c))
+    .filter((c) => !c.banned && !swiped.has(c.id) && !blocked.has(c.id) && !flagged.has(c.id) && mutual(me, c))
     .filter((c) => { const a = ageOf(c); return a >= ageMin && a <= ageMax; })
     .filter((c) => { if (dist === Infinity) return true; const d = distanceKm(me, c); return d == null || d <= dist; })
     .map((c) => {
@@ -426,10 +445,18 @@ app.post("/api/swipe", auth, (req, res) => {
 
 /* --------------------------- Modération ---------------------------- */
 app.post("/api/report", auth, (req, res) => {
-  const { targetId, reason } = req.body || {};
+  const { targetId, reason, block } = req.body || {};
   const target = D.q.getProfile.get(targetId);
   if (!target || targetId === req.user.id) return res.status(404).json({ error: "Profil introuvable." });
   D.createReport(req.user.id, targetId, reason);
+  if (block) D.addBlock(req.user.id, targetId);
+  res.json({ ok: true });
+});
+app.post("/api/block", auth, (req, res) => {
+  const targetId = req.body && +req.body.targetId;
+  const target = targetId && D.q.getProfile.get(targetId);
+  if (!target || targetId === req.user.id) return res.status(404).json({ error: "Profil introuvable." });
+  D.addBlock(req.user.id, targetId);
   res.json({ ok: true });
 });
 
@@ -496,6 +523,8 @@ app.get("/api/messages/:matchId", auth, async (req, res) => {
 app.post("/api/messages/:matchId", auth, (req, res) => {
   const m = D.q.matchById.get(+req.params.matchId);
   if (!m || (m.a !== req.user.id && m.b !== req.user.id)) return res.status(404).json({ error: "Conversation introuvable." });
+  const otherPeer = m.a === req.user.id ? m.b : m.a;
+  if (D.isBlocked(req.user.id, otherPeer)) return res.status(403).json({ error: "Conversation indisponible." });
   const body = (req.body && req.body.body || "").trim();
   if (!body) return res.status(400).json({ error: "Message vide." });
   D.q.insMessage.run(m.id, req.user.id, body.slice(0, 800), D.now());
@@ -518,6 +547,7 @@ app.post("/api/message-direct", auth, (req, res) => {
   const { targetId, body } = req.body || {};
   const target = D.q.getProfile.get(targetId);
   if (!target || targetId === req.user.id) return res.status(404).json({ error: "Profil introuvable." });
+  if (D.isBlocked(req.user.id, targetId)) return res.status(403).json({ error: "Envoi impossible." });
   const c = D.getCredits(req.user.id);
   if (!c.premium && c.messages <= 0) return res.status(402).json({ error: "Message direct = option premium.", needPremium: "message" });
   const text = (body || "").trim();

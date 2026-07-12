@@ -133,6 +133,20 @@ input[type="file"] { font-size: .82rem; padding: .5rem 0; color: var(--muted); b
 .push-row .btn.small { margin-top: 0; }
 .push-row .hint { margin: 0; }
 
+/* ---------------------------- Onboarding ---------------------------- */
+.onboarding { min-height: 76vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 1.5rem 0 2rem; }
+.onb-card { max-width: 30ch; animation: rise .35s cubic-bezier(.2, .8, .3, 1); }
+.onb-emoji { font-size: 3.4rem; line-height: 1; margin-bottom: 1.2rem; }
+.onb-card h2 { font-weight: 700; color: var(--text); font-size: 1.7rem; letter-spacing: -0.02em; margin: 0 0 .8rem; }
+.onb-card p { color: var(--muted); font-size: 1.05rem; line-height: 1.6; margin: 0; }
+.onb-dots { display: flex; gap: .5rem; margin: 2rem 0 1.6rem; }
+.onb-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--card-2); transition: background .2s, width .2s; }
+.onb-dot.on { width: 22px; border-radius: 99px; background: var(--grad); }
+.onb-actions { display: flex; flex-direction: column; align-items: center; gap: .4rem; width: 100%; max-width: 340px; }
+.onb-actions .btn { margin-top: 0; }
+.onb-skip { background: none; border: none; cursor: pointer; font: inherit; font-size: .86rem; color: var(--faint); padding: .6rem; text-decoration: underline; text-underline-offset: 3px; }
+.onb-skip:hover { color: var(--muted); }
+
 /* ------------------------------ Overlay ----------------------------- */
 .overlay { position: fixed; inset: 0; z-index: 20; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(6px); display: flex; align-items: flex-start; justify-content: center; padding: 1rem; overflow-y: auto; }
 .overlay-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); max-width: 560px; width: 100%; margin: auto; padding: 1.8rem; }

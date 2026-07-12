@@ -40,7 +40,7 @@
 
   /* ============================ Boot ============================ */
   document.addEventListener("DOMContentLoaded", async () => {
-    initControls(); initFilters(); initAuth(); initMatches(); initRgpd(); initPhoto();
+    initControls(); initFilters(); initAuth(); initMatches(); initRgpd(); initPhoto(); initOnboarding();
     $("quiz-form").addEventListener("submit", onQuizSubmit);
     const params = new URLSearchParams(location.search);
     if (params.has("verified")) {
@@ -117,8 +117,32 @@
     prefill();
     initPush();
     startUnreadPoll();
-    showView(S.profile ? "discover" : "profile");
+    let onboarded = false; try { onboarded = !!localStorage.getItem("amesoeur_onboarded"); } catch (_) {}
+    if (!S.profile && !onboarded) showOnboarding();
+    else showView(S.profile ? "discover" : "profile");
   }
+
+  /* =========================== Onboarding ======================== */
+  const ONB = [
+    { emoji: "💫", title: "Bienvenue sur Âme Sœur", text: "Ici, on ne matche pas sur des photos, mais sur ce qui compte vraiment : votre personnalité et vos affinités profondes." },
+    { emoji: "🧬", title: "Cinq dimensions croisées", text: "Personnalité (MBTI), astrologie, astrologie chinoise, numérologie et affinités intimes se combinent en un vrai score de compatibilité." },
+    { emoji: "🌒", title: "La magie se dévoile peu à peu", text: "Personnalité, signes, puis photo se révèlent au fil de la conversation. On apprend à se connaître avant de se juger." },
+    { emoji: "✨", title: "Et vous vous découvrez", text: "Au passage, vous obtenez votre thème astral, votre type de personnalité et vos nombres. Prêt·e à rencontrer votre âme sœur ?" },
+  ];
+  let onbPos = 0;
+  function initOnboarding() {
+    $("onb-next").addEventListener("click", () => { if (onbPos < ONB.length - 1) { onbPos++; renderOnb(); } else finishOnboarding(); });
+    $("onb-skip").addEventListener("click", finishOnboarding);
+  }
+  function showOnboarding() { onbPos = 0; renderOnb(); showView("onboarding"); }
+  function renderOnb() {
+    const s = ONB[onbPos];
+    $("onb-card").innerHTML = `<div class="onb-emoji">${s.emoji}</div><h2>${esc(s.title)}</h2><p>${esc(s.text)}</p>`;
+    $("onb-dots").innerHTML = ONB.map((_, i) => `<span class="onb-dot${i === onbPos ? " on" : ""}"></span>`).join("");
+    $("onb-next").textContent = onbPos === ONB.length - 1 ? "Créer mon profil" : "Suivant";
+    $("onb-skip").hidden = onbPos === ONB.length - 1;
+  }
+  function finishOnboarding() { try { localStorage.setItem("amesoeur_onboarded", "1"); } catch (_) {} showView("profile"); }
 
   /* ===================== Badge « messages non lus » =============== */
   let unreadPoll = null;
@@ -274,7 +298,8 @@
   /* ============================= Vues ============================= */
   function showView(v) {
     if (v !== "matches") { stopChatPoll(); currentChat = null; }
-    ["auth", "profile", "discover", "insights", "matches"].forEach((k) => { const el = $("view-" + k); if (el) el.hidden = k !== v; });
+    ["auth", "onboarding", "profile", "discover", "insights", "matches"].forEach((k) => { const el = $("view-" + k); if (el) el.hidden = k !== v; });
+    $("tabs").hidden = (v === "auth" || v === "onboarding");
     $("nav-discover").classList.toggle("active", v === "discover");
     $("nav-matches").classList.toggle("active", v === "matches");
     $("nav-insights").classList.toggle("active", v === "insights");

@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS users (
   consent_at INTEGER, consent_version TEXT, age_confirmed INTEGER DEFAULT 0,
   sensitive_consent_at INTEGER,
   email_verified INTEGER DEFAULT 0, verify_token TEXT,
-  notify_email INTEGER DEFAULT 1
+  notify_email INTEGER DEFAULT 1, last_active INTEGER, banned INTEGER DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS profiles (
   user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -70,6 +70,10 @@ CREATE TABLE IF NOT EXISTS match_reads (
   user_id INTEGER, match_id INTEGER, last_read INTEGER,
   PRIMARY KEY (user_id, match_id)
 );
+CREATE TABLE IF NOT EXISTS blocks (
+  blocker INTEGER, blocked INTEGER, created_at INTEGER,
+  PRIMARY KEY (blocker, blocked)
+);
 `);
 
 // Migrations défensives (bases existantes créées avant l'ajout du RGPD).
@@ -84,6 +88,8 @@ for (const alter of [
   "ALTER TABLE profiles ADD COLUMN interests TEXT",
   "ALTER TABLE profiles ADD COLUMN avatar_feat TEXT",
   "ALTER TABLE users ADD COLUMN notify_email INTEGER DEFAULT 1",
+  "ALTER TABLE users ADD COLUMN last_active INTEGER",
+  "ALTER TABLE users ADD COLUMN banned INTEGER DEFAULT 0",
 ]) { try { db.exec(alter); } catch (_) { /* colonne déjà présente */ } }
 
 const CONSENT_VERSION = "2026-07-11";
@@ -111,8 +117,8 @@ const q = {
     ON CONFLICT(user_id) DO UPDATE SET name=@name,gender=@gender,seeking=@seeking,bio=@bio,avatar=@avatar,
       avatar_feat=COALESCE(@avatar_feat,avatar_feat),
       photo=COALESCE(@photo,photo),by=@by,bm=@bm,bd=@bd,btime=@btime,city=@city,mbti=@mbti,bdsm=@bdsm,discover_photo=@discover_photo,interests=@interests,updated_at=@updated_at`),
-  getProfile: db.prepare("SELECT p.*, u.is_bot FROM profiles p JOIN users u ON u.id=p.user_id WHERE p.user_id = ?"),
-  allProfiles: db.prepare("SELECT p.*, u.is_bot FROM profiles p JOIN users u ON u.id=p.user_id WHERE p.user_id != ?"),
+  getProfile: db.prepare("SELECT p.*, u.is_bot, u.last_active, u.banned FROM profiles p JOIN users u ON u.id=p.user_id WHERE p.user_id = ?"),
+  allProfiles: db.prepare("SELECT p.*, u.is_bot, u.last_active, u.banned FROM profiles p JOIN users u ON u.id=p.user_id WHERE p.user_id != ?"),
   insSwipe: db.prepare("INSERT OR REPLACE INTO swipes (actor,target,kind,created_at) VALUES (?,?,?,?)"),
   getSwipe: db.prepare("SELECT * FROM swipes WHERE actor=? AND target=?"),
   swipedTargets: db.prepare("SELECT target FROM swipes WHERE actor=?"),
@@ -220,8 +226,22 @@ function profileOut(row) {
     photo: row.photo, year: row.by, month: row.bm, day: row.bd,
     time: row.btime, city: row.city, mbti: row.mbti, bdsm: row.bdsm ? JSON.parse(row.bdsm) : null,
     discoverPhoto: !!row.discover_photo, interests: row.interests ? JSON.parse(row.interests) : [],
-    isBot: !!row.is_bot,
+    isBot: !!row.is_bot, lastActive: row.last_active || null, banned: !!row.banned,
   };
+}
+function touchActive(userId) { db.prepare("UPDATE users SET last_active=? WHERE id=?").run(now(), userId); }
+// Blocage (modération) : masquage réciproque en découverte et messagerie.
+function addBlock(blocker, blocked) {
+  db.prepare("INSERT OR IGNORE INTO blocks (blocker,blocked,created_at) VALUES (?,?,?)").run(blocker, blocked, now());
+  q.insSwipe.run(blocker, blocked, "pass", now()); // retire aussi de la file
+}
+function blockedSet(userId) {
+  const s = new Set();
+  db.prepare("SELECT blocked id FROM blocks WHERE blocker=? UNION SELECT blocker id FROM blocks WHERE blocked=?").all(userId, userId).forEach((r) => s.add(r.id));
+  return s;
+}
+function isBlocked(a, b) {
+  return !!db.prepare("SELECT 1 FROM blocks WHERE (blocker=? AND blocked=?) OR (blocker=? AND blocked=?) LIMIT 1").get(a, b, b, a);
 }
 // Réglages persistants (ex. pondérations du matching), clé → JSON.
 function getSetting(key) {
@@ -320,5 +340,6 @@ module.exports = {
   verifyEmailToken, regenerateVerifyToken, createReport,
   getSetting, setSetting, logAdmin, getAdminLog,
   setNotifyEmail, addPushSub, delPushSub, pushSubsFor,
-  markRead, matchUnread, unreadCount,
+  markRead, matchUnread, unreadCount, touchActive,
+  addBlock, blockedSet, isBlocked,
 };

@@ -56,11 +56,18 @@ function parseCookies(req) {
   });
   return out;
 }
+const lastTouch = new Map();
+function touchActivity(userId) {
+  const t = Date.now();
+  if (t - (lastTouch.get(userId) || 0) < 120000) return; // au plus 1 écriture / 2 min
+  lastTouch.set(userId, t); try { D.touchActive(userId); } catch (_) {}
+}
 function auth(req, res, next) {
   const token = parseCookies(req).sid;
   const user = D.userForToken(token);
   if (!user) return res.status(401).json({ error: "Non authentifié" });
-  req.user = user; next();
+  if (user.banned) return res.status(403).json({ error: "Compte suspendu." });
+  req.user = user; touchActivity(user.id); next();
 }
 function setSession(res, userId) {
   const token = D.newSession(userId);
@@ -346,8 +353,10 @@ app.get("/api/discover", auth, async (req, res) => {
   const swiped = new Set(D.q.swipedTargets.all(req.user.id).map((r) => r.target));
   const superSet = new Set(D.q.superLikers.all(req.user.id).map((r) => r.actor));
 
+  const blocked = D.blockedSet(req.user.id); // masqués dans les deux sens (feature modération)
+  const ACTIVE_MS = 48 * 3600 * 1000, tnow = D.now();
   const cands = D.q.allProfiles.all(req.user.id).map(D.profileOut)
-    .filter((c) => !swiped.has(c.id) && mutual(me, c))
+    .filter((c) => !c.banned && !swiped.has(c.id) && !blocked.has(c.id) && mutual(me, c))
     .filter((c) => { const a = ageOf(c); return a >= ageMin && a <= ageMax; })
     .filter((c) => { if (dist === Infinity) return true; const d = distanceKm(me, c); return d == null || d <= dist; })
     .map((c) => {
@@ -358,11 +367,20 @@ app.get("/api/discover", auth, async (req, res) => {
         id: c.id, name: c.name, age: ageOf(c), city: c.city, distanceKm: distanceKm(me, c),
         bio: c.bio, avatarSvg: Avatars.svgSync("u" + c.id, c.avatarFeat), score: r.score,
         superLikedYou: superSet.has(c.id),
+        activeRecently: !!(c.lastActive && tnow - c.lastActive < ACTIVE_MS),
+        _lastActive: c.lastActive || 0, _dist: distanceKm(me, c),
         // Photo montrée en découverte seulement si l'utilisateur l'a choisi.
         photo: c.discoverPhoto && c.photo ? c.photo : null,
       };
     });
-  cands.sort((x, y) => (y.superLikedYou - x.superLikedYou) || (y.score - x.score));
+  // Tri : les super-likes d'abord, puis selon le critère choisi.
+  const sort = req.query.sort;
+  const byDist = (a) => (a._dist == null ? Infinity : a._dist);
+  const cmp = sort === "distance" ? (x, y) => byDist(x) - byDist(y) || (y.score - x.score)
+    : sort === "active" ? (x, y) => (y._lastActive - x._lastActive) || (y.score - x.score)
+      : (x, y) => (y.score - x.score);
+  cands.sort((x, y) => (y.superLikedYou - x.superLikedYou) || cmp(x, y));
+  cands.forEach((c) => { delete c._lastActive; delete c._dist; });
   res.json({ me: { name: me.name }, candidates: cands });
 });
 

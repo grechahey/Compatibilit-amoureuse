@@ -166,6 +166,14 @@ input[type="range"] { -webkit-appearance: none; appearance: none; height: 3px; b
 input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--pink); cursor: pointer; }
 input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border: none; border-radius: 50%; background: var(--pink); cursor: pointer; }
 .nudge-inline { font-size: .84rem; color: var(--muted); background: var(--card-2); border-radius: 12px; padding: .7rem .8rem; margin: .3rem 0 .2rem; line-height: 1.5; }
+.sort-bar { display: flex; align-items: center; gap: .7rem; margin: 0 0 1.2rem; flex-wrap: wrap; }
+.sort-bar > span { font-size: .8rem; color: var(--faint); }
+.seg { display: inline-flex; background: var(--card); border: 1px solid var(--line); border-radius: 99px; padding: 3px; gap: 2px; }
+.seg-btn { font: inherit; font-size: .82rem; font-weight: 500; cursor: pointer; border: none; background: transparent; color: var(--muted); padding: .4rem .9rem; border-radius: 99px; transition: color .12s, background .12s; }
+.seg-btn:hover { color: var(--text); }
+.seg-btn.active { background: var(--card-2); color: var(--text); }
+.active-badge { display: inline-flex; align-items: center; gap: .35rem; font-size: .78rem; color: #6be29a; margin-top: .5rem; }
+.active-badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #4fd487; box-shadow: 0 0 0 3px rgba(79, 212, 135, .18); }
 
 /* ------------------------- Profil (découverte) ---------------------- */
 .deck { min-height: 200px; }

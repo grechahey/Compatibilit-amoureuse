@@ -36,6 +36,7 @@
   let authMode = "register";
   let currentChat = null;
   const filters = { ageMin: 18, ageMax: 80, dist: 2050 };
+  let sortBy = "score";
 
   /* ============================ Boot ============================ */
   document.addEventListener("DOMContentLoaded", async () => {
@@ -180,6 +181,12 @@
     $("nav-premium").addEventListener("click", () => openPremiumModal());
     $("quiz-close").addEventListener("click", closeOverlay);
     ["pass", "like", "super", "msg"].forEach((k) => $("act-" + k).addEventListener("click", () => act(k)));
+    $("sort-seg").addEventListener("click", (e) => {
+      const b = e.target.closest(".seg-btn"); if (!b) return;
+      sortBy = b.dataset.sort;
+      $("sort-seg").querySelectorAll(".seg-btn").forEach((x) => x.classList.toggle("active", x === b));
+      buildDeck();
+    });
   }
   function refreshMbtiBadge() {
     const b = $("mbti-badge"), btn = $("btn-mbti-test");
@@ -298,6 +305,7 @@
   async function buildDeck() {
     const params = new URLSearchParams({ ageMin: filters.ageMin, ageMax: filters.ageMax });
     if (filters.dist < 2050) params.set("dist", filters.dist);
+    if (sortBy && sortBy !== "score") params.set("sort", sortBy);
     let r;
     try { r = await api("/discover?" + params.toString()); }
     catch (e) { if (e.status === 400) { showView("profile"); return; } toast(e.message); return; }
@@ -336,6 +344,7 @@
         <h3 class="hero-name">${esc(c.name)} <span class="age">${c.age}</span></h3>
         <span class="score-pill">${HEART_ICON}<b>${c.score}%</b> d'affinité</span>
         ${loc ? `<p class="hero-verdict">${loc}</p>` : ""}
+        ${c.activeRecently ? `<p class="active-badge">Actif·ve récemment</p>` : ""}
       </div>
       ${c.bio ? `<section class="pcard"><p class="bio">${esc(c.bio)}</p></section>` : ""}
       <p class="locked">Personnalité, signes et affinités se dévoilent au fil de vos échanges.</p>

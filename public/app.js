@@ -87,6 +87,7 @@
       try { await api("/logout", { method: "POST" }); } catch (_) {}
       S = { user: null, profile: null, credits: {} }; devVerifyUrl = null;
       $("verify-banner").hidden = true;
+      stopUnreadPoll(); $("msg-badge").hidden = true;
       showAuth();
     });
     $("verify-resend").addEventListener("click", async () => {
@@ -114,8 +115,20 @@
     refreshVerify();
     prefill();
     initPush();
+    startUnreadPoll();
     showView(S.profile ? "discover" : "profile");
   }
+
+  /* ===================== Badge « messages non lus » =============== */
+  let unreadPoll = null;
+  async function refreshUnread() {
+    if (!S.user) return;
+    let c = 0; try { c = (await api("/unread")).count; } catch (_) { return; }
+    const b = $("msg-badge");
+    if (c > 0) { b.hidden = false; b.textContent = c > 9 ? "9+" : String(c); } else b.hidden = true;
+  }
+  function startUnreadPoll() { stopUnreadPoll(); refreshUnread(); unreadPoll = setInterval(refreshUnread, 30000); }
+  function stopUnreadPoll() { if (unreadPoll) { clearInterval(unreadPoll); unreadPoll = null; } }
 
   /* ========================= Notifications push =================== */
   async function initPush() {
@@ -656,8 +669,8 @@
     list.innerHTML = "";
     r.matches.forEach((m) => {
       const av = m.other.photo ? `<img src="${m.other.photo}" alt="">` : m.avatarSvg;
-      const d = document.createElement("button"); d.type = "button"; d.className = "match-row";
-      d.innerHTML = `<div class="mr-face">${av}</div><div class="mr-info"><h4>${esc(m.other.name)}, ${m.other.age}${m.superd ? ' <span class="mr-super">Super Like</span>' : ""}</h4><p>${m.lastMessage ? (m.lastMessage.mine ? "Vous : " : "") + esc(m.lastMessage.body) : "<i>Dites bonjour…</i>"}</p></div>`;
+      const d = document.createElement("button"); d.type = "button"; d.className = "match-row" + (m.unread ? " unread" : "");
+      d.innerHTML = `<div class="mr-face">${av}</div><div class="mr-info"><h4>${esc(m.other.name)}, ${m.other.age}${m.superd ? ' <span class="mr-super">Super Like</span>' : ""}</h4><p>${m.lastMessage ? (m.lastMessage.mine ? "Vous : " : "") + esc(m.lastMessage.body) : "<i>Dites bonjour…</i>"}</p></div>${m.unread ? '<span class="mr-dot" aria-label="Non lu"></span>' : ""}`;
       d.addEventListener("click", () => openChat(m.matchId));
       list.appendChild(d);
     });
@@ -692,6 +705,7 @@
     body.innerHTML = r.messages.length ? r.messages.map((m) => `<div class="bubble ${m.mine ? "me" : "them"}">${esc(m.body)}</div>`).join("")
       : `<p class="chat-empty">Vous avez matché ! Lancez la conversation avec ${esc(o.name)}.</p>`;
     body.scrollTop = body.scrollHeight;
+    refreshUnread(); // l'ouverture a marqué la conversation comme lue (serveur)
   }
   // Bandeau d'affinités qui se dévoile message après message.
   const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;

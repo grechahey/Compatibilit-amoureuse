@@ -422,11 +422,13 @@ function matchView(m, meId) {
   const last = D.q.lastMessage.get(m.id);
   return {
     matchId: m.id, superd: !!m.super, avatarSvg: Avatars.svgSync("u" + otherId, other.avatarFeat),
+    unread: D.matchUnread(meId, m.id),
     other: { id: otherId, name: other.name, age: ageOf(other), city: other.city,
       photo: other.photo, bio: other.bio },
     lastMessage: last ? { body: last.body, mine: last.sender === meId, at: last.created_at } : null,
   };
 }
+app.get("/api/unread", auth, (req, res) => res.json({ count: D.unreadCount(req.user.id) }));
 
 // Révélation progressive des affinités au fil de la conversation (par paliers
 // de messages échangés). Rien n'est envoyé au client avant son palier.
@@ -465,8 +467,10 @@ app.get("/api/messages/:matchId", auth, async (req, res) => {
   const msgs = D.q.messagesFor.all(m.id);
   const otherId = m.a === req.user.id ? m.b : m.a;
   const me = D.profileOut(D.q.getProfile.get(req.user.id)), other = D.profileOut(D.q.getProfile.get(otherId));
+  const view = matchView(m, req.user.id);
+  D.markRead(req.user.id, m.id); // ouvrir la conversation la marque comme lue
   res.json({
-    match: matchView(m, req.user.id),
+    match: view,
     reveal: buildReveal(me, other, msgs.length),
     messages: msgs.map((x) => ({ body: x.body, mine: x.sender === req.user.id, at: x.created_at })),
   });

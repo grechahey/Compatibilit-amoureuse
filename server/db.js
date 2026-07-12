@@ -66,6 +66,10 @@ CREATE TABLE IF NOT EXISTS push_subs (
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   sub TEXT, created_at INTEGER
 );
+CREATE TABLE IF NOT EXISTS match_reads (
+  user_id INTEGER, match_id INTEGER, last_read INTEGER,
+  PRIMARY KEY (user_id, match_id)
+);
 `);
 
 // Migrations défensives (bases existantes créées avant l'ajout du RGPD).
@@ -248,6 +252,23 @@ function delPushSub(endpoint) { db.prepare("DELETE FROM push_subs WHERE endpoint
 function pushSubsFor(userId) {
   return db.prepare("SELECT sub FROM push_subs WHERE user_id=?").all(userId).map((r) => { try { return JSON.parse(r.sub); } catch (_) { return null; } }).filter(Boolean);
 }
+// Suivi de lecture des conversations (badge « non lus »).
+function markRead(userId, matchId) {
+  db.prepare("INSERT INTO match_reads (user_id,match_id,last_read) VALUES (?,?,?) ON CONFLICT(user_id,match_id) DO UPDATE SET last_read=excluded.last_read")
+    .run(userId, matchId, now());
+}
+// Une conversation est non lue si le dernier message de l'AUTRE est postérieur
+// à la dernière lecture de l'utilisateur.
+function matchUnread(userId, matchId) {
+  const r = db.prepare(`SELECT (SELECT MAX(created_at) FROM messages WHERE match_id=? AND sender!=?) lastOther,
+    (SELECT last_read FROM match_reads WHERE user_id=? AND match_id=?) lastRead`).get(matchId, userId, userId, matchId);
+  return !!(r.lastOther && r.lastOther > (r.lastRead || 0));
+}
+function unreadCount(userId) {
+  return db.prepare(`SELECT COUNT(*) c FROM matches m WHERE (m.a=? OR m.b=?) AND
+    (SELECT MAX(created_at) FROM messages msg WHERE msg.match_id=m.id AND msg.sender!=?) >
+    COALESCE((SELECT last_read FROM match_reads r WHERE r.user_id=? AND r.match_id=m.id), 0)`).get(userId, userId, userId, userId).c;
+}
 function getCredits(userId) {
   q.insCredits.run(userId);
   const c = q.getCredits.get(userId);
@@ -299,4 +320,5 @@ module.exports = {
   verifyEmailToken, regenerateVerifyToken, createReport,
   getSetting, setSetting, logAdmin, getAdminLog,
   setNotifyEmail, addPushSub, delPushSub, pushSubsFor,
+  markRead, matchUnread, unreadCount,
 };

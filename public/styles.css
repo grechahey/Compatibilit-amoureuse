@@ -372,6 +372,25 @@ input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border: none;
 .verify-banner .demo { color: var(--faint); font-size: .74rem; }
 .verify-banner .btn { margin-top: 0; width: auto; padding: .4rem .9rem; font-size: .8rem; }
 
+/* ---------------------- Bandeau « Installer l'app » ------------------ */
+.install-banner {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  z-index: 40; width: calc(100% - 1.6rem); max-width: 440px;
+  display: flex; align-items: center; gap: .85rem;
+  padding: .9rem 1rem; background: var(--card); border: 1px solid var(--line); border-radius: 18px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, .5); animation: install-in .28s ease;
+}
+@keyframes install-in { from { opacity: 0; transform: translate(-50%, 16px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.install-icon { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: var(--grad); color: #fff; }
+.install-icon svg { width: 22px; height: 22px; }
+.install-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .1rem; }
+.install-txt b { color: var(--text); font-size: .92rem; font-weight: 600; }
+.install-txt span { color: var(--muted); font-size: .78rem; line-height: 1.4; }
+.install-txt .install-ios b { font-size: inherit; color: var(--text); }
+.install-banner .btn { margin-top: 0; width: auto; flex: 0 0 auto; padding: .5rem 1rem; }
+.install-close { position: absolute; top: .4rem; right: .5rem; border: none; background: transparent; color: var(--faint); font-size: .9rem; cursor: pointer; line-height: 1; padding: .2rem; }
+.install-close:hover { color: var(--text); }
+
 .report { text-align: left; position: relative; }
 .report h3 { margin: 0 0 .3rem; }
 .report select { width: 100%; margin: .7rem 0; }

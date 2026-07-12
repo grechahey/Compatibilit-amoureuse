@@ -40,7 +40,7 @@
 
   /* ============================ Boot ============================ */
   document.addEventListener("DOMContentLoaded", async () => {
-    initI18n();
+    initI18n(); initInstall();
     initControls(); initFilters(); initAuth(); initMatches(); initRgpd(); initPhoto(); initOnboarding(); initVerif();
     $("quiz-form").addEventListener("submit", onQuizSubmit);
     const params = new URLSearchParams(location.search);
@@ -174,6 +174,47 @@
   }
   function startUnreadPoll() { stopUnreadPoll(); refreshUnread(); unreadPoll = setInterval(refreshUnread, 30000); }
   function stopUnreadPoll() { if (unreadPoll) { clearInterval(unreadPoll); unreadPoll = null; } }
+
+  /* ===================== Installation (PWA « A2HS ») ============== */
+  let deferredInstall = null;
+  const INSTALL_SNOOZE = 14 * 24 * 3600 * 1000; // 14 jours
+  function isStandalone() {
+    return (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true;
+  }
+  function installDismissed() {
+    try { const t = +localStorage.getItem("amesoeur_install_dismissed") || 0; return Date.now() - t < INSTALL_SNOOZE; } catch (_) { return false; }
+  }
+  function initInstall() {
+    const banner = $("install-banner"); if (!banner) return;
+    if (isStandalone() || installDismissed()) return;
+    $("install-close").addEventListener("click", () => {
+      banner.hidden = true;
+      try { localStorage.setItem("amesoeur_install_dismissed", String(Date.now())); } catch (_) {}
+    });
+    $("install-btn").addEventListener("click", async () => {
+      if (!deferredInstall) return;
+      deferredInstall.prompt();
+      try { await deferredInstall.userChoice; } catch (_) {}
+      deferredInstall = null; banner.hidden = true;
+    });
+    // Android / Chrome / Edge / Samsung Internet : invite native différée.
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault(); deferredInstall = e;
+      $("install-ios").hidden = true; $("install-btn").hidden = false;
+      banner.hidden = false;
+    });
+    window.addEventListener("appinstalled", () => {
+      banner.hidden = true;
+      try { localStorage.setItem("amesoeur_install_dismissed", String(Date.now())); } catch (_) {}
+    });
+    // iOS Safari : pas d'API d'installation → on montre la marche à suivre.
+    const ua = navigator.userAgent || "";
+    const isiOS = /iphone|ipad|ipod/i.test(ua) && !/crios|fxios|edgios/i.test(ua);
+    if (isiOS) {
+      $("install-btn").hidden = true; $("install-ios").hidden = false;
+      setTimeout(() => { if (!isStandalone()) banner.hidden = false; }, 1500);
+    }
+  }
 
   /* ========================= Notifications push =================== */
   async function initPush() {

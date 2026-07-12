@@ -275,6 +275,19 @@
     <p><a href="#" id="footer-privacy" data-i18n="footer.privacy">Politique de confidentialité</a><span data-i18n="footer.controller"> · Responsable de traitement : Âme Sœur (démo)</span></p>
   </footer>
 
+  <div id="install-banner" class="install-banner" hidden>
+    <button type="button" class="install-close" id="install-close" aria-label="Fermer">✕</button>
+    <div class="install-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M5 21h14"/></svg>
+    </div>
+    <div class="install-txt">
+      <b data-i18n="install.title">Installer l'app</b>
+      <span data-i18n="install.text">Ajoutez Âme Sœur à votre écran d'accueil, comme une vraie app.</span>
+      <span class="install-ios" id="install-ios" hidden data-i18n-html="install.ios">Appuyez sur <b>Partager</b> puis « <b>Sur l'écran d'accueil</b> ».</span>
+    </div>
+    <button type="button" class="btn small" id="install-btn" data-i18n="install.btn">Installer</button>
+  </div>
+
   <div id="cookie-banner" class="cookie-banner" hidden>
     <p><span data-i18n="cookie.text">Nous utilisons uniquement un cookie strictement nécessaire à votre connexion, sans aucun traceur publicitaire. </span><a href="#" id="cookie-privacy" data-i18n="cookie.link">En savoir plus</a>.</p>
     <button type="button" class="btn small" id="cookie-ok" data-i18n="cookie.ok">J'ai compris</button>

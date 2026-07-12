@@ -30,6 +30,8 @@
       "cookie.text": "Nous utilisons uniquement un cookie strictement nécessaire à votre connexion, sans aucun traceur publicitaire. ",
       "cookie.link": "En savoir plus", "cookie.ok": "J'ai compris",
       "toast.saved": "Profil enregistré", "lang.label": "Langue",
+      "install.title": "Installer l'app", "install.text": "Ajoutez Âme Sœur à votre écran d'accueil, comme une vraie app.",
+      "install.btn": "Installer", "install.ios": "Appuyez sur <b>Partager</b> puis « <b>Sur l'écran d'accueil</b> ».",
     },
     en: {
       "nav.discover": "Discover", "nav.messages": "Messages", "nav.me": "Me", "nav.profile": "Profile",
@@ -54,6 +56,8 @@
       "cookie.text": "We only use a strictly necessary cookie for your session, with no advertising tracker. ",
       "cookie.link": "Learn more", "cookie.ok": "Got it",
       "toast.saved": "Profile saved", "lang.label": "Language",
+      "install.title": "Install the app", "install.text": "Add Âme Sœur to your home screen, like a real app.",
+      "install.btn": "Install", "install.ios": "Tap <b>Share</b>, then “<b>Add to Home Screen</b>”.",
     },
   };
   const LOCALES = [["fr", "Français"], ["en", "English"]];

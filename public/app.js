@@ -40,7 +40,7 @@
 
   /* ============================ Boot ============================ */
   document.addEventListener("DOMContentLoaded", async () => {
-    initControls(); initFilters(); initAuth(); initMatches(); initRgpd(); initPhoto(); initOnboarding();
+    initControls(); initFilters(); initAuth(); initMatches(); initRgpd(); initPhoto(); initOnboarding(); initVerif();
     $("quiz-form").addEventListener("submit", onQuizSubmit);
     const params = new URLSearchParams(location.search);
     if (params.has("verified")) {
@@ -305,6 +305,7 @@
     $("nav-insights").classList.toggle("active", v === "insights");
     $("nav-profile").classList.toggle("active", v === "profile");
     if (v === "discover") buildDeck();
+    if (v === "profile") loadVerif();
     if (v === "insights") loadInsights();
     if (v === "matches") { $("chat").hidden = true; renderMatchesList(); }
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -366,7 +367,7 @@
       ${c.superLikedYou ? `<div class="superbadge">${esc(c.name)} vous a super-liké·e</div>` : ""}
       <div class="profile-hero">
         <div class="face">${c.photo ? `<img src="${c.photo}" alt="Photo de ${esc(c.name)}">` : c.avatarSvg}</div>
-        <h3 class="hero-name">${esc(c.name)} <span class="age">${c.age}</span></h3>
+        <h3 class="hero-name">${esc(c.name)} <span class="age">${c.age}</span>${c.verified ? ' <span class="verif-badge" title="Profil vérifié">✓</span>' : ""}</h3>
         <span class="score-pill">${HEART_ICON}<b>${c.score}%</b> d'affinité</span>
         ${loc ? `<p class="hero-verdict">${loc}</p>` : ""}
         ${c.activeRecently ? `<p class="active-badge">Actif·ve récemment</p>` : ""}
@@ -630,6 +631,58 @@
     const box = $("p-avatar-preview"); if (!box) return;
     try { const r = await api("/avatar/preview", { method: "POST", body: { avatarFeat: feat || null } }); box.innerHTML = r.svg; box.hidden = false; }
     catch (_) { box.hidden = true; }
+  }
+
+  /* ======================= Vérification profil =================== */
+  let verifGesture = null;
+  function processImage(file, cb) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const max = 640, scale = Math.min(1, max / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+        const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+        cv.getContext("2d").drawImage(img, 0, 0, w, h);
+        cb(cv.toDataURL("image/jpeg", 0.82));
+      };
+      img.onerror = () => toast("Image illisible.");
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  }
+  function initVerif() {
+    $("verif-file").addEventListener("change", (e) => {
+      const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+      if (!/^image\//.test(f.type)) { toast("Image uniquement."); return; }
+      if (f.size > 12 * 1024 * 1024) { toast("Image trop lourde."); return; }
+      processImage(f, async (dataUrl) => {
+        try { await api("/verification", { method: "POST", body: { selfie: dataUrl, gesture: verifGesture } }); toast("Selfie envoyé — en attente de validation."); loadVerif(); }
+        catch (ex) { toast(ex.message); }
+      });
+    });
+  }
+  async function loadVerif() {
+    if (!S.user) return;
+    let r; try { r = await api("/verification"); } catch (_) { return; }
+    renderVerif(r);
+  }
+  function renderVerif(r) {
+    const el = $("verif-area"); if (!el) return;
+    if (r.verified) { el.innerHTML = `<p class="verif-ok">✓ Profil vérifié</p><p class="hint">Votre badge « vérifié » rassure vos matchs et vous met en avant.</p>`; return; }
+    if (r.pending) { el.innerHTML = `<p class="hint">⏳ Selfie envoyé — en attente de validation par notre équipe. Vous serez notifié·e.</p>`; return; }
+    el.innerHTML = `<p class="hint">Obtenez le badge <b>« vérifié »</b> : prenez un selfie en reproduisant un geste demandé. Il est comparé à votre photo par notre équipe, puis supprimé.</p>
+      <button type="button" class="btn btn-ghost small" id="verif-start">Vérifier mon profil</button>`;
+    $("verif-start").addEventListener("click", startVerif);
+  }
+  async function startVerif() {
+    let g; try { g = (await api("/verification/start")).gesture; } catch (e) { toast(e.message); return; }
+    verifGesture = g;
+    $("verif-area").innerHTML = `<div class="verif-gesture"><p class="hint" style="margin-bottom:.3rem">Prenez un selfie en faisant&nbsp;:</p><p class="verif-g">${esc(g)}</p></div>
+      <button type="button" class="btn small" id="verif-cap">Prendre le selfie</button>
+      <button type="button" class="btn btn-ghost small" id="verif-cancel">Annuler</button>`;
+    $("verif-cap").addEventListener("click", () => $("verif-file").click());
+    $("verif-cancel").addEventListener("click", loadVerif);
   }
 
   /* ============================ RGPD ============================= */

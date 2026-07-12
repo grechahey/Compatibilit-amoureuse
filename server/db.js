@@ -27,7 +27,8 @@ CREATE TABLE IF NOT EXISTS profiles (
   user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   name TEXT, gender TEXT, seeking TEXT, bio TEXT, avatar TEXT, avatar_feat TEXT, photo TEXT,
   by INTEGER, bm INTEGER, bd INTEGER, btime TEXT, city TEXT,
-  mbti TEXT, bdsm TEXT, updated_at INTEGER, discover_photo INTEGER DEFAULT 0, interests TEXT
+  mbti TEXT, bdsm TEXT, updated_at INTEGER, discover_photo INTEGER DEFAULT 0, interests TEXT,
+  photo_verified INTEGER DEFAULT 0
 );
 CREATE TABLE IF NOT EXISTS reports (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -74,6 +75,10 @@ CREATE TABLE IF NOT EXISTS blocks (
   blocker INTEGER, blocked INTEGER, created_at INTEGER,
   PRIMARY KEY (blocker, blocked)
 );
+CREATE TABLE IF NOT EXISTS verifications (
+  user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  selfie TEXT, gesture TEXT, created_at INTEGER
+);
 `);
 
 // Migrations défensives (bases existantes créées avant l'ajout du RGPD).
@@ -90,6 +95,7 @@ for (const alter of [
   "ALTER TABLE users ADD COLUMN notify_email INTEGER DEFAULT 1",
   "ALTER TABLE users ADD COLUMN last_active INTEGER",
   "ALTER TABLE users ADD COLUMN banned INTEGER DEFAULT 0",
+  "ALTER TABLE profiles ADD COLUMN photo_verified INTEGER DEFAULT 0",
 ]) { try { db.exec(alter); } catch (_) { /* colonne déjà présente */ } }
 
 const CONSENT_VERSION = "2026-07-11";
@@ -227,7 +233,22 @@ function profileOut(row) {
     time: row.btime, city: row.city, mbti: row.mbti, bdsm: row.bdsm ? JSON.parse(row.bdsm) : null,
     discoverPhoto: !!row.discover_photo, interests: row.interests ? JSON.parse(row.interests) : [],
     isBot: !!row.is_bot, lastActive: row.last_active || null, banned: !!row.banned,
+    verified: !!row.photo_verified,
   };
+}
+// Vérification de profil (selfie + geste, revue par un admin → badge).
+function setVerification(userId, selfie, gesture) {
+  db.prepare("INSERT INTO verifications (user_id,selfie,gesture,created_at) VALUES (?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET selfie=excluded.selfie, gesture=excluded.gesture, created_at=excluded.created_at")
+    .run(userId, selfie, gesture, now());
+}
+function getVerification(userId) { return db.prepare("SELECT selfie, gesture, created_at FROM verifications WHERE user_id=?").get(userId); }
+function listVerifications() {
+  return db.prepare(`SELECT v.user_id, v.selfie, v.gesture, v.created_at, p.name, p.photo
+    FROM verifications v LEFT JOIN profiles p ON p.user_id=v.user_id ORDER BY v.created_at ASC`).all();
+}
+function resolveVerification(userId, approve) {
+  if (approve) db.prepare("UPDATE profiles SET photo_verified=1 WHERE user_id=?").run(userId);
+  db.prepare("DELETE FROM verifications WHERE user_id=?").run(userId);
 }
 function touchActive(userId) { db.prepare("UPDATE users SET last_active=? WHERE id=?").run(now(), userId); }
 // Blocage (modération) : masquage réciproque en découverte et messagerie.
@@ -359,4 +380,5 @@ module.exports = {
   setNotifyEmail, addPushSub, delPushSub, pushSubsFor,
   markRead, matchUnread, unreadCount, touchActive,
   addBlock, blockedSet, isBlocked, setBanned, flaggedUserIds, adminReports,
+  setVerification, getVerification, listVerifications, resolveVerification,
 };

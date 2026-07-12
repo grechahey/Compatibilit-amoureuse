@@ -37,6 +37,26 @@
     } catch (e) { alert(e.message); }
     finally { btn.textContent = label; renderLog(); }
   }
+  async function renderVerifs() {
+    let r; try { r = await api("/admin/verifications"); } catch (_) { return; }
+    $("verif-count").textContent = r.verifications.length;
+    const el = $("verif-list");
+    if (!r.verifications.length) { el.innerHTML = `<p class="hint">Aucune vérification en attente.</p>`; return; }
+    el.innerHTML = r.verifications.map((v) => `<div class="verif-card">
+      <div class="vc-imgs">
+        <figure><img src="${esc(v.selfie)}" alt="selfie" /><figcaption>Selfie</figcaption></figure>
+        ${v.photo ? `<figure><img src="${esc(v.photo)}" alt="photo" /><figcaption>Photo de profil</figcaption></figure>` : `<figure class="no-photo"><span>—</span><figcaption>Photo de profil</figcaption></figure>`}
+      </div>
+      <div class="vc-meta"><b>${esc(v.name || "—")}</b> <span class="muted">#${v.userId}</span><p>Geste demandé : <b>${esc(v.gesture || "—")}</b> · ${fmtDate(v.at)}</p></div>
+      <div class="vc-actions"><button type="button" class="btn small" data-ok="${v.userId}">Approuver</button><button type="button" class="btn btn-ghost small" data-no="${v.userId}">Rejeter</button></div>
+    </div>`).join("");
+    el.querySelectorAll("[data-ok]").forEach((b) => b.addEventListener("click", () => resolveVerif(+b.dataset.ok, true)));
+    el.querySelectorAll("[data-no]").forEach((b) => b.addEventListener("click", () => resolveVerif(+b.dataset.no, false)));
+  }
+  async function resolveVerif(userId, approve) {
+    try { await api("/admin/verify", { method: "POST", body: { userId, approve } }); renderVerifs(); renderLog(); }
+    catch (e) { alert(e.message); }
+  }
   async function renderReports() {
     let r; try { r = await api("/admin/reports"); } catch (_) { return; }
     const body = $("reports-body");
@@ -176,6 +196,7 @@
     renderKpis(stats); renderCharts(stats);
     $("export-csv").addEventListener("click", exportCsv);
     try { await renderMembers(); } catch (_) {}
+    try { await renderVerifs(); } catch (_) {}
     try { await renderReports(); } catch (_) {}
     try { await initAudit(); } catch (_) {}
     try { await initWeights(); } catch (_) {}

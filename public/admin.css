@@ -49,6 +49,19 @@ body { display: block; }
 .pill-flag { color: #2a0f1f; background: #f0b752; border-radius: 99px; padding: .1rem .5rem; font-size: .72rem; font-weight: 700; }
 .admin-table tr.flagged td { background: rgba(240, 183, 82, .06); }
 
+.verif-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: .9rem; }
+.verif-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 1rem; }
+.vc-imgs { display: flex; gap: .6rem; }
+.vc-imgs figure { margin: 0; flex: 1; }
+.vc-imgs img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); display: block; }
+.vc-imgs .no-photo { display: flex; flex-direction: column; }
+.vc-imgs .no-photo span { display: flex; align-items: center; justify-content: center; aspect-ratio: 1; background: var(--card-2); border-radius: 10px; color: var(--faint); }
+.vc-imgs figcaption { font-size: .72rem; color: var(--faint); text-align: center; margin-top: .3rem; }
+.vc-meta { margin: .7rem 0; font-size: .9rem; color: var(--text); }
+.vc-meta p { margin: .3rem 0 0; font-size: .82rem; color: var(--muted); }
+.vc-actions { display: flex; gap: .5rem; }
+.vc-actions .btn { margin-top: 0; }
+
 .audit-pick { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .8rem; margin-bottom: 1rem; }
 .audit-pick .field { margin: 0; min-width: 190px; flex: 1; }
 .audit-pick .btn { margin-top: 0; flex: 0 0 auto; }

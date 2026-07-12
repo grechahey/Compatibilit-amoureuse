@@ -202,6 +202,10 @@ input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border: none;
 .score-pill { display: inline-flex; align-items: baseline; gap: .4rem; margin-top: .3rem; padding: .4rem .9rem; border-radius: 99px; background: rgba(253, 76, 118, .12); border: 1px solid rgba(253, 76, 118, .3); color: var(--pink); font-size: .82rem; font-weight: 500; }
 .score-pill b { font-size: 1.05rem; font-weight: 700; }
 .hero-verdict { color: var(--muted); font-size: .88rem; margin: .7rem 0 0; }
+.verif-badge { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: #2f9be8; color: #fff; font-size: .8rem; font-weight: 800; vertical-align: middle; box-shadow: 0 0 0 3px rgba(47, 155, 232, .18); }
+.verif-ok { color: #4fd487; font-weight: 700; font-size: 1.05rem; margin: 0 0 .2rem; }
+.verif-g { font-size: 1.15rem; font-weight: 700; color: var(--text); background: var(--card-2); border: 1px solid var(--line); border-radius: 12px; padding: .8rem 1rem; margin: .1rem 0 .8rem; text-align: center; }
+#verif-area .btn { margin-top: .4rem; margin-right: .5rem; }
 
 .pcard { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem 1.3rem; margin-top: .9rem; text-align: left; }
 .pcard-head { display: flex; align-items: center; gap: .55rem; color: var(--muted); font-weight: 600; font-size: .95rem; margin-bottom: .9rem; }

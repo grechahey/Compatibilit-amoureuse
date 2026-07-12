@@ -226,6 +226,23 @@ app.post("/api/push/unsubscribe", auth, (req, res) => {
   res.json({ ok: true });
 });
 
+/* --------------------- Vérification de profil ---------------------- */
+const GESTURES = ["Levez le pouce 👍", "Faites le signe de la paix ✌️", "Main ouverte près du visage ✋",
+  "Faites un cœur avec les mains 🫶", "Touchez votre oreille gauche", "Pouce et index en « OK » 👌"];
+const randomGesture = () => GESTURES[Math.floor(Math.random() * GESTURES.length)];
+app.get("/api/verification", auth, (req, res) => {
+  const me = D.profileOut(D.q.getProfile.get(req.user.id));
+  const pending = D.getVerification(req.user.id);
+  res.json({ verified: !!(me && me.verified), pending: !!pending, gesture: pending ? pending.gesture : null });
+});
+app.get("/api/verification/start", auth, (req, res) => res.json({ gesture: randomGesture() }));
+app.post("/api/verification", auth, (req, res) => {
+  const { selfie, gesture } = req.body || {};
+  if (!selfie || !/^data:image\//.test(selfie) || selfie.length > 3000000) return res.status(400).json({ error: "Selfie invalide (image, 3 Mo max)." });
+  D.setVerification(req.user.id, selfie, String(gesture || "").slice(0, 80));
+  res.json({ pending: true });
+});
+
 // Résultats personnels : thème astral, chinois, numérologie, MBTI, kink.
 app.get("/api/me/insights", auth, (req, res) => {
   const me = D.profileOut(D.q.getProfile.get(req.user.id));
@@ -332,6 +349,15 @@ app.get("/api/admin/reports", adminAuth, (req, res) => {
     })),
   });
 });
+app.get("/api/admin/verifications", adminAuth, (req, res) => {
+  res.json({ verifications: D.listVerifications().map((v) => ({ userId: v.user_id, name: v.name || null, photo: v.photo || null, selfie: v.selfie, gesture: v.gesture, at: v.created_at })) });
+});
+app.post("/api/admin/verify", adminAuth, (req, res) => {
+  const userId = +req.body.userId, approve = !!req.body.approve;
+  D.resolveVerification(userId, approve);
+  D.logAdmin(req.user.id, req.user.email, `${approve ? "Vérification approuvée" : "Vérification rejetée"} du membre #${userId}`, req.ip);
+  res.json({ ok: true });
+});
 app.post("/api/admin/ban", adminAuth, (req, res) => {
   const userId = +req.body.userId, banned = !!req.body.banned;
   const u = D.q.userById.get(userId);
@@ -385,7 +411,7 @@ app.get("/api/discover", auth, async (req, res) => {
         // affinités) reste côté serveur et se dévoilera plus tard.
         id: c.id, name: c.name, age: ageOf(c), city: c.city, distanceKm: distanceKm(me, c),
         bio: c.bio, avatarSvg: Avatars.svgSync("u" + c.id, c.avatarFeat), score: r.score,
-        superLikedYou: superSet.has(c.id),
+        superLikedYou: superSet.has(c.id), verified: c.verified,
         activeRecently: !!(c.lastActive && tnow - c.lastActive < ACTIVE_MS),
         _lastActive: c.lastActive || 0, _dist: distanceKm(me, c),
         // Photo montrée en découverte seulement si l'utilisateur l'a choisi.
@@ -469,7 +495,7 @@ function matchView(m, meId) {
     matchId: m.id, superd: !!m.super, avatarSvg: Avatars.svgSync("u" + otherId, other.avatarFeat),
     unread: D.matchUnread(meId, m.id),
     other: { id: otherId, name: other.name, age: ageOf(other), city: other.city,
-      photo: other.photo, bio: other.bio },
+      photo: other.photo, bio: other.bio, verified: other.verified },
     lastMessage: last ? { body: last.body, mine: last.sender === meId, at: last.created_at } : null,
   };
 }

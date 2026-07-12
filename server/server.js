@@ -194,7 +194,7 @@ app.get("/api/me/insights", auth, (req, res) => {
   if (!me) return res.status(400).json({ error: "Complétez votre profil d'abord." });
   const ap = Engine.astroProfile(toEngine(me));
   res.json({
-    sun: ap.sun, cusp: ap.cusp, chinese: ap.chinese, ascendant: ap.ascendant,
+    sun: ap.sun, cusp: ap.cusp, chinese: ap.chinese, chineseEl: ap.chineseEl, ascendant: ap.ascendant,
     lifePath: ap.lifePath, hasBirthTime: !!(me.time && me.city),
     mbti: me.mbti || null, bdsm: me.bdsm || null,
   });
@@ -305,7 +305,10 @@ function buildReveal(me, other, count) {
     ? { sun: r.b.sun.name, chinese: r.b.chinese.name, ascendant: r.b.ascendant ? r.b.ascendant.name : null }
     : null;
   out.factors = count >= at("factors")
-    ? r.factors.map((f) => ({ label: f.label, emoji: f.emoji, value: Math.round(f.value * 100) }))
+    ? r.factors.map((f) => ({
+      label: f.label, emoji: f.emoji, value: Math.round(f.value * 100), weight: Math.round(f.weight * 100),
+      parts: (f.parts || []).map((p) => ({ label: p.label, value: Math.round(p.value * 100) })),
+    }))
     : null;
   const nextStage = REVEAL_STAGES.find((s) => count < s.at);
   out.next = nextStage ? { label: nextStage.label, in: nextStage.at - count } : null;

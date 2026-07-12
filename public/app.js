@@ -346,7 +346,9 @@
     }
     if (theme === "chinese") {
       const c = C.CHINESE[d.chinese.name] || {};
-      return insHead(d.chinese.emoji, d.chinese.name, "Votre signe astrologique chinois") +
+      const elEmoji = { feu: "🔥", terre: "🌍", "métal": "⚙️", eau: "💧", bois: "🌳" };
+      const sub = d.chineseEl ? `Élément ${elEmoji[d.chineseEl] || ""} ${d.chineseEl} · signe chinois` : "Votre signe astrologique chinois";
+      return insHead(d.chinese.emoji, d.chinese.name, sub) +
         `<section class="pcard">${c.keywords ? insChips(c.keywords) : ""}<p class="ins-p">${esc(c.portrait || "")}</p>${c.amour ? insLove(c.amour) : ""}</section>`;
     }
     if (theme === "numero") {
@@ -668,8 +670,11 @@
       if (rv.signs.chinese) chips.push(`<span class="rv-chip">🐉 ${esc(rv.signs.chinese)}</span>`);
       if (rv.signs.ascendant) chips.push(`<span class="rv-chip">↗️ Asc. ${esc(rv.signs.ascendant)}</span>`);
     }
-    const factors = rv.factors ? `<div class="rv-factors">${rv.factors.map((f) =>
-      `<div class="rv-frow"><span>${f.emoji} ${esc(f.label)}</span><b>${f.value}%</b><i style="width:${f.value}%"></i></div>`).join("")}</div>` : "";
+    const factors = rv.factors ? `<div class="rv-factors">${rv.factors.map((f) => {
+      const sub = (f.parts && f.parts.length > 1)
+        ? `<div class="rv-sub">${f.parts.map((p) => `<span>${esc(p.label)} <b>${p.value}%</b></span>`).join("")}</div>` : "";
+      return `<div class="rv-fitem"><div class="rv-frow"><span>${f.emoji} ${esc(f.label)}${f.weight != null ? ` <em>· ${f.weight}%</em>` : ""}</span><b>${f.value}%</b><i style="width:${f.value}%"></i></div>${sub}</div>`;
+    }).join("")}</div>` : "";
     const next = rv.next
       ? `<p class="rv-next">🔒 ${esc(cap(rv.next.label))} — dans ${rv.next.in} message${rv.next.in > 1 ? "s" : ""}</p>`
       : `<p class="rv-next">Toutes vos affinités sont dévoilées.</p>`;

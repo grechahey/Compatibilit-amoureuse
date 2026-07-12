@@ -140,11 +140,26 @@
     for (const t of raw.split(" ")) { const [y, md] = t.split(":"); const [m, d] = md.split("-"); o[+y] = [+m, +d]; }
     return o;
   })();
-  function chineseSign(date) {
+  // Année chinoise (ajustée au Nouvel An lunaire) — base commune animal + élément.
+  function chineseYearAdjusted(date) {
     let y = date.getFullYear();
     const cny = CNY[y];
     if (cny) { const m = date.getMonth() + 1, d = date.getDate(); if (m < cny[0] || (m === cny[0] && d < cny[1])) y -= 1; }
-    return CHINESE[((y % 12) + 12) % 12];
+    return y;
+  }
+  function chineseSign(date) { const y = chineseYearAdjusted(date); return CHINESE[((y % 12) + 12) % 12]; }
+  // Cinq éléments par dernier chiffre de l'année (tronc céleste).
+  const CH_ELEMENTS = ["métal", "métal", "eau", "eau", "bois", "bois", "feu", "feu", "terre", "terre"];
+  function chineseElementOf(date) { const y = chineseYearAdjusted(date); return CH_ELEMENTS[((y % 10) + 10) % 10]; }
+  // Cycles d'engendrement (harmonie) et de contrôle (tension) des 5 éléments.
+  const CH_GEN = { bois: "feu", feu: "terre", terre: "métal", métal: "eau", eau: "bois" };
+  const CH_CTRL = { bois: "terre", terre: "eau", eau: "feu", feu: "métal", métal: "bois" };
+  function chineseElementScore(a, b) {
+    if (!a || !b) return 0.65;
+    if (CH_GEN[a] === b || CH_GEN[b] === a) return 0.92; // s'engendrent → nourrissant
+    if (a === b) return 0.8;                              // même élément → complices
+    if (CH_CTRL[a] === b || CH_CTRL[b] === a) return 0.45; // se contrôlent → friction
+    return 0.65;
   }
   const CH_TRINES = [["Rat", "Dragon", "Singe"], ["Buffle", "Serpent", "Coq"], ["Tigre", "Cheval", "Chien"], ["Lapin", "Chèvre", "Cochon"]];
   const CH_FRIENDS = [["Rat", "Buffle"], ["Tigre", "Cochon"], ["Lapin", "Chien"], ["Dragon", "Coq"], ["Serpent", "Singe"], ["Cheval", "Chèvre"]];
@@ -181,12 +196,18 @@
     { same: 0.6, diff: 0.85 }, { same: 1.0, diff: 0.4 },
     { same: 0.6, diff: 0.85 }, { same: 0.65, diff: 0.8 },
   ];
-  function mbtiScore(t1, t2) {
+  const MBTI_AXIS_LABEL = ["Énergie (E/I)", "Perception (N/S)", "Décision (T/F)", "Mode de vie (J/P)"];
+  function mbtiDetail(t1, t2) {
     if (!t1 || !t2) return null;
-    let s = 0;
-    for (let i = 0; i < 4; i++) s += t1[i] === t2[i] ? MBTI_DIM[i].same : MBTI_DIM[i].diff;
-    return s / 4;
+    const parts = []; let s = 0;
+    for (let i = 0; i < 4; i++) {
+      const v = t1[i] === t2[i] ? MBTI_DIM[i].same : MBTI_DIM[i].diff;
+      s += v;
+      parts.push({ label: MBTI_AXIS_LABEL[i], value: v, same: t1[i] === t2[i] });
+    }
+    return { value: s / 4, parts };
   }
+  function mbtiScore(t1, t2) { const d = mbtiDetail(t1, t2); return d ? d.value : null; }
 
   /* -------------------------------- BDSM ----------------------------- *
    * Adaptation légère (inspirée de bdsmtest.org) — traits 0..1.
@@ -206,22 +227,33 @@
     ["polygame", "polygame"], ["asexual", "asexual"], ["hypersexual", "hypersexual"],
     ["daddybaby", "daddybaby"], ["echangiste", "echangiste"],
   ];
-  function bdsmScore(a, b) {
+  function kinkDetail(a, b) {
     if (!a || !b) return null;
-    const parts = [];
+    const raw = [];
     for (const [x, y] of BDSM_PAIRS) {
       const ax = a[x] || 0, ay = a[y] || 0, bx = b[x] || 0, by = b[y] || 0;
       // complémentarité dans un sens ou l'autre
-      parts.push(clamp01(ax * by + ay * bx));
+      raw.push({ pair: [x, y], value: clamp01(ax * by + ay * bx) });
     }
     // Ouverture partagée (experimental) : deux profils curieux s'entendent.
     const openA = a.experimental || 0, openB = b.experimental || 0;
     const openness = Math.min(openA, openB) * (1 - 0.5 * Math.abs(openA - openB));
     // Les switches augmentent la flexibilité globale.
-    const flex = 1 + 0.15 * Math.min(a.switch || 0, b.switch || 0);
-    const core = parts.sort((m, n) => n - m).slice(0, 6).reduce((s, v) => s + v, 0) / 6;
-    return clamp01((core * 0.72 + openness * 0.28) * flex);
+    const flexMin = Math.min(a.switch || 0, b.switch || 0);
+    const flex = 1 + 0.15 * flexMin;
+    const core = raw.map((r) => r.value).sort((m, n) => n - m).slice(0, 6).reduce((s, v) => s + v, 0) / 6;
+    const value = clamp01((core * 0.72 + openness * 0.28) * flex);
+    return {
+      value,
+      parts: [
+        { label: "Complémentarité des rôles", value: core },
+        { label: "Ouverture partagée", value: openness },
+        { label: "Flexibilité (switch)", value: clamp01(flexMin) },
+      ],
+      top: raw.filter((r) => r.value > 0.15).sort((m, n) => n.value - m.value).slice(0, 3),
+    };
   }
+  function bdsmScore(a, b) { const d = kinkDetail(a, b); return d ? d.value : null; }
 
   /* ------------------- Détails astro d'un profil --------------------- */
   function astroProfile(p) {
@@ -230,43 +262,64 @@
       sun: sunSign(date),
       cusp: cuspInfo(date),
       chinese: chineseSign(date),
+      chineseEl: chineseElementOf(date),
       lifePath: lifePath(date),
       ascendant: ascendant(date, p.time, p.zone, p.lat, p.lon),
     };
   }
 
-  /* --------------------- Compatibilité combinée ---------------------- */
-  function compatibility(A, B) {
-    const a = astroProfile(A), b = astroProfile(B);
-
-    let astro = ELEMENT_AFFINITY[a.sun.element][b.sun.element];
-    if (a.ascendant && b.ascendant)
-      astro = astro * 0.6 + ELEMENT_AFFINITY[a.ascendant.element][b.ascendant.element] * 0.4;
-
-    const factors = [];
-    const add = (key, label, emoji, value, weight) => {
-      if (value == null) return;
-      factors.push({ key, label, emoji, value, weight });
-    };
-    add("mbti", "Personnalité (MBTI)", "🧠", mbtiScore(A.mbti, B.mbti), 0.25);
-    add("bdsm", "Alchimie kink", "🔥", bdsmScore(A.bdsm, B.bdsm), 0.20);
-    add("astro", "Astrologie (Soleil + Asc.)", "✨", astro, 0.20);
-    add("chinese", "Astrologie chinoise", "🐉", chineseScore(a.chinese.name, b.chinese.name), 0.15);
-    add("numero", "Numérologie", "🔢", numerologyScore(a.lifePath, b.lifePath), 0.10);
-    // Étincelle : tiebreaker déterministe basé sur les prénoms.
-    add("spark", "Étincelle", "⚡", spark(A.name, B.name), 0.10);
-
-    const wsum = factors.reduce((s, f) => s + f.weight, 0);
-    const score = Math.round(factors.reduce((s, f) => s + f.value * (f.weight / wsum), 0) * 100);
-    return { score, factors: factors.map((f) => ({ ...f, weight: f.weight / wsum })), a, b };
+  /* -------- Détails de compatibilité par item (chacun 0..1) ---------- *
+   * Chaque helper renvoie { value, parts:[{label,value}] } pour un calcul
+   * transparent et vérifiable, décomposé en sous-critères. */
+  // Aspect entre deux signes solaires selon leur écart angulaire (×30°).
+  const SIGN_ASPECT = { 0: 0.75, 1: 0.5, 2: 0.85, 3: 0.45, 4: 0.95, 5: 0.5, 6: 0.6 };
+  const signGap = (i, j) => { const d = Math.abs(i - j); return Math.min(d, 12 - d); };
+  function astroDetail(a, b) {
+    const si = ZODIAC.indexOf(a.sun), sj = ZODIAC.indexOf(b.sun);
+    const elem = ELEMENT_AFFINITY[a.sun.element][b.sun.element];
+    const aspect = SIGN_ASPECT[signGap(si, sj)];
+    const parts = [{ label: "Éléments du Soleil", value: elem }, { label: "Aspect solaire", value: aspect }];
+    let value;
+    if (a.ascendant && b.ascendant) {
+      const asc = ELEMENT_AFFINITY[a.ascendant.element][b.ascendant.element];
+      parts.push({ label: "Ascendants", value: asc });
+      value = 0.45 * elem + 0.25 * aspect + 0.30 * asc;
+    } else value = 0.65 * elem + 0.35 * aspect;
+    return { value, parts };
+  }
+  function chineseDetail(a, b) {
+    const rel = chineseScore(a.chinese.name, b.chinese.name);
+    const el = chineseElementScore(a.chineseEl, b.chineseEl);
+    return { value: 0.65 * rel + 0.35 * el, parts: [
+      { label: "Relation des signes", value: rel },
+      { label: "Éléments chinois", value: el },
+    ] };
+  }
+  function numeroDetail(lp1, lp2) {
+    const v = numerologyScore(lp1, lp2);
+    return { value: v, parts: [{ label: "Chemins de vie", value: v }] };
   }
 
-  function spark(n1, n2) {
-    const norm = (s) => (s || "").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-    const pair = [norm(n1), norm(n2)].sort().join("+");
-    let h = 2166136261;
-    for (let i = 0; i < pair.length; i++) { h ^= pair.charCodeAt(i); h = Math.imul(h, 16777619); }
-    return 0.35 + (((h >>> 0) % 100000) / 100000) * 0.65;
+  /* --------------------- Compatibilité combinée ---------------------- *
+   * Matching précis sur 5 items pondérés (numérologie plafonnée à 10 %).
+   * Quand le kink n'est pas renseigné, son poids est redistribué. */
+  const WEIGHTS = { mbti: 0.30, astro: 0.25, chinese: 0.15, numero: 0.10, bdsm: 0.20 };
+  function compatibility(A, B) {
+    const a = astroProfile(A), b = astroProfile(B);
+    const factors = [];
+    const add = (key, label, emoji, res) => {
+      if (!res || res.value == null) return;
+      factors.push({ key, label, emoji, weight: WEIGHTS[key], value: res.value, parts: res.parts || [], top: res.top });
+    };
+    add("mbti", "Personnalité (MBTI)", "🧠", mbtiDetail(A.mbti, B.mbti));
+    add("astro", "Astrologie (Soleil + Asc.)", "✨", astroDetail(a, b));
+    add("chinese", "Astrologie chinoise", "🐉", chineseDetail(a, b));
+    add("numero", "Numérologie", "🔢", numeroDetail(a.lifePath, b.lifePath));
+    add("bdsm", "Alchimie kink", "🔥", kinkDetail(A.bdsm, B.bdsm));
+
+    const wsum = factors.reduce((s, f) => s + f.weight, 0) || 1;
+    const score = Math.round(factors.reduce((s, f) => s + f.value * (f.weight / wsum), 0) * 100);
+    return { score, factors: factors.map((f) => ({ ...f, weight: f.weight / wsum })), a, b };
   }
 
   function verdict(score) {

@@ -34,6 +34,14 @@ header, main, footer { position: relative; z-index: 1; width: 100%; }
   border-bottom: 1px solid var(--line);
 }
 .brand { font-weight: 700; color: var(--text); font-size: 1.15rem; letter-spacing: -0.01em; }
+.lang-select {
+  margin-left: auto; margin-right: .6rem; font: inherit; font-size: .8rem; font-weight: 500;
+  color: var(--muted); background: var(--card-2); border: 1px solid var(--line); border-radius: 99px;
+  padding: .32rem 1.6rem .32rem .7rem; cursor: pointer; -webkit-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M1 3l4 4 4-4' stroke='%23999' stroke-width='1.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right .6rem center;
+}
+.lang-select:hover { color: var(--text); border-color: var(--muted); }
 .tabs { display: flex; align-items: center; gap: .1rem; }
 .tab {
   font: inherit; font-size: .82rem; font-weight: 500; cursor: pointer; white-space: nowrap;

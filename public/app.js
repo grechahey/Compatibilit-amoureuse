@@ -40,6 +40,7 @@
 
   /* ============================ Boot ============================ */
   document.addEventListener("DOMContentLoaded", async () => {
+    initI18n();
     initControls(); initFilters(); initAuth(); initMatches(); initRgpd(); initPhoto(); initOnboarding(); initVerif();
     $("quiz-form").addEventListener("submit", onQuizSubmit);
     const params = new URLSearchParams(location.search);
@@ -56,15 +57,37 @@
     catch (e) { showAuth(); }
   });
 
+  /* ======================= Internationalisation =================== */
+  const I18n = window.I18n || { t: (k) => k, applyI18n: () => {}, setLocale: () => {}, getLocale: () => "fr", locales: [["fr", "Français"]] };
+  function initI18n() {
+    const sel = $("lang-select");
+    if (sel) {
+      I18n.locales.forEach(([code, label]) => sel.appendChild(new Option(label, code)));
+      sel.value = I18n.getLocale();
+      sel.addEventListener("change", () => I18n.setLocale(sel.value));
+    }
+    I18n.applyI18n();
+    refreshAuthTexts();
+    document.addEventListener("localechange", onLocaleChange);
+  }
+  function onLocaleChange() {
+    refreshAuthTexts();
+    renderOnb();
+  }
+  function refreshAuthTexts() {
+    const reg = authMode === "register";
+    $("auth-title").textContent = I18n.t(reg ? "auth.createTitle" : "auth.loginTitle");
+    $("auth-submit").textContent = I18n.t(reg ? "auth.signup" : "auth.login");
+    $("auth-switch").textContent = I18n.t(reg ? "auth.toLogin" : "auth.toRegister");
+    const lead = $("auth-switch-lead"); if (lead) lead.textContent = I18n.t(reg ? "auth.haveAccount" : "auth.noAccount");
+  }
+
   /* ============================ Auth ============================ */
   function initAuth() {
     $("auth-switch").addEventListener("click", (e) => {
       e.preventDefault();
       authMode = authMode === "register" ? "login" : "register";
-      $("auth-title").textContent = authMode === "register" ? "Créer un compte" : "Se connecter";
-      $("auth-submit").textContent = authMode === "register" ? "S'inscrire" : "Se connecter";
-      $("auth-switch").textContent = authMode === "register" ? "Se connecter" : "Créer un compte";
-      $("auth-switch").previousSibling.textContent = authMode === "register" ? "Déjà membre ? " : "Nouveau ici ? ";
+      refreshAuthTexts();
       $("consent-block").hidden = authMode !== "register";
     });
     $("privacy-link").addEventListener("click", (e) => { e.preventDefault(); openPrivacyModal(); });
@@ -124,10 +147,7 @@
 
   /* =========================== Onboarding ======================== */
   const ONB = [
-    { emoji: "💫", title: "Bienvenue sur Âme Sœur", text: "Ici, on ne matche pas sur des photos, mais sur ce qui compte vraiment : votre personnalité et vos affinités profondes." },
-    { emoji: "🧬", title: "Cinq dimensions croisées", text: "Personnalité (MBTI), astrologie, astrologie chinoise, numérologie et affinités intimes se combinent en un vrai score de compatibilité." },
-    { emoji: "🌒", title: "La magie se dévoile peu à peu", text: "Personnalité, signes, puis photo se révèlent au fil de la conversation. On apprend à se connaître avant de se juger." },
-    { emoji: "✨", title: "Et vous vous découvrez", text: "Au passage, vous obtenez votre thème astral, votre type de personnalité et vos nombres. Prêt·e à rencontrer votre âme sœur ?" },
+    { emoji: "💫", k: 1 }, { emoji: "🧬", k: 2 }, { emoji: "🌒", k: 3 }, { emoji: "✨", k: 4 },
   ];
   let onbPos = 0;
   function initOnboarding() {
@@ -137,9 +157,9 @@
   function showOnboarding() { onbPos = 0; renderOnb(); showView("onboarding"); }
   function renderOnb() {
     const s = ONB[onbPos];
-    $("onb-card").innerHTML = `<div class="onb-emoji">${s.emoji}</div><h2>${esc(s.title)}</h2><p>${esc(s.text)}</p>`;
+    $("onb-card").innerHTML = `<div class="onb-emoji">${s.emoji}</div><h2>${esc(I18n.t("onb." + s.k + "t"))}</h2><p>${esc(I18n.t("onb." + s.k + "x"))}</p>`;
     $("onb-dots").innerHTML = ONB.map((_, i) => `<span class="onb-dot${i === onbPos ? " on" : ""}"></span>`).join("");
-    $("onb-next").textContent = onbPos === ONB.length - 1 ? "Créer mon profil" : "Suivant";
+    $("onb-next").textContent = onbPos === ONB.length - 1 ? I18n.t("onb.create") : I18n.t("onb.next");
     $("onb-skip").hidden = onbPos === ONB.length - 1;
   }
   function finishOnboarding() { try { localStorage.setItem("amesoeur_onboarded", "1"); } catch (_) {} showView("profile"); }
@@ -291,7 +311,7 @@
     };
     if (pendingPhoto) body.photo = pendingPhoto;
     if (pendingAvatarFeat) body.avatarFeat = pendingAvatarFeat;
-    try { const r = await api("/profile", { method: "PUT", body }); S.profile = r.profile; if (S.user) S.user.notifyEmail = body.notifyEmail; toast("Profil enregistré"); showView("discover"); }
+    try { const r = await api("/profile", { method: "PUT", body }); S.profile = r.profile; if (S.user) S.user.notifyEmail = body.notifyEmail; toast(I18n.t("toast.saved")); showView("discover"); }
     catch (ex) { fail(ex.message); }
   }
 

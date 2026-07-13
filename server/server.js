@@ -198,7 +198,8 @@ function sanitizeAvatarFeat(f) {
   const out = {};
   if (HEX6.test(f.skinColor || "")) out.skinColor = String(f.skinColor).toLowerCase();
   if (HEX6.test(f.hairColor || "")) out.hairColor = String(f.hairColor).toLowerCase();
-  return out.skinColor || out.hairColor ? out : null;
+  if (Avatars.HAIR_STYLES.includes(f.hairStyle)) out.hairStyle = f.hairStyle;
+  return out.skinColor || out.hairColor || out.hairStyle ? out : null;
 }
 
 // Aperçu de l'avatar généré (pour un retour visuel immédiat dans le formulaire).

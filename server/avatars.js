@@ -1,62 +1,55 @@
 "use strict";
-/* Avatars humanoïdes déterministes via DiceBear (style « adventurer »).
+/* Avatars humanoïdes déterministes via DiceBear (style « avataaars »).
  * ESM chargé dynamiquement puis mis en cache ; génération synchrone ensuite.
- * L'avatar respecte le genre déclaré (cheveux longs pour les femmes, courts
- * pour les hommes, mixte pour non-binaire) et, si des caractéristiques (teint,
- * cheveux) extraites d'une photo sont fournies, il s'en rapproche.
- * « adventurer » n'a aucune pilosité faciale : plus de barbe indésirable. */
-let mod = null, HAIR = null;
+ * - respecte le genre déclaré (coiffures longues/variées pour les femmes,
+ *   courtes pour les hommes, mixte pour non-binaire) ;
+ * - aucune pilosité faciale imposée (plus de barbe indésirable) ;
+ * - teint + couleur de cheveux extraits de la photo (ou choisis à la main) ;
+ * - coiffure explicite possible (frisés, afro, locks…) via feat.hairStyle. */
+let mod = null;
 async function ready() {
   if (!mod) {
     const core = await import("@dicebear/core");
     const col = await import("@dicebear/collection");
     mod = { core, col };
-    computeHair();
   }
   return mod;
 }
 
 const BG = ["ece4d9", "e6ded0", "ddd6ea", "d9e2df", "e8dcd9", "e9ddd6"];
-// Style d'avatar (DiceBear). Modifiable via AVATAR_STYLE (défaut : adventurer).
-const STYLE = process.env.AVATAR_STYLE || "adventurer";
+const STYLE = process.env.AVATAR_STYLE || "avataaars";
 const cache = new Map();
 const isHex = (s) => typeof s === "string" && /^[0-9a-fA-F]{6}$/.test(s);
 
-// Répartit les variantes de coiffure du style en « longues » / « courtes ».
-function computeHair() {
-  try {
-    const style = mod.col[STYLE] || mod.col.adventurer;
-    const list = style.schema.properties.hair && style.schema.properties.hair.items.enum;
-    if (list && list.length) {
-      const long = list.filter((h) => /long/i.test(h));
-      const short = list.filter((h) => /short/i.test(h));
-      HAIR = { long: long.length ? long : list, short: short.length ? short : list, all: list };
-    }
-  } catch (_) { HAIR = null; }
-}
-// Jeu de coiffures selon le genre déclaré.
-function hairFor(gender) {
-  if (!HAIR) return null;
-  if (gender === "F" || gender === "FT") return HAIR.long;   // femmes → cheveux longs
-  if (gender === "H" || gender === "HT") return HAIR.short;  // hommes → cheveux courts
-  return HAIR.all;                                           // non-binaire / inconnu → tout
-}
+// Coiffures avataaars réparties par présentation de genre (sans chapeaux).
+const FEMALE_TOPS = ["bob", "bun", "curly", "curvy", "dreads", "frida", "fro", "froBand",
+  "longButNotTooLong", "miaWallace", "straight01", "straight02", "straightAndStrand",
+  "dreads01", "dreads02", "frizzle", "bigHair", "shaggyMullet"];
+const MALE_TOPS = ["shortCurly", "shortFlat", "shortRound", "shortWaved", "sides",
+  "theCaesar", "theCaesarAndSidePart", "dreads01", "fro", "frizzle", "shaggy"];
+const ALL_TOPS = [...new Set([...FEMALE_TOPS, ...MALE_TOPS])];
+// Coiffures sélectionnables à la main (avec l'intitulé montré côté client).
+const HAIR_STYLES = ["shortCurly", "fro", "curly", "dreads", "bob", "bun",
+  "longButNotTooLong", "straight02", "shortFlat", "shaggy", "hijab", "turban"];
+const topsFor = (gender) => (gender === "F" || gender === "FT") ? FEMALE_TOPS
+  : (gender === "H" || gender === "HT") ? MALE_TOPS : ALL_TOPS;
 
 function svgSync(seed, feat, gender) {
   if (!mod) return "";
   const skin = feat && isHex(feat.skinColor) ? feat.skinColor.toLowerCase() : null;
   const hair = feat && isHex(feat.hairColor) ? feat.hairColor.toLowerCase() : null;
-  const key = seed + "|" + (skin || "") + "|" + (hair || "") + "|" + (gender || "");
+  const style = feat && HAIR_STYLES.includes(feat.hairStyle) ? feat.hairStyle : null;
+  const key = [seed, skin || "", hair || "", style || "", gender || ""].join("|");
   if (cache.has(key)) return cache.get(key);
-  const style = mod.col[STYLE] || mod.col.adventurer;
-  const opts = { seed: String(seed), radius: 50, backgroundColor: BG };
+  const dstyle = mod.col[STYLE] || mod.col.avataaars;
+  const opts = { seed: String(seed), radius: 50, backgroundColor: BG,
+    facialHairProbability: 0, accessoriesProbability: 0, topProbability: 100 };
   if (skin) opts.skinColor = [skin];
   if (hair) opts.hairColor = [hair];
-  const hs = hairFor(gender);
-  if (hs) { opts.hair = hs; opts.hairProbability = 100; } // toujours des cheveux
-  const svg = mod.core.createAvatar(style, opts).toString();
+  opts.top = style ? [style] : topsFor(gender);
+  const svg = mod.core.createAvatar(dstyle, opts).toString();
   cache.set(key, svg);
   return svg;
 }
 
-module.exports = { ready, svgSync };
+module.exports = { ready, svgSync, HAIR_STYLES };

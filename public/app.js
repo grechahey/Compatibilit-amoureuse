@@ -862,11 +862,17 @@
     catch (_) { box.hidden = true; box.classList.remove("av-loading"); }
   }
   // Réglage manuel du teint/cheveux : l'auto-détection propose, l'utilisateur corrige.
+  const HAIR_STYLE_OPTS = [
+    ["shortCurly", "Frisés courts"], ["fro", "Afro"], ["curly", "Bouclés"], ["dreads", "Locks"],
+    ["bob", "Carré"], ["bun", "Chignon"], ["longButNotTooLong", "Longs"], ["straight02", "Longs raides"],
+    ["shortFlat", "Courts"], ["shaggy", "Mi-longs"], ["hijab", "Hijab"], ["turban", "Turban"],
+  ];
   function buildAvatarTune() {
     const mk = (hex, kind) => `<button type="button" class="swatch" data-kind="${kind}" data-hex="${hex}" style="background:#${hex}" aria-label="${kind} #${hex}"></button>`;
-    const sk = $("skin-swatches"), ha = $("hair-swatches"); if (!sk || !ha) return;
+    const sk = $("skin-swatches"), ha = $("hair-swatches"), hs = $("hair-styles"); if (!sk || !ha || !hs) return;
     sk.innerHTML = SKIN_PALETTE.map((h) => mk(h, "skin")).join("");
     ha.innerHTML = HAIR_PALETTE.map((h) => mk(h, "hair")).join("");
+    hs.innerHTML = HAIR_STYLE_OPTS.map(([v, l]) => `<button type="button" class="hair-chip" data-style="${v}">${esc(l)}</button>`).join("");
     const onPick = (e) => {
       const b = e.target.closest(".swatch"); if (!b) return;
       pendingAvatarFeat = pendingAvatarFeat ? { ...pendingAvatarFeat } : {};
@@ -874,6 +880,12 @@
       refreshAvatarPreview(pendingAvatarFeat);
     };
     sk.addEventListener("click", onPick); ha.addEventListener("click", onPick);
+    hs.addEventListener("click", (e) => {
+      const b = e.target.closest(".hair-chip"); if (!b) return;
+      pendingAvatarFeat = pendingAvatarFeat ? { ...pendingAvatarFeat } : {};
+      pendingAvatarFeat.hairStyle = b.dataset.style;
+      refreshAvatarPreview(pendingAvatarFeat);
+    });
     $("avatar-reset").addEventListener("click", () => {
       pendingAvatarFeat = lastAutoFeat ? { ...lastAutoFeat } : null;
       refreshAvatarPreview(pendingAvatarFeat);
@@ -887,6 +899,7 @@
       const cur = b.dataset.kind === "skin" ? f.skinColor : f.hairColor;
       b.classList.toggle("on", !!cur && cur.toLowerCase() === b.dataset.hex.toLowerCase());
     });
+    tune.querySelectorAll(".hair-chip").forEach((b) => b.classList.toggle("on", f.hairStyle === b.dataset.style));
   }
 
   /* ======================= Vérification profil =================== */

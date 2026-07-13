@@ -145,6 +145,12 @@ input[type="file"] { font-size: .82rem; padding: .5rem 0; color: var(--muted); b
 .swatch { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; box-shadow: 0 0 0 1px var(--line); cursor: pointer; padding: 0; transition: transform .1s; }
 .swatch:hover { transform: scale(1.12); }
 .swatch.on { border-color: var(--pink); box-shadow: 0 0 0 2px var(--pink); }
+.tune-row-hair { align-items: flex-start; }
+.hair-styles { display: flex; flex-wrap: wrap; gap: .35rem; }
+.hair-chip { font: inherit; font-size: .78rem; padding: .32rem .6rem; border-radius: 99px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--card-2); color: var(--muted); transition: all .12s; }
+.hair-chip:hover { color: var(--text); border-color: var(--muted); }
+.hair-chip.on { background: var(--pink); color: #fff; border-color: var(--pink); }
 #avatar-reset { margin-top: .6rem; width: auto; }
 
 /* Page explicative « Pourquoi rester ouvert·e » (modal) */

@@ -435,7 +435,6 @@ app.get("/api/discover", auth, async (req, res) => {
   const meRow = D.q.getProfile.get(req.user.id);
   if (!meRow) return res.status(400).json({ error: "Complétez votre profil d'abord." });
   const me = D.profileOut(meRow), meE = toEngine(me);
-  const ageMin = +req.query.ageMin || 18, ageMax = +req.query.ageMax || 120;
   const dist = req.query.dist ? +req.query.dist : Infinity;
   const swiped = new Set(D.q.swipedTargets.all(req.user.id).map((r) => r.target));
   const superSet = new Set(D.q.superLikers.all(req.user.id).map((r) => r.actor));
@@ -445,7 +444,6 @@ app.get("/api/discover", auth, async (req, res) => {
   const ACTIVE_MS = 48 * 3600 * 1000, tnow = D.now();
   const cands = D.q.allProfiles.all(req.user.id).map(D.profileOut)
     .filter((c) => !c.banned && !swiped.has(c.id) && !blocked.has(c.id) && !flagged.has(c.id) && mutual(me, c))
-    .filter((c) => { const a = ageOf(c); return a >= ageMin && a <= ageMax; })
     .filter((c) => { if (dist === Infinity) return true; const d = distanceKm(me, c); return d == null || d <= dist; })
     .map((c) => {
       const r = Engine.compatibility(meE, toEngine(c));

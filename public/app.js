@@ -38,7 +38,7 @@
   let candidates = [], deck = [], pos = 0;
   let authMode = "register";
   let currentChat = null;
-  const filters = { ageMin: 18, ageMax: 80, dist: 2050 };
+  const filters = { dist: 2050 };
   let sortBy = "score";
 
   /* ============================ Boot ============================ */
@@ -511,22 +511,18 @@
   /* ============================ Filtres =========================== */
   function initFilters() {
     const sync = () => {
-      filters.ageMin = +$("f-age-min").value; filters.ageMax = +$("f-age-max").value;
-      if (filters.ageMin > filters.ageMax) { $("f-age-max").value = filters.ageMin; filters.ageMax = filters.ageMin; }
       filters.dist = +$("f-dist").value;
-      $("age-min-val").textContent = filters.ageMin; $("age-max-val").textContent = filters.ageMax;
       $("dist-val").textContent = filters.dist >= 2050 ? "∞" : filters.dist + " km";
-      const narrow = (filters.ageMax - filters.ageMin) < 8 || filters.dist < 300;
       const fn = $("filter-nudge");
-      if (narrow) { fn.hidden = false; fn.textContent = Data.NUDGES[5].text; } else fn.hidden = true;
+      if (filters.dist < 300) { fn.hidden = false; fn.textContent = Data.NUDGES[5].text; } else fn.hidden = true;
       buildDeck();
     };
-    ["f-age-min", "f-age-max", "f-dist"].forEach((id) => $(id).addEventListener("input", sync));
+    $("f-dist").addEventListener("input", sync);
   }
 
   /* ============================ Deck ============================== */
   async function buildDeck() {
-    const params = new URLSearchParams({ ageMin: filters.ageMin, ageMax: filters.ageMax });
+    const params = new URLSearchParams();
     if (filters.dist < 2050) params.set("dist", filters.dist);
     if (sortBy && sortBy !== "score") params.set("sort", sortBy);
     let r;

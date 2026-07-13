@@ -33,6 +33,7 @@
   let S = { user: null, profile: null, credits: { superLikes: 1, messages: 0, premium: false } };
   let CONFIG = { org: { name: "Âme Sœur", dpoEmail: "dpo@amesoeur.exemple", legal: "" } };
   let tempMbti = null, tempMbtiDetail = null, tempBdsm = null, pendingPhoto = null, devVerifyUrl = null, pendingAvatarFeat = null, pushKey = null;
+  let lastAutoFeat = null;
   let candidates = [], deck = [], pos = 0;
   let authMode = "register";
   let currentChat = null;
@@ -255,6 +256,7 @@
     const clist = $("city-list");
     [...Data.CITIES].sort((a, b) => a[0].localeCompare(b[0], "fr")).forEach((c) => clist.appendChild(new Option(c[0], c[0])));
     $("openness-link").addEventListener("click", (e) => { e.preventDefault(); openOpennessModal(); });
+    buildAvatarTune();
     ["p-dob", "p-time", "p-city"].forEach((id) => {
       const el = $(id); if (!el) return;
       el.addEventListener("change", scheduleAstroLive); el.addEventListener("input", scheduleAstroLive);
@@ -428,7 +430,7 @@
     $("nav-insights").classList.toggle("active", v === "insights");
     $("nav-profile").classList.toggle("active", v === "profile");
     if (v === "discover") buildDeck();
-    if (v === "profile") loadVerif();
+    if (v === "profile") { loadVerif(); if ($("p-avatar-preview") && $("p-avatar-preview").hidden) refreshAvatarPreview(pendingAvatarFeat); }
     if (v === "insights") loadInsights();
     if (v === "matches") { $("chat").hidden = true; renderMatchesList(); }
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -704,6 +706,7 @@
           // Extraction locale (teint, cheveux) → avatar ressemblant. La photo ne quitte pas l'appareil pour cela.
           try { pendingAvatarFeat = extractFeatures(ctx.getImageData(0, 0, w, h).data, w, h); }
           catch (_) { pendingAvatarFeat = null; }
+          lastAutoFeat = pendingAvatarFeat ? { ...pendingAvatarFeat } : null;
           refreshAvatarPreview(pendingAvatarFeat);
         };
         img.onerror = () => toast("Image illisible.");
@@ -786,8 +789,35 @@
     // Retour visuel immédiat : on révèle la vignette avec un état « en cours »
     // dès la photo chargée, puis on remplace par l'avatar généré.
     box.hidden = false; box.classList.add("av-loading"); box.innerHTML = '<span class="av-spin" aria-hidden="true"></span>';
-    try { const r = await api("/avatar/preview", { method: "POST", body: { avatarFeat: feat || null } }); box.innerHTML = r.svg; box.classList.remove("av-loading"); }
+    try { const r = await api("/avatar/preview", { method: "POST", body: { avatarFeat: feat || null } }); box.innerHTML = r.svg; box.classList.remove("av-loading"); syncAvatarTune(); }
     catch (_) { box.hidden = true; box.classList.remove("av-loading"); }
+  }
+  // Réglage manuel du teint/cheveux : l'auto-détection propose, l'utilisateur corrige.
+  function buildAvatarTune() {
+    const mk = (hex, kind) => `<button type="button" class="swatch" data-kind="${kind}" data-hex="${hex}" style="background:#${hex}" aria-label="${kind} #${hex}"></button>`;
+    const sk = $("skin-swatches"), ha = $("hair-swatches"); if (!sk || !ha) return;
+    sk.innerHTML = SKIN_PALETTE.map((h) => mk(h, "skin")).join("");
+    ha.innerHTML = HAIR_PALETTE.map((h) => mk(h, "hair")).join("");
+    const onPick = (e) => {
+      const b = e.target.closest(".swatch"); if (!b) return;
+      pendingAvatarFeat = pendingAvatarFeat ? { ...pendingAvatarFeat } : {};
+      pendingAvatarFeat[b.dataset.kind === "skin" ? "skinColor" : "hairColor"] = b.dataset.hex;
+      refreshAvatarPreview(pendingAvatarFeat);
+    };
+    sk.addEventListener("click", onPick); ha.addEventListener("click", onPick);
+    $("avatar-reset").addEventListener("click", () => {
+      pendingAvatarFeat = lastAutoFeat ? { ...lastAutoFeat } : null;
+      refreshAvatarPreview(pendingAvatarFeat);
+    });
+  }
+  function syncAvatarTune() {
+    const tune = $("avatar-tune"); if (!tune) return;
+    tune.hidden = false;
+    const f = pendingAvatarFeat || {};
+    tune.querySelectorAll(".swatch").forEach((b) => {
+      const cur = b.dataset.kind === "skin" ? f.skinColor : f.hairColor;
+      b.classList.toggle("on", !!cur && cur.toLowerCase() === b.dataset.hex.toLowerCase());
+    });
   }
 
   /* ======================= Vérification profil =================== */

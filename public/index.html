@@ -117,6 +117,12 @@
         <div class="avatar-gen">
           <div class="avatar-gen-face" id="p-avatar-preview" hidden></div>
           <p class="photo-note">Votre <b>avatar</b> est généré à partir de votre photo (teint et couleur de cheveux) et vous représente publiquement. Votre photo, elle, reste réservée à vos matchs.</p>
+          <div class="avatar-tune" id="avatar-tune" hidden>
+            <p class="tune-hint">Pas le bon rendu ? Ajustez d'un tap :</p>
+            <div class="tune-row"><span class="tune-lab">Teint</span><div class="swatches" id="skin-swatches"></div></div>
+            <div class="tune-row"><span class="tune-lab">Cheveux</span><div class="swatches" id="hair-swatches"></div></div>
+            <button type="button" class="btn btn-ghost small" id="avatar-reset">↻ Regénérer depuis ma photo</button>
+          </div>
         </div>
         <label class="check"><input type="checkbox" id="p-discover-photo" />
           Afficher ma photo dès la découverte (au lieu de l'avatar). Sinon, elle reste réservée à mes matchs.</label>

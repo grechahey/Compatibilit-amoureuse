@@ -256,6 +256,8 @@
     initCityAutocomplete();
     $("openness-link").addEventListener("click", (e) => { e.preventDefault(); openOpennessModal(); });
     buildAvatarTune();
+    // Le genre déclaré pilote la coiffure de l'avatar (long/court) → on régénère.
+    $("p-gender").addEventListener("change", () => { if (!$("p-avatar-preview").hidden) refreshAvatarPreview(pendingAvatarFeat); });
     ["p-dob", "p-time", "p-city"].forEach((id) => {
       const el = $(id); if (!el) return;
       el.addEventListener("change", scheduleAstroLive); el.addEventListener("input", scheduleAstroLive);
@@ -859,7 +861,8 @@
     // Retour visuel immédiat : on révèle la vignette avec un état « en cours »
     // dès la photo chargée, puis on remplace par l'avatar généré.
     box.hidden = false; box.classList.add("av-loading"); box.innerHTML = '<span class="av-spin" aria-hidden="true"></span>';
-    try { const r = await api("/avatar/preview", { method: "POST", body: { avatarFeat: feat || null } }); box.innerHTML = r.svg; box.classList.remove("av-loading"); syncAvatarTune(); }
+    const gender = ($("p-gender") && $("p-gender").value) || null;
+    try { const r = await api("/avatar/preview", { method: "POST", body: { avatarFeat: feat || null, gender } }); box.innerHTML = r.svg; box.classList.remove("av-loading"); syncAvatarTune(); }
     catch (_) { box.hidden = true; box.classList.remove("av-loading"); }
   }
   // Réglage manuel du teint/cheveux : l'auto-détection propose, l'utilisateur corrige.

@@ -205,7 +205,8 @@ function sanitizeAvatarFeat(f) {
 app.post("/api/avatar/preview", auth, async (req, res) => {
   await Avatars.ready();
   const feat = sanitizeAvatarFeat(req.body && req.body.avatarFeat);
-  res.json({ svg: Avatars.svgSync("u" + req.user.id, feat) });
+  const gender = req.body && req.body.gender;
+  res.json({ svg: Avatars.svgSync("u" + req.user.id, feat, gender) });
 });
 
 app.put("/api/profile", auth, async (req, res) => {
@@ -452,7 +453,7 @@ app.get("/api/discover", auth, async (req, res) => {
         // Première intention : score, ville, âge. Le reste (MBTI, signes,
         // affinités) reste côté serveur et se dévoilera plus tard.
         id: c.id, name: c.name, age: ageOf(c), city: c.city, distanceKm: distanceKm(me, c),
-        bio: c.bio, avatarSvg: Avatars.svgSync("u" + c.id, c.avatarFeat), score: r.score,
+        bio: c.bio, avatarSvg: Avatars.svgSync("u" + c.id, c.avatarFeat, c.gender), score: r.score,
         superLikedYou: superSet.has(c.id), verified: c.verified,
         activeRecently: !!(c.lastActive && tnow - c.lastActive < ACTIVE_MS),
         _lastActive: c.lastActive || 0, _dist: distanceKm(me, c),
@@ -534,7 +535,7 @@ function matchView(m, meId) {
   const other = D.profileOut(D.q.getProfile.get(otherId));
   const last = D.q.lastMessage.get(m.id);
   return {
-    matchId: m.id, superd: !!m.super, avatarSvg: Avatars.svgSync("u" + otherId, other.avatarFeat),
+    matchId: m.id, superd: !!m.super, avatarSvg: Avatars.svgSync("u" + otherId, other.avatarFeat, other.gender),
     unread: D.matchUnread(meId, m.id),
     other: { id: otherId, name: other.name, age: ageOf(other), city: other.city,
       photo: other.photo, bio: other.bio, verified: other.verified },

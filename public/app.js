@@ -742,16 +742,41 @@
     if (mx - mn < 12) return false;           // trop gris (fond, mur)
     return true;
   }
+  // Estime le teint à partir des seuls pixels « peau » du visage, en retenant
+  // la bande de luminance médiane-haute : on écarte les ombres (qui foncent le
+  // teint à tort) et les reflets brûlés. Bien plus fidèle qu'une simple moyenne,
+  // et honnête pour toutes les carnations (on lit la peau éclairée, pas l'ombre).
+  function skinEstimate(data, w, h) {
+    const x0 = Math.floor(0.20 * w), x1 = Math.floor(0.80 * w);
+    const y0 = Math.floor(0.26 * h), y1 = Math.floor(0.82 * h);
+    const px = [];
+    for (let y = y0; y < y1; y += 2) for (let x = x0; x < x1; x += 2) {
+      const i = (y * w + x) * 4;
+      if (data[i + 3] < 200) continue;
+      const R = data[i], G = data[i + 1], B = data[i + 2];
+      if (!skinish(R, G, B)) continue;
+      px.push([R, G, B, 0.299 * R + 0.587 * G + 0.114 * B]);
+    }
+    if (px.length < 25) return null;
+    px.sort((a, b) => a[3] - b[3]);
+    const lo = Math.floor(px.length * 0.45), hi = Math.max(lo + 1, Math.floor(px.length * 0.88));
+    let r = 0, g = 0, b = 0, n = 0;
+    for (let k = lo; k < hi; k++) { r += px[k][0]; g += px[k][1]; b += px[k][2]; n++; }
+    return [r / n, g / n, b / n];
+  }
   function extractFeatures(data, w, h) {
-    let skin = regionAvg(data, w, h, 0.30, 0.42, 0.40, 0.34, skinish);
-    if (!skin || skin[3] < 40) skin = regionAvg(data, w, h, 0.34, 0.45, 0.32, 0.28, null);
     const feat = {};
-    if (skin) feat.skinColor = snap([skin[0], skin[1], skin[2]], SKIN_PALETTE);
+    // Teint : estimation robuste sur la peau éclairée ; repli sur une moyenne
+    // filtrée « peau » (jamais sur une moyenne brute, qui inclurait cheveux/fond).
+    let skin = skinEstimate(data, w, h);
+    if (!skin) { const a = regionAvg(data, w, h, 0.34, 0.44, 0.30, 0.24, skinish); if (a && a[3] >= 20) skin = [a[0], a[1], a[2]]; }
+    if (skin) feat.skinColor = snap(skin, SKIN_PALETTE);
+    // Cheveux : haut du crâne, en excluant un fond clair et les pixels proches du teint.
     const top = regionAvg(data, w, h, 0.28, 0.02, 0.44, 0.16, null);
     if (top) {
       const c = [top[0], top[1], top[2]], mx = Math.max(c[0], c[1], c[2]), mn = Math.min(c[0], c[1], c[2]);
       const sat = (mx - mn) / (mx || 1), background = mx > 232 && sat < 0.08;
-      const nearSkin = skin && dist2(c, [skin[0], skin[1], skin[2]]) < 500;
+      const nearSkin = skin && dist2(c, skin) < 500;
       if (!background && !nearSkin) feat.hairColor = snap(c, HAIR_PALETTE);
     }
     return (feat.skinColor || feat.hairColor) ? feat : null;

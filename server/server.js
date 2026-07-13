@@ -222,6 +222,23 @@ app.put("/api/profile", auth, async (req, res) => {
   res.json({ profile: D.profileOut(D.q.getProfile.get(req.user.id)) });
 });
 
+// Aperçu astral en direct dans le formulaire (dès la date + le lieu saisis).
+app.post("/api/astro/preview", auth, (req, res) => {
+  const b = req.body || {};
+  const y = +b.year, mo = +b.month, d = +b.day;
+  if (!y || !mo || !d) return res.status(400).json({ error: "Date incomplète." });
+  const ci = b.city ? Data.CITY_BY_NAME[b.city] : null;
+  const ap = Engine.astroProfile({
+    year: y, month: mo, day: d, time: b.time || null,
+    zone: ci ? ci.zone : null, lat: ci ? ci.lat : null, lon: ci ? ci.lon : null,
+  });
+  res.json({
+    sun: ap.sun, cusp: ap.cusp, chinese: ap.chinese, chineseEl: ap.chineseEl,
+    chineseHour: ap.chineseHour, ascendant: ap.ascendant, lifePath: ap.lifePath,
+    hasCity: !!ci, hasTime: !!b.time,
+  });
+});
+
 /* -------------------------- Notifications push --------------------- */
 app.get("/api/push/pubkey", auth, (req, res) => res.json({ key: Notify.vapidPublicKey() }));
 app.post("/api/push/subscribe", auth, (req, res) => {

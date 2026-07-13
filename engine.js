@@ -237,6 +237,9 @@
     // (l'auto-paire récompense les valeurs mutuellement fortes).
     ["polygame", "polygame"], ["asexual", "asexual"], ["hypersexual", "hypersexual"],
     ["daddybaby", "daddybaby"], ["echangiste", "echangiste"],
+    // Nouvelles dimensions : goût partagé des fluides, de l'edge play (sans tabou),
+    // ou au contraire d'une intimité tendre et classique (vanille).
+    ["fluids", "fluids"], ["edgeplay", "edgeplay"], ["vanilla", "vanilla"],
   ];
   function kinkDetail(a, b) {
     if (!a || !b) return null;

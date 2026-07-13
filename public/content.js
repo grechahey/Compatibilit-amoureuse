@@ -135,8 +135,8 @@
   const KINK = {
     dominant: "Aime prendre le contrôle et guider le jeu.",
     submissive: "Aime s'abandonner et suivre la direction de l'autre.",
-    sadist: "Prend plaisir à donner des sensations intenses.",
-    masochist: "Prend plaisir à recevoir des sensations intenses.",
+    sadist: "Sadisme : prend plaisir à donner des sensations fortes (douleur consentie, marques).",
+    masochist: "Masochisme : prend plaisir à recevoir des sensations fortes (douleur consentie, marques).",
     rigger: "Aime attacher et immobiliser son/sa partenaire.",
     ropebunny: "Aime être attaché·e et immobilisé·e.",
     brattamer: "Aime canaliser un·e partenaire espiègle.",
@@ -166,6 +166,9 @@
     hung: "Aime être désiré pour être très bien membré.",
     blacksharer: "Aime partager son/sa partenaire avec des hommes noirs.",
     hungsharer: "Aime partager son/sa partenaire avec des hommes très bien membrés.",
+    fluids: "Aime le jeu avec les fluides corporels (salive, sueur, et plus).",
+    edgeplay: "Sans tabou : attiré·e par les pratiques taboues ou borderline (edge play).",
+    vanilla: "Au contraire, préfère une intimité tendre et classique, sans extrêmes.",
   };
 
   global.Content = { WESTERN, ELEMENT_LABEL, CHINESE, LIFEPATH, MBTI, MBTI_AXIS, KINK };

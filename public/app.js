@@ -16,6 +16,7 @@
     bigcock: "Big cock addict", asexual: "Asexuel·le", hypersexual: "Hypersexuel·le", daddybaby: "Daddy/Baby",
     echangiste: "Échangiste", blackdesired: "Black (désiré·e)", hung: "Bien membré",
     blacksharer: "Partage (hommes noirs)", hungsharer: "Partage (bien membrés)",
+    fluids: "Fluides", edgeplay: "Sans tabou / borderline", vanilla: "Tendre / vanille",
   };
 
   async function api(path, opts = {}) {
@@ -254,6 +255,10 @@
     const clist = $("city-list");
     [...Data.CITIES].sort((a, b) => a[0].localeCompare(b[0], "fr")).forEach((c) => clist.appendChild(new Option(c[0], c[0])));
     $("openness-link").addEventListener("click", (e) => { e.preventDefault(); openOpennessModal(); });
+    ["p-dob", "p-time", "p-city"].forEach((id) => {
+      const el = $(id); if (!el) return;
+      el.addEventListener("change", scheduleAstroLive); el.addEventListener("input", scheduleAstroLive);
+    });
     $("btn-bdsm-test").textContent = `Passer le test kink (${Data.BDSM_QUESTIONS.length} questions)`;
     $("p-bdsm-optin").addEventListener("change", (e) => { $("bdsm-area").hidden = !e.target.checked; if (!e.target.checked) { tempBdsm = null; refreshBdsmBadge(); } });
     $("btn-mbti-test").addEventListener("click", openMbtiQuiz);
@@ -340,6 +345,35 @@
     const low = v.toLowerCase();
     const hit = Data.CITIES.find((c) => c[0].toLowerCase() === low);
     return hit ? hit[0] : v;
+  }
+
+  /* ============ Aperçu astral en direct dans le formulaire =========== */
+  let astroLiveTimer = null;
+  function scheduleAstroLive() { clearTimeout(astroLiveTimer); astroLiveTimer = setTimeout(updateAstroLive, 350); }
+  async function updateAstroLive() {
+    const box = $("astro-live"); if (!box) return;
+    const dob = $("p-dob").value;
+    if (!dob) { box.hidden = true; return; }
+    const d = new Date(dob + "T00:00:00");
+    if (isNaN(d.getTime())) { box.hidden = true; return; }
+    const body = { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate(), time: $("p-time").value || null, city: normalizeCity($("p-city").value) };
+    let r; try { r = await api("/astro/preview", { method: "POST", body }); } catch (_) { box.hidden = true; return; }
+    const C = window.Content || {};
+    const west = (C.WESTERN && C.WESTERN[r.sun.name]) || {};
+    const lp = (C.LIFEPATH && C.LIFEPATH[r.lifePath]) || {};
+    const elEmoji = { feu: "🔥", terre: "🌍", "métal": "⚙️", eau: "💧", bois: "🌳" };
+    const row = (ic, title, sub, muted) => `<div class="al-row${muted ? " muted" : ""}"><span class="al-ic">${ic}</span><div><b>${title}</b><span>${sub}</span></div></div>`;
+    const rows = [];
+    rows.push(row("☀️", `${esc(r.sun.emoji)} ${esc(r.sun.name)}`, `Signe solaire${west.keywords ? " · " + esc(west.keywords.slice(0, 2).join(", ")) : ""}`));
+    if (r.ascendant) rows.push(row("⬆️", `${esc(r.ascendant.emoji)} ${esc(r.ascendant.name)}`, "Ascendant · l'image renvoyée au premier regard"));
+    else rows.push(row("⬆️", "Ascendant", `Ajoutez l'heure ${r.hasCity ? "" : "et la ville "}de naissance pour le calculer`, true));
+    const chSub = `Signe chinois${r.chineseEl ? " · " + (elEmoji[r.chineseEl] || "") + " " + esc(r.chineseEl) : ""}${r.chineseHour ? " · heure " + esc(r.chineseHour.name) : ""}`;
+    rows.push(row("🐉", `${esc(r.chinese.emoji)} ${esc(r.chinese.name)}`, chSub));
+    const lpWords = lp.title ? " — " + esc(lp.title) : "";
+    const lpPortrait = lp.portrait ? esc(String(lp.portrait).split(". ")[0]) : "Votre tempérament de fond, calculé depuis votre date.";
+    rows.push(row("🔢", `Chemin de vie ${esc(r.lifePath)}${lpWords}`, lpPortrait));
+    box.innerHTML = `<div class="al-head">Votre thème, en direct ✨</div>${rows.join("")}<p class="al-note">Aperçu instantané — le détail complet vous attend dans « Moi » après enregistrement.</p>`;
+    box.hidden = false;
   }
 
   /* ============= Pourquoi rester ouvert·e (dév. perso / TCC) ========= */
@@ -933,6 +967,7 @@
     $("p-notify-email").checked = !(S.user && S.user.notifyEmail === false);
     pendingAvatarFeat = me.avatarFeat || null;
     refreshAvatarPreview(pendingAvatarFeat);
+    if (me.year) scheduleAstroLive();
   }
 
   /* ============================= Toast ========================== */

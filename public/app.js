@@ -250,9 +250,10 @@
 
   /* ====================== Contrôles du profil ====================== */
   function initControls() {
-    const csel = $("p-city");
-    csel.appendChild(new Option("— non précisé —", ""));
-    [...Data.CITIES].sort((a, b) => a[0].localeCompare(b[0], "fr")).forEach((c) => csel.appendChild(new Option(c[0], c[0])));
+    // Ville : champ de recherche libre (datalist) — on tape, ça filtre parmi ~180 villes.
+    const clist = $("city-list");
+    [...Data.CITIES].sort((a, b) => a[0].localeCompare(b[0], "fr")).forEach((c) => clist.appendChild(new Option(c[0], c[0])));
+    $("openness-link").addEventListener("click", (e) => { e.preventDefault(); openOpennessModal(); });
     $("btn-bdsm-test").textContent = `Passer le test kink (${Data.BDSM_QUESTIONS.length} questions)`;
     $("p-bdsm-optin").addEventListener("change", (e) => { $("bdsm-area").hidden = !e.target.checked; if (!e.target.checked) { tempBdsm = null; refreshBdsmBadge(); } });
     $("btn-mbti-test").addEventListener("click", openMbtiQuiz);
@@ -331,6 +332,33 @@
   function openOverlay() { $("quiz-error").hidden = true; $("overlay").hidden = false; document.body.style.overflow = "hidden"; }
   function closeOverlay() { $("overlay").hidden = true; document.body.style.overflow = ""; }
 
+  // Ramène la ville saisie sur un libellé exact du catalogue (insensible à la
+  // casse/accents partiels). Ville inconnue → null (l'ascendant sera simplement omis).
+  function normalizeCity(raw) {
+    const v = (raw || "").trim();
+    if (!v) return null;
+    const low = v.toLowerCase();
+    const hit = Data.CITIES.find((c) => c[0].toLowerCase() === low);
+    return hit ? hit[0] : v;
+  }
+
+  /* ============= Pourquoi rester ouvert·e (dév. perso / TCC) ========= */
+  function openOpennessModal() {
+    openModal(`<div class="explainer"><button type="button" class="close" data-close>✕</button>
+      <h3>Pourquoi rester ouvert·e&nbsp;?</h3>
+      <p class="ex-lead">Sur Âme Sœur, on matche sur ce qui dure — la personnalité et les affinités profondes — pas sur un « type » physique. Voici pourquoi, sérieusement.</p>
+      <section class="ex-card"><h4>🧭 Le « type » est un filtre qui appauvrit</h4>
+        <p>Chercher un physique ou un profil précis, c'est trier sur 1&nbsp;% de qui est l'autre — et écarter d'emblée des personnes avec qui l'entente serait rare. Les études sur l'attirance montrent que la compatibilité durable se joue sur les valeurs, l'humour, le rythme de vie et la sécurité émotionnelle, bien plus que sur des critères de casting.</p></section>
+      <section class="ex-card"><h4>🌱 Une occasion de développement personnel</h4>
+        <p>Explorer sa personnalité (démarche des 16 types, inspirée du MBTI®) et ses fonctionnements aide à mieux se comprendre et à mieux comprendre l'autre. Ce n'est pas un test de tri, c'est un miroir : il éclaire vos besoins, vos angles morts, votre manière d'aimer.</p></section>
+      <section class="ex-card"><h4>🧠 Ce qu'en disent les TCC</h4>
+        <p>Les thérapies cognitives et comportementales (TCC) invitent à repérer nos automatismes — « il/elle doit absolument être comme ceci » — et à les assouplir. La <b>dépendance affective</b>, la peur du rejet ou la quête de validation poussent à des choix étroits et répétitifs. Prendre du recul, tolérer l'incertitude d'une rencontre, s'ouvrir à la surprise : ce sont des compétences qui se travaillent, et qui rendent les relations plus libres.</p>
+        <p class="ex-note">Ces repères sont proposés à titre de mieux-être, sans valeur de diagnostic ni de thérapie. En cas de souffrance, un·e professionnel·le de santé reste la bonne adresse.</p></section>
+      <button type="button" class="btn" data-back>← Revenir à mon inscription</button></div>`);
+    $("modal-card").querySelector("[data-close]").addEventListener("click", closeModal);
+    $("modal-card").querySelector("[data-back]").addEventListener("click", closeModal);
+  }
+
   /* ========================= Enregistrement ======================== */
   async function onSave(e) {
     e.preventDefault();
@@ -345,7 +373,7 @@
     const body = {
       name, gender: $("p-gender").value, seeking: $("p-seeking").value, bio: $("p-bio").value.trim(),
       year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate(),
-      time: $("p-time").value || null, city: $("p-city").value || null, mbti: tempMbti, bdsm: tempBdsm,
+      time: $("p-time").value || null, city: normalizeCity($("p-city").value), mbti: tempMbti, bdsm: tempBdsm,
       sensitiveConsent: tempBdsm ? $("p-bdsm-optin").checked : false,
       discoverPhoto: $("p-discover-photo").checked,
       notifyEmail: $("p-notify-email").checked,
@@ -492,8 +520,14 @@
       const c = C.CHINESE[d.chinese.name] || {};
       const elEmoji = { feu: "🔥", terre: "🌍", "métal": "⚙️", eau: "💧", bois: "🌳" };
       const sub = d.chineseEl ? `Élément ${elEmoji[d.chineseEl] || ""} ${d.chineseEl} · signe chinois` : "Votre signe astrologique chinois";
-      return insHead(d.chinese.emoji, d.chinese.name, sub) +
+      let h = insHead(d.chinese.emoji, d.chinese.name, sub) +
         `<section class="pcard">${c.keywords ? insChips(c.keywords) : ""}<p class="ins-p">${esc(c.portrait || "")}</p>${c.amour ? insLove(c.amour) : ""}</section>`;
+      if (d.chineseHour) {
+        h += `<p class="hint">${d.chineseHour.emoji} <b>Signe de l'heure</b> : ${esc(d.chineseHour.name)}. En astrologie chinoise, l'heure de naissance ajoute un second signe qui nuance votre tempérament.</p>`;
+      } else {
+        h += `<p class="hint">Ajoutez votre <b>heure de naissance</b> dans le profil pour révéler votre <b>signe de l'heure</b> chinois.</p>`;
+      }
+      return h;
     }
     if (theme === "numero") {
       const n = C.LIFEPATH[d.lifePath] || {};
@@ -690,8 +724,11 @@
   }
   async function refreshAvatarPreview(feat) {
     const box = $("p-avatar-preview"); if (!box) return;
-    try { const r = await api("/avatar/preview", { method: "POST", body: { avatarFeat: feat || null } }); box.innerHTML = r.svg; box.hidden = false; }
-    catch (_) { box.hidden = true; }
+    // Retour visuel immédiat : on révèle la vignette avec un état « en cours »
+    // dès la photo chargée, puis on remplace par l'avatar généré.
+    box.hidden = false; box.classList.add("av-loading"); box.innerHTML = '<span class="av-spin" aria-hidden="true"></span>';
+    try { const r = await api("/avatar/preview", { method: "POST", body: { avatarFeat: feat || null } }); box.innerHTML = r.svg; box.classList.remove("av-loading"); }
+    catch (_) { box.hidden = true; box.classList.remove("av-loading"); }
   }
 
   /* ======================= Vérification profil =================== */

@@ -148,6 +148,17 @@
     return y;
   }
   function chineseSign(date) { const y = chineseYearAdjusted(date); return CHINESE[((y % 12) + 12) % 12]; }
+  // Heure chinoise : chaque signe gouverne une « double-heure » (2 h). Le Rat
+  // ouvre le cycle à 23 h. Affine le portrait chinois avec l'heure de naissance.
+  const CH_HOUR_ORDER = ["Rat", "Buffle", "Tigre", "Lapin", "Dragon", "Serpent", "Cheval", "Chèvre", "Singe", "Coq", "Chien", "Cochon"];
+  function chineseHour(timeStr) {
+    if (!timeStr || !/^\d{1,2}:\d{2}/.test(timeStr)) return null;
+    const hh = parseInt(timeStr.slice(0, 2), 10);
+    if (isNaN(hh)) return null;
+    const idx = Math.floor(((hh + 1) % 24) / 2); // 23h/0h → Rat, puis +2 h par signe
+    const name = CH_HOUR_ORDER[idx];
+    return CHINESE.find((c) => c.name === name) || null;
+  }
   // Cinq éléments par dernier chiffre de l'année (tronc céleste).
   const CH_ELEMENTS = ["métal", "métal", "eau", "eau", "bois", "bois", "feu", "feu", "terre", "terre"];
   function chineseElementOf(date) { const y = chineseYearAdjusted(date); return CH_ELEMENTS[((y % 10) + 10) % 10]; }
@@ -263,6 +274,7 @@
       cusp: cuspInfo(date),
       chinese: chineseSign(date),
       chineseEl: chineseElementOf(date),
+      chineseHour: chineseHour(p.time),
       lifePath: lifePath(date),
       ascendant: ascendant(date, p.time, p.zone, p.lat, p.lon),
     };

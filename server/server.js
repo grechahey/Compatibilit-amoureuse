@@ -122,7 +122,17 @@ function distanceKm(a, b) {
   const s = Math.sin(dLat / 2) ** 2 + Math.cos(ca.lat * Math.PI / 180) * Math.cos(cb.lat * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
   return Math.round(R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s)));
 }
-const mutual = (a, b) => (a.seeking === "T" || a.seeking === b.gender) && (b.seeking === "T" || b.seeking === a.gender);
+// Filtre d'attirance inclusif : les femmes trans (FT) entrent dans le spectre
+// « femmes », les hommes trans (HT) dans « hommes » ; les personnes non-binaires
+// (NB) sont vues par qui cherche « tout le monde » ou explicitement NB.
+function seekMatch(seeking, gender) {
+  if (seeking === "T") return true;
+  if (seeking === "F") return gender === "F" || gender === "FT";
+  if (seeking === "H") return gender === "H" || gender === "HT";
+  if (seeking === "NB") return gender === "NB";
+  return seeking === gender;
+}
+const mutual = (a, b) => seekMatch(a.seeking, b.gender) && seekMatch(b.seeking, a.gender);
 const emailOk = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
 /* ------------------------------ Auth ------------------------------- */
@@ -249,8 +259,8 @@ app.get("/api/me/insights", auth, (req, res) => {
   if (!me) return res.status(400).json({ error: "Complétez votre profil d'abord." });
   const ap = Engine.astroProfile(toEngine(me));
   res.json({
-    sun: ap.sun, cusp: ap.cusp, chinese: ap.chinese, chineseEl: ap.chineseEl, ascendant: ap.ascendant,
-    lifePath: ap.lifePath, hasBirthTime: !!(me.time && me.city),
+    sun: ap.sun, cusp: ap.cusp, chinese: ap.chinese, chineseEl: ap.chineseEl, chineseHour: ap.chineseHour,
+    ascendant: ap.ascendant, lifePath: ap.lifePath, hasBirthTime: !!(me.time && me.city),
     mbti: me.mbti || null, bdsm: me.bdsm || null,
   });
 });
@@ -308,7 +318,8 @@ app.get("/api/admin/export.csv", adminAuth, (req, res) => {
     p.name, p.gender, p.seeking, p.city, p.mbti, p.by, p.bm, p.bd, (p.bdsm IS NOT NULL) hasKink,
     (SELECT premium FROM credits c WHERE c.user_id=u.id) premium
     FROM users u LEFT JOIN profiles p ON p.user_id=u.id WHERE u.is_bot=0 ORDER BY u.created_at DESC`).all();
-  const G = { F: "Femme", H: "Homme", NB: "Non-binaire" }, S = { T: "Tout le monde", F: "Des femmes", H: "Des hommes" };
+  const G = { F: "Femme", H: "Homme", FT: "Femme trans", HT: "Homme trans", NB: "Non-binaire (iel)" },
+    S = { T: "Tout le monde", F: "Des femmes", H: "Des hommes", NB: "Des personnes non-binaires" };
   const head = ["id", "email", "prenom", "age", "genre", "recherche", "ville", "mbti", "kink", "premium", "verifie", "inscription"];
   const lines = [head.join(",")];
   for (const r of rows) {

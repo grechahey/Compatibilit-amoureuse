@@ -77,7 +77,7 @@
     <section id="view-profile" class="view" hidden>
       <div class="hero-mini">
         <h1>Trouvez votre <span>âme sœur</span></h1>
-        <p class="subtitle">On croise votre personnalité (MBTI), votre thème astral, votre numérologie et vos affinités pour révéler vos meilleurs matchs.</p>
+        <p class="subtitle">On croise votre personnalité (MBTI), votre thème astral occidental et chinois, votre numérologie et vos affinités pour révéler vos meilleurs matchs.</p>
       </div>
 
       <form id="profile-form" class="card" novalidate>
@@ -91,7 +91,9 @@
             <select id="p-gender" required>
               <option value="F">Une femme</option>
               <option value="H">Un homme</option>
-              <option value="NB">Non-binaire</option>
+              <option value="FT">Une femme trans</option>
+              <option value="HT">Un homme trans</option>
+              <option value="NB">Non-binaire (iel)</option>
             </select>
           </label>
         </div>
@@ -102,9 +104,10 @@
               <option value="T">Tout le monde</option>
               <option value="F">Des femmes</option>
               <option value="H">Des hommes</option>
+              <option value="NB">Des personnes non-binaires</option>
             </select>
           </label>
-          <p class="tip form-tip">Plus votre recherche est ouverte, plus l'algorithme peut vous surprendre. Les critères trop étroits (physique, « type » précis) font passer à côté de belles rencontres.</p>
+          <p class="tip form-tip">Plus votre recherche est ouverte, plus l'algorithme peut vous surprendre. Les critères trop étroits (physique, « type » précis) font passer à côté de belles rencontres. <a href="#" id="openness-link" class="tip-link">Pourquoi&nbsp;?</a></p>
           <label class="field">Photo (optionnel)
             <input type="file" id="p-photo" accept="image/*" />
             <img id="p-photo-preview" class="photo-preview" hidden alt="Aperçu de votre photo" />
@@ -122,19 +125,29 @@
           <textarea id="p-bio" rows="2" maxlength="180" placeholder="Quelques mots sur vous…"></textarea>
         </label>
 
-        <h2 class="section-title">Naissance <small>— pour votre thème astral</small></h2>
+        <h2 class="section-title">Naissance <small>— thème occidental, chinois &amp; numérologie</small></h2>
+        <p class="hint">Renseignez juste ces trois champs : tout le reste est <b>calculé automatiquement</b>, vous n'avez rien à saisir vous-même.</p>
         <div class="grid2">
           <label class="field">Date de naissance
             <input type="date" id="p-dob" required />
           </label>
-          <label class="field">Heure (pour l'ascendant)
+          <label class="field">Heure de naissance <small>ascendant + heure chinoise</small>
             <input type="time" id="p-time" />
           </label>
         </div>
-        <label class="field">Ville de naissance (pour l'ascendant)
-          <select id="p-city" class="wide"></select>
+        <label class="field">Ville de naissance <small>pour l'ascendant</small>
+          <input type="text" id="p-city" class="wide" list="city-list" autocomplete="off" placeholder="Tapez votre ville…" />
+          <datalist id="city-list"></datalist>
         </label>
-        <p class="hint">L'heure d'été et les fuseaux historiques sont gérés automatiquement. Heure + ville = ascendant calculé.</p>
+        <p class="hint">L'heure d'été et les fuseaux historiques sont gérés automatiquement.</p>
+        <div class="birth-recap" id="birth-recap">
+          <b>Calculé pour vous</b>
+          <ul>
+            <li>☀️ <b>Thème occidental</b> — signe solaire &amp; ascendant</li>
+            <li>🐉 <b>Thème chinois</b> — signe, élément &amp; heure chinoise</li>
+            <li>🔢 <b>Numérologie</b> — votre chemin de vie</li>
+          </ul>
+        </div>
 
         <h2 class="section-title">Personnalité <small>— 32 questions, inspiré du modèle MBTI®</small></h2>
         <p class="hint">Votre type se détermine par le test, pour une compatibilité juste — pas de type auto-déclaré. Deux minutes, aucune bonne réponse.</p>

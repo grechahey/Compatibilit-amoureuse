@@ -98,6 +98,31 @@ input[type="file"] { font-size: .82rem; padding: .5rem 0; color: var(--muted); b
 .hint { font-size: .78rem; color: var(--faint); line-height: 1.5; margin: -.1rem 0 .7rem; font-weight: 400; }
 .legal-note { font-size: .68rem; color: var(--faint); line-height: 1.5; margin: .1rem 0 .5rem; font-weight: 400; opacity: .85; }
 .form-tip { grid-column: 1 / -1; }
+.tip-link { color: var(--pink); font-weight: 600; text-decoration: underline; white-space: nowrap; }
+.tip-link:hover { opacity: .85; }
+
+/* Récap « calculé automatiquement » sous la naissance */
+.birth-recap { background: var(--card-2); border: 1px solid var(--line); border-radius: 14px; padding: .9rem 1.05rem; margin: .5rem 0 .2rem; }
+.birth-recap > b { display: block; font-size: .8rem; color: var(--text); margin-bottom: .55rem; text-transform: uppercase; letter-spacing: .04em; }
+.birth-recap ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .4rem; }
+.birth-recap li { font-size: .86rem; color: var(--muted); line-height: 1.4; }
+.birth-recap li b { color: var(--text); font-weight: 600; }
+
+/* Avatar : état de chargement instantané */
+.av-loading { display: flex; align-items: center; justify-content: center; }
+.av-spin { display: inline-block; width: 24px; height: 24px; border: 2px solid var(--line); border-top-color: var(--pink); border-radius: 50%; animation: av-spin .7s linear infinite; }
+@keyframes av-spin { to { transform: rotate(360deg); } }
+
+/* Page explicative « Pourquoi rester ouvert·e » (modal) */
+.explainer { text-align: left; max-height: 82vh; overflow-y: auto; }
+.explainer h3 { font-weight: 700; color: var(--text); font-size: 1.2rem; margin: 0 0 .5rem; letter-spacing: -0.02em; }
+.ex-lead { color: var(--muted); font-size: .92rem; line-height: 1.55; margin: 0 0 1rem; }
+.ex-card { background: var(--card-2); border: 1px solid var(--line); border-radius: 14px; padding: .95rem 1.1rem; margin: .8rem 0; }
+.ex-card h4 { margin: 0 0 .4rem; font-size: .96rem; font-weight: 600; color: var(--text); }
+.ex-card p { font-size: .88rem; color: var(--muted); line-height: 1.58; margin: .35rem 0 0; }
+.ex-card p b { color: var(--text); }
+.ex-note { font-size: .78rem !important; color: var(--faint) !important; font-style: italic; }
+.explainer .btn { margin-top: 1rem; }
 .error { color: #ff7a7a; font-size: .86rem; margin: 1rem 0 0; text-align: center; }
 #btn-mbti-test, #btn-bdsm-test { margin-top: .3rem; }
 

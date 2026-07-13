@@ -10,7 +10,7 @@
     fr: {
       "nav.discover": "Découvrir", "nav.messages": "Messages", "nav.me": "Moi", "nav.profile": "Profil",
       "auth.heroTitle": "Trouvez votre <span>âme sœur</span>",
-      "auth.heroSub": "Des rencontres par affinités profondes : MBTI, thème astral, numérologie et bien plus.",
+      "auth.heroSub": "Des rencontres par affinités profondes : MBTI, thème astral occidental & chinois, numérologie et bien plus.",
       "auth.createTitle": "Créer un compte", "auth.loginTitle": "Se connecter",
       "auth.email": "Email", "auth.password": "Mot de passe", "auth.passwordPh": "6 caractères minimum",
       "auth.age": "Je certifie avoir <b>18 ans ou plus</b>.",
@@ -36,7 +36,7 @@
     en: {
       "nav.discover": "Discover", "nav.messages": "Messages", "nav.me": "Me", "nav.profile": "Profile",
       "auth.heroTitle": "Find your <span>soulmate</span>",
-      "auth.heroSub": "Dating by deep compatibility: MBTI, birth chart, numerology and much more.",
+      "auth.heroSub": "Dating by deep compatibility: MBTI, Western & Chinese astrology, numerology and much more.",
       "auth.createTitle": "Create an account", "auth.loginTitle": "Sign in",
       "auth.email": "Email", "auth.password": "Password", "auth.passwordPh": "6 characters minimum",
       "auth.age": "I confirm I am <b>18 or older</b>.",

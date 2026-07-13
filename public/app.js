@@ -842,15 +842,10 @@
     let skin = skinEstimate(data, w, h);
     if (!skin) { const a = regionAvg(data, w, h, 0.34, 0.44, 0.30, 0.24, skinish); if (a && a[3] >= 20) skin = [a[0], a[1], a[2]]; }
     if (skin) feat.skinColor = snap(skin, SKIN_PALETTE);
-    // Cheveux : haut du crâne, en excluant un fond clair et les pixels proches du teint.
-    const top = regionAvg(data, w, h, 0.28, 0.02, 0.44, 0.16, null);
-    if (top) {
-      const c = [top[0], top[1], top[2]], mx = Math.max(c[0], c[1], c[2]), mn = Math.min(c[0], c[1], c[2]);
-      const sat = (mx - mn) / (mx || 1), background = mx > 232 && sat < 0.08;
-      const nearSkin = skin && dist2(c, skin) < 500;
-      if (!background && !nearSkin) feat.hairColor = snap(c, HAIR_PALETTE);
-    }
-    return (feat.skinColor || feat.hairColor) ? feat : null;
+    // La couleur/texture des cheveux n'est PAS déduite de la photo : trop peu
+    // fiable (on obtenait des blonds/gris à tort). Défaut brun côté serveur ;
+    // l'utilisateur ajuste couleur et coiffure d'un tap dans le réglage.
+    return feat.skinColor ? feat : null;
   }
   async function refreshAvatarPreview(feat) {
     const box = $("p-avatar-preview"); if (!box) return;

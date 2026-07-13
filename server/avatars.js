@@ -21,12 +21,16 @@ const STYLE = process.env.AVATAR_STYLE || "avataaars";
 const cache = new Map();
 const isHex = (s) => typeof s === "string" && /^[0-9a-fA-F]{6}$/.test(s);
 
-// Coiffures avataaars réparties par présentation de genre (sans chapeaux).
-const FEMALE_TOPS = ["bob", "bun", "curly", "curvy", "dreads", "frida", "fro", "froBand",
-  "longButNotTooLong", "miaWallace", "straight01", "straight02", "straightAndStrand",
-  "dreads01", "dreads02", "frizzle", "bigHair", "shaggyMullet"];
+// Coiffures avataaars par présentation de genre (sans chapeaux). Les femmes
+// ont par défaut des coiffures nettement LONGUES (les courtes/frisées restent
+// accessibles via le sélecteur manuel), les hommes des coiffures courtes.
+const FEMALE_TOPS = ["longButNotTooLong", "straight01", "straight02", "straightAndStrand",
+  "curly", "curvy", "miaWallace", "bigHair", "dreads", "shaggyMullet"];
 const MALE_TOPS = ["shortCurly", "shortFlat", "shortRound", "shortWaved", "sides",
-  "theCaesar", "theCaesarAndSidePart", "dreads01", "fro", "frizzle", "shaggy"];
+  "theCaesar", "theCaesarAndSidePart", "dreads01", "frizzle", "shaggy"];
+// Teintes de cheveux par défaut (bruns naturels) quand aucune couleur n'est
+// fournie — évite le rendu blond aléatoire du style.
+const DEFAULT_HAIR = ["2c1e16", "4a3627", "3a2a1e", "6b4a2f"];
 const ALL_TOPS = [...new Set([...FEMALE_TOPS, ...MALE_TOPS])];
 // Coiffures sélectionnables à la main (avec l'intitulé montré côté client).
 const HAIR_STYLES = ["shortCurly", "fro", "curly", "dreads", "bob", "bun",
@@ -45,7 +49,7 @@ function svgSync(seed, feat, gender) {
   const opts = { seed: String(seed), radius: 50, backgroundColor: BG,
     facialHairProbability: 0, accessoriesProbability: 0, topProbability: 100 };
   if (skin) opts.skinColor = [skin];
-  if (hair) opts.hairColor = [hair];
+  opts.hairColor = hair ? [hair] : DEFAULT_HAIR; // jamais de blond par défaut
   opts.top = style ? [style] : topsFor(gender);
   const svg = mod.core.createAvatar(dstyle, opts).toString();
   cache.set(key, svg);

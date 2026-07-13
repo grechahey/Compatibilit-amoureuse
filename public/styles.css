@@ -108,6 +108,17 @@ input[type="file"] { font-size: .82rem; padding: .5rem 0; color: var(--muted); b
 .birth-recap li { font-size: .86rem; color: var(--muted); line-height: 1.4; }
 .birth-recap li b { color: var(--text); font-weight: 600; }
 
+/* Autocomplétion des communes (géocodeur officiel) */
+.city-ac { position: relative; }
+.city-suggest { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 30;
+  background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .5); max-height: 280px; overflow-y: auto; }
+.city-opt { display: block; width: 100%; text-align: left; border: none; background: transparent; cursor: pointer;
+  padding: .6rem .8rem; font: inherit; font-size: .9rem; color: var(--text); border-bottom: 1px solid var(--line); }
+.city-opt:last-child { border-bottom: none; }
+.city-opt:hover, .city-opt:focus { background: var(--card-2); }
+.city-opt span { color: var(--faint); font-size: .78rem; }
+
 /* Aperçu astral en direct */
 .astro-live { margin: .7rem 0 .2rem; border: 1px solid var(--pink); border-radius: 16px; padding: 1rem 1.1rem; background: linear-gradient(180deg, rgba(253,76,118,.08), rgba(253,76,118,.02)); }
 .al-head { font-size: .82rem; font-weight: 700; color: var(--text); margin-bottom: .7rem; text-transform: uppercase; letter-spacing: .04em; }

@@ -142,8 +142,10 @@
           </label>
         </div>
         <label class="field">Ville de naissance <small>pour l'ascendant</small>
-          <input type="text" id="p-city" class="wide" list="city-list" autocomplete="off" placeholder="Tapez votre ville…" />
-          <datalist id="city-list"></datalist>
+          <div class="city-ac">
+            <input type="text" id="p-city" class="wide" autocomplete="off" placeholder="Tapez votre ville…" />
+            <div class="city-suggest" id="city-suggest" hidden></div>
+          </div>
         </label>
         <p class="hint">L'heure d'été et les fuseaux historiques sont gérés automatiquement.</p>
         <div class="birth-recap" id="birth-recap">

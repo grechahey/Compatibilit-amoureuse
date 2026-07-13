@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
   name TEXT, gender TEXT, seeking TEXT, bio TEXT, avatar TEXT, avatar_feat TEXT, photo TEXT,
   by INTEGER, bm INTEGER, bd INTEGER, btime TEXT, city TEXT,
+  city_lat REAL, city_lon REAL, city_zone TEXT,
   mbti TEXT, bdsm TEXT, updated_at INTEGER, discover_photo INTEGER DEFAULT 0, interests TEXT,
   photo_verified INTEGER DEFAULT 0
 );
@@ -100,6 +101,9 @@ for (const alter of [
   "ALTER TABLE users ADD COLUMN last_active INTEGER",
   "ALTER TABLE users ADD COLUMN banned INTEGER DEFAULT 0",
   "ALTER TABLE profiles ADD COLUMN photo_verified INTEGER DEFAULT 0",
+  "ALTER TABLE profiles ADD COLUMN city_lat REAL",
+  "ALTER TABLE profiles ADD COLUMN city_lon REAL",
+  "ALTER TABLE profiles ADD COLUMN city_zone TEXT",
 ]) { try { db.exec(alter); } catch (_) { /* colonne déjà présente */ } }
 
 const CONSENT_VERSION = "2026-07-11";
@@ -122,11 +126,11 @@ const q = {
   insSession: db.prepare("INSERT INTO sessions (token, user_id, expires) VALUES (?, ?, ?)"),
   sessionByToken: db.prepare("SELECT * FROM sessions WHERE token = ?"),
   delSession: db.prepare("DELETE FROM sessions WHERE token = ?"),
-  upsertProfile: db.prepare(`INSERT INTO profiles (user_id,name,gender,seeking,bio,avatar,avatar_feat,photo,by,bm,bd,btime,city,mbti,bdsm,discover_photo,interests,updated_at)
-    VALUES (@user_id,@name,@gender,@seeking,@bio,@avatar,@avatar_feat,@photo,@by,@bm,@bd,@btime,@city,@mbti,@bdsm,@discover_photo,@interests,@updated_at)
+  upsertProfile: db.prepare(`INSERT INTO profiles (user_id,name,gender,seeking,bio,avatar,avatar_feat,photo,by,bm,bd,btime,city,city_lat,city_lon,city_zone,mbti,bdsm,discover_photo,interests,updated_at)
+    VALUES (@user_id,@name,@gender,@seeking,@bio,@avatar,@avatar_feat,@photo,@by,@bm,@bd,@btime,@city,@city_lat,@city_lon,@city_zone,@mbti,@bdsm,@discover_photo,@interests,@updated_at)
     ON CONFLICT(user_id) DO UPDATE SET name=@name,gender=@gender,seeking=@seeking,bio=@bio,avatar=@avatar,
       avatar_feat=COALESCE(@avatar_feat,avatar_feat),
-      photo=COALESCE(@photo,photo),by=@by,bm=@bm,bd=@bd,btime=@btime,city=@city,mbti=@mbti,bdsm=@bdsm,discover_photo=@discover_photo,interests=@interests,updated_at=@updated_at`),
+      photo=COALESCE(@photo,photo),by=@by,bm=@bm,bd=@bd,btime=@btime,city=@city,city_lat=@city_lat,city_lon=@city_lon,city_zone=@city_zone,mbti=@mbti,bdsm=@bdsm,discover_photo=@discover_photo,interests=@interests,updated_at=@updated_at`),
   getProfile: db.prepare("SELECT p.*, u.is_bot, u.last_active, u.banned FROM profiles p JOIN users u ON u.id=p.user_id WHERE p.user_id = ?"),
   allProfiles: db.prepare("SELECT p.*, u.is_bot, u.last_active, u.banned FROM profiles p JOIN users u ON u.id=p.user_id WHERE p.user_id != ?"),
   insSwipe: db.prepare("INSERT OR REPLACE INTO swipes (actor,target,kind,created_at) VALUES (?,?,?,?)"),
@@ -222,6 +226,9 @@ function saveProfile(userId, p) {
     avatar: p.avatar || "⭐", avatar_feat: p.avatarFeat ? JSON.stringify(p.avatarFeat) : null,
     photo: p.photo || null,
     by: p.year, bm: p.month, bd: p.day, btime: p.time || null, city: p.city || null,
+    city_lat: (typeof p.cityLat === "number" ? p.cityLat : null),
+    city_lon: (typeof p.cityLon === "number" ? p.cityLon : null),
+    city_zone: p.cityZone || null,
     mbti: p.mbti, bdsm: p.bdsm ? JSON.stringify(p.bdsm) : null,
     discover_photo: p.discoverPhoto ? 1 : 0,
     interests: p.interests && p.interests.length ? JSON.stringify(p.interests) : null,
@@ -234,7 +241,8 @@ function profileOut(row) {
     id: row.user_id, name: row.name, gender: row.gender, seeking: row.seeking, bio: row.bio,
     avatar: row.avatar, avatarFeat: row.avatar_feat ? JSON.parse(row.avatar_feat) : null,
     photo: row.photo, year: row.by, month: row.bm, day: row.bd,
-    time: row.btime, city: row.city, mbti: row.mbti, bdsm: row.bdsm ? JSON.parse(row.bdsm) : null,
+    time: row.btime, city: row.city, cityLat: row.city_lat, cityLon: row.city_lon, cityZone: row.city_zone,
+    mbti: row.mbti, bdsm: row.bdsm ? JSON.parse(row.bdsm) : null,
     discoverPhoto: !!row.discover_photo, interests: row.interests ? JSON.parse(row.interests) : [],
     isBot: !!row.is_bot, lastActive: row.last_active || null, banned: !!row.banned,
     verified: !!row.photo_verified,

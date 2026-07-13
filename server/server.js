@@ -28,7 +28,7 @@ app.use((req, res, next) => {
   const imgHost = Storage.publicHost();
   res.setHeader("Content-Security-Policy",
     `default-src 'self'; img-src 'self' data:${imgHost ? " " + imgHost : ""}; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; ` +
-    "font-src https://fonts.gstatic.com; script-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'");
+    "font-src https://fonts.gstatic.com; script-src 'self'; connect-src 'self' https://api-adresse.data.gouv.fr; base-uri 'self'; form-action 'self'");
   if (PROD) res.setHeader("Strict-Transport-Security", "max-age=15552000; includeSubDomains");
   next();
 });
@@ -106,9 +106,19 @@ async function sendVerificationEmail(email, token) {
 }
 const toEngine = (p) => {
   const ci = p.city ? Data.CITY_BY_NAME[p.city] : null;
+  // Coordonnées stockées (géocodeur officiel, toutes communes) prioritaires,
+  // sinon repli sur le catalogue local.
+  const lat = (typeof p.cityLat === "number") ? p.cityLat : (ci ? ci.lat : null);
+  const lon = (typeof p.cityLon === "number") ? p.cityLon : (ci ? ci.lon : null);
+  const zone = p.cityZone || (ci ? ci.zone : null);
   return { name: p.name, year: p.year, month: p.month, day: p.day, time: p.time || null,
-    zone: ci ? ci.zone : null, lat: ci ? ci.lat : null, lon: ci ? ci.lon : null, mbti: p.mbti, bdsm: p.bdsm || null };
+    zone, lat, lon, mbti: p.mbti, bdsm: p.bdsm || null };
 };
+function coordsOf(p) {
+  if (typeof p.cityLat === "number" && typeof p.cityLon === "number") return { lat: p.cityLat, lon: p.cityLon };
+  const c = p.city && Data.CITY_BY_NAME[p.city];
+  return c ? { lat: c.lat, lon: c.lon } : null;
+}
 function ageOf(p) {
   const t = new Date(), b = new Date(p.year, p.month - 1, p.day);
   let a = t.getFullYear() - b.getFullYear();
@@ -116,7 +126,7 @@ function ageOf(p) {
   return a;
 }
 function distanceKm(a, b) {
-  const ca = a.city && Data.CITY_BY_NAME[a.city], cb = b.city && Data.CITY_BY_NAME[b.city];
+  const ca = coordsOf(a), cb = coordsOf(b);
   if (!ca || !cb) return null;
   const R = 6371, dLat = (cb.lat - ca.lat) * Math.PI / 180, dLon = (cb.lon - ca.lon) * Math.PI / 180;
   const s = Math.sin(dLat / 2) ** 2 + Math.cos(ca.lat * Math.PI / 180) * Math.cos(cb.lat * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
@@ -207,6 +217,10 @@ app.put("/api/profile", auth, async (req, res) => {
     ? [...new Set(p.interests.filter((x) => valid.has(x)))].slice(0, 8) : [];
   // Avatar généré depuis la photo : on ne garde que des couleurs hex valides.
   p.avatarFeat = sanitizeAvatarFeat(p.avatarFeat);
+  // Commune géocodée (api-adresse.data.gouv.fr) : coordonnées + fuseau validés.
+  p.cityLat = (typeof p.cityLat === "number" && p.cityLat >= -90 && p.cityLat <= 90) ? p.cityLat : null;
+  p.cityLon = (typeof p.cityLon === "number" && p.cityLon >= -180 && p.cityLon <= 180) ? p.cityLon : null;
+  p.cityZone = (typeof p.cityZone === "string" && /^[A-Za-z_+\-/]{3,40}$/.test(p.cityZone)) ? p.cityZone : null;
   // Données sensibles (Art. 9 RGPD) : consentement explicite obligatoire.
   if (p.bdsm) {
     if (!p.sensitiveConsent) return res.status(400).json({ error: "Le traitement des données kink exige votre consentement explicite." });
@@ -228,14 +242,14 @@ app.post("/api/astro/preview", auth, (req, res) => {
   const y = +b.year, mo = +b.month, d = +b.day;
   if (!y || !mo || !d) return res.status(400).json({ error: "Date incomplète." });
   const ci = b.city ? Data.CITY_BY_NAME[b.city] : null;
-  const ap = Engine.astroProfile({
-    year: y, month: mo, day: d, time: b.time || null,
-    zone: ci ? ci.zone : null, lat: ci ? ci.lat : null, lon: ci ? ci.lon : null,
-  });
+  const lat = (typeof b.cityLat === "number") ? b.cityLat : (ci ? ci.lat : null);
+  const lon = (typeof b.cityLon === "number") ? b.cityLon : (ci ? ci.lon : null);
+  const zone = b.cityZone || (ci ? ci.zone : null);
+  const ap = Engine.astroProfile({ year: y, month: mo, day: d, time: b.time || null, zone, lat, lon });
   res.json({
     sun: ap.sun, cusp: ap.cusp, chinese: ap.chinese, chineseEl: ap.chineseEl,
     chineseHour: ap.chineseHour, ascendant: ap.ascendant, lifePath: ap.lifePath,
-    hasCity: !!ci, hasTime: !!b.time,
+    hasCity: lat != null, hasTime: !!b.time,
   });
 });
 

@@ -34,6 +34,7 @@
   let CONFIG = { org: { name: "Âme Sœur", dpoEmail: "dpo@amesoeur.exemple", legal: "" } };
   let tempMbti = null, tempMbtiDetail = null, tempBdsm = null, pendingPhoto = null, devVerifyUrl = null, pendingAvatarFeat = null, pushKey = null;
   let lastAutoFeat = null;
+  let pendingCity = null; // { name, lat, lon, zone } issu du géocodeur officiel
   let candidates = [], deck = [], pos = 0;
   let authMode = "register";
   let currentChat = null;
@@ -252,9 +253,7 @@
 
   /* ====================== Contrôles du profil ====================== */
   function initControls() {
-    // Ville : champ de recherche libre (datalist) — on tape, ça filtre parmi ~180 villes.
-    const clist = $("city-list");
-    [...Data.CITIES].sort((a, b) => a[0].localeCompare(b[0], "fr")).forEach((c) => clist.appendChild(new Option(c[0], c[0])));
+    initCityAutocomplete();
     $("openness-link").addEventListener("click", (e) => { e.preventDefault(); openOpennessModal(); });
     buildAvatarTune();
     ["p-dob", "p-time", "p-city"].forEach((id) => {
@@ -340,13 +339,80 @@
   function closeOverlay() { $("overlay").hidden = true; document.body.style.overflow = ""; }
 
   // Ramène la ville saisie sur un libellé exact du catalogue (insensible à la
-  // casse/accents partiels). Ville inconnue → null (l'ascendant sera simplement omis).
+  // casse). Ville inconnue → texte tel quel (coordonnées gérées via le géocodeur).
   function normalizeCity(raw) {
     const v = (raw || "").trim();
     if (!v) return null;
     const low = v.toLowerCase();
     const hit = Data.CITIES.find((c) => c[0].toLowerCase() === low);
     return hit ? hit[0] : v;
+  }
+  // Ville + coordonnées à envoyer : si la saisie correspond à la commune géocodée
+  // choisie, on joint ses coordonnées ; sinon nom seul (le serveur résout via le
+  // catalogue local si la ville y figure).
+  function currentCity() {
+    const name = normalizeCity($("p-city").value);
+    if (!name) return { name: null };
+    if (pendingCity && pendingCity.name && pendingCity.name.toLowerCase() === name.toLowerCase())
+      return { name, lat: pendingCity.lat, lon: pendingCity.lon, zone: pendingCity.zone };
+    return { name };
+  }
+  // Fuseau horaire déduit du code commune (métropole = Europe/Paris, DOM à part).
+  function zoneFromCitycode(cc) {
+    const p = String(cc || "").slice(0, 3);
+    return ({ "971": "America/Guadeloupe", "972": "America/Martinique", "973": "America/Cayenne",
+      "974": "Indian/Reunion", "975": "America/Miquelon", "976": "Indian/Mayotte" })[p] || "Europe/Paris";
+  }
+  // Autocomplétion des communes via le géocodeur officiel (toutes les communes
+  // françaises). Repli sur le catalogue local si l'API est indisponible.
+  let cityAcTimer = null;
+  function initCityAutocomplete() {
+    const input = $("p-city"), box = $("city-suggest");
+    if (!input || !box) return;
+    const hide = () => { box.hidden = true; box.innerHTML = ""; };
+    input.addEventListener("input", () => {
+      pendingCity = null; // toute frappe invalide la sélection précédente
+      const q = input.value.trim();
+      clearTimeout(cityAcTimer);
+      if (q.length < 2) { hide(); scheduleAstroLive(); return; }
+      cityAcTimer = setTimeout(() => cityAcSearch(q, box, input), 250);
+      scheduleAstroLive();
+    });
+    input.addEventListener("blur", () => setTimeout(hide, 150)); // laisse le clic passer
+    document.addEventListener("click", (e) => { if (!box.contains(e.target) && e.target !== input) hide(); });
+  }
+  async function cityAcSearch(q, box, input) {
+    let items = [];
+    try {
+      const url = "https://api-adresse.data.gouv.fr/search/?type=municipality&autocomplete=1&limit=8&q=" + encodeURIComponent(q);
+      const res = await fetch(url);
+      if (res.ok) {
+        const j = await res.json();
+        items = (j.features || []).map((f) => ({
+          name: f.properties.city || f.properties.name,
+          label: f.properties.label || f.properties.name,
+          context: f.properties.context || "",
+          lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0],
+          zone: zoneFromCitycode(f.properties.citycode || f.properties.postcode),
+        }));
+      }
+    } catch (_) { /* réseau indisponible → repli local */ }
+    if (!items.length) { // repli catalogue local
+      const low = q.toLowerCase();
+      items = Data.CITIES.filter((c) => c[0].toLowerCase().includes(low)).slice(0, 8)
+        .map((c) => ({ name: c[0], label: c[0], context: "", lat: c[1], lon: c[2], zone: c[3] }));
+    }
+    if (!items.length) { box.hidden = true; box.innerHTML = ""; return; }
+    box.innerHTML = items.map((it, i) =>
+      `<button type="button" class="city-opt" data-i="${i}">${esc(it.name)}${it.context ? ` <span>${esc(it.context)}</span>` : ""}</button>`).join("");
+    box.hidden = false;
+    box.querySelectorAll(".city-opt").forEach((btn) => btn.addEventListener("click", () => {
+      const it = items[+btn.dataset.i];
+      input.value = it.name;
+      pendingCity = { name: it.name, lat: it.lat, lon: it.lon, zone: it.zone };
+      box.hidden = true; box.innerHTML = "";
+      scheduleAstroLive();
+    }));
   }
 
   /* ============ Aperçu astral en direct dans le formulaire =========== */
@@ -358,7 +424,9 @@
     if (!dob) { box.hidden = true; return; }
     const d = new Date(dob + "T00:00:00");
     if (isNaN(d.getTime())) { box.hidden = true; return; }
-    const body = { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate(), time: $("p-time").value || null, city: normalizeCity($("p-city").value) };
+    const cc = currentCity();
+    const body = { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate(), time: $("p-time").value || null,
+      city: cc.name, cityLat: cc.lat, cityLon: cc.lon, cityZone: cc.zone };
     let r; try { r = await api("/astro/preview", { method: "POST", body }); } catch (_) { box.hidden = true; return; }
     const C = window.Content || {};
     const west = (C.WESTERN && C.WESTERN[r.sun.name]) || {};
@@ -406,10 +474,12 @@
     const d = new Date(dob + "T00:00:00");
     if (d > new Date()) return fail("La date de naissance ne peut pas être dans le futur.");
     if (!tempMbti) return fail("Passez le test de personnalité (MBTI) pour continuer.");
+    const cc = currentCity();
     const body = {
       name, gender: $("p-gender").value, seeking: $("p-seeking").value, bio: $("p-bio").value.trim(),
       year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate(),
-      time: $("p-time").value || null, city: normalizeCity($("p-city").value), mbti: tempMbti, bdsm: tempBdsm,
+      time: $("p-time").value || null, city: cc.name, cityLat: cc.lat, cityLon: cc.lon, cityZone: cc.zone,
+      mbti: tempMbti, bdsm: tempBdsm,
       sensitiveConsent: tempBdsm ? $("p-bdsm-optin").checked : false,
       discoverPhoto: $("p-discover-photo").checked,
       notifyEmail: $("p-notify-email").checked,
@@ -1014,6 +1084,8 @@
     $("p-seeking").value = me.seeking || "T"; $("p-bio").value = me.bio || "";
     if (me.year) $("p-dob").value = `${me.year}-${String(me.month).padStart(2, "0")}-${String(me.day).padStart(2, "0")}`;
     $("p-time").value = me.time || ""; $("p-city").value = me.city || "";
+    pendingCity = (me.city && typeof me.cityLat === "number" && typeof me.cityLon === "number")
+      ? { name: me.city, lat: me.cityLat, lon: me.cityLon, zone: me.cityZone || "Europe/Paris" } : null;
     tempMbti = MBTI_TYPES.includes(me.mbti) ? me.mbti : null; tempMbtiDetail = null; refreshMbtiBadge();
     tempBdsm = me.bdsm || null;
     if (me.bdsm) { $("p-bdsm-optin").checked = true; $("bdsm-area").hidden = false; refreshBdsmBadge(); }

@@ -1,0 +1,30 @@
+# Blueprint Render — déploiement « en un clic » d'Âme Sœur.
+# Sur https://dashboard.render.com → New → Blueprint → connectez ce dépôt.
+# Render lit ce fichier, construit l'image Docker et met l'app en ligne.
+# Variables optionnelles (SMTP, Stripe, VAPID push, S3, back office admin) :
+# à ajouter ensuite dans l'onglet Environment du service — voir DEPLOY.md.
+services:
+  - type: web
+    name: amesoeur
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    # Le disque persistant (SQLite) nécessite l'offre payante « starter ».
+    # Pour un simple essai gratuit, retirez le bloc "disk" et passez plan: free
+    # (⚠️ la base est alors réinitialisée à chaque redéploiement).
+    plan: starter
+    region: frankfurt
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_PATH
+        value: /app/data/amesoeur.db
+      # Renseignez BASE_URL avec l'URL Render après le 1er déploiement
+      # (active cookie Secure, HSTS, liens de retour Stripe/vérification).
+      - key: BASE_URL
+        sync: false
+    disk:
+      name: amesoeur-data
+      mountPath: /app/data
+      sizeGB: 1

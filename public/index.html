@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Âme Sœur — le site de rencontres qui croise MBTI, astrologie, numérologie et affinités pour vous proposer vos meilleurs matchs." />
+  <title>Âme Sœur · Rencontres par affinités profondes</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#08080a" />
+  <link rel="icon" href="/icons/favicon-32.png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Âme Sœur" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar" id="topbar">
+    <div class="brand">Âme&nbsp;Sœur</div>
+    <select id="lang-select" class="lang-select" aria-label="Langue / Language"></select>
+    <nav class="tabs" id="tabs" hidden>
+      <button type="button" id="nav-discover" class="tab" data-i18n="nav.discover">Découvrir</button>
+      <button type="button" id="nav-matches" class="tab"><span data-i18n="nav.messages">Messages</span><span class="tab-badge" id="msg-badge" hidden></span></button>
+      <button type="button" id="nav-insights" class="tab" data-i18n="nav.me">Moi</button>
+      <button type="button" id="nav-profile" class="tab" data-i18n="nav.profile">Profil</button>
+      <button type="button" id="nav-premium" class="tab premium-chip" title="Options premium"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3.5l2.6 5.7 6.2.6-4.7 4.1 1.4 6.1L12 16.9 6.5 20.1l1.4-6.1L3.2 9.8l6.2-.6z"/></svg><span id="credits-count">1</span></button>
+      <button type="button" id="nav-logout" class="tab" title="Se déconnecter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-2"/><path d="M18 15l3-3-3-3M21 12H9"/></svg></button>
+    </nav>
+  </header>
+
+  <div id="verify-banner" class="verify-banner" hidden>
+    <span id="verify-text">Confirmez votre adresse email pour sécuriser votre compte.</span>
+    <button type="button" class="btn small" id="verify-resend">Renvoyer le lien</button>
+  </div>
+
+  <main id="app">
+    <!-- ============ Vue Authentification ============ -->
+    <section id="view-auth" class="view" hidden>
+      <div class="hero-mini">
+        <h1 data-i18n-html="auth.heroTitle">Trouvez votre <span>âme sœur</span></h1>
+        <p class="subtitle" data-i18n="auth.heroSub">Des rencontres par affinités profondes : MBTI, thème astral, numérologie et bien plus.</p>
+      </div>
+      <form id="auth-form" class="card" novalidate>
+        <h2 class="section-title" id="auth-title">Créer un compte</h2>
+        <label class="field"><span data-i18n="auth.email">Email</span>
+          <input type="email" id="a-email" autocomplete="email" placeholder="vous@exemple.fr" required />
+        </label>
+        <label class="field"><span data-i18n="auth.password">Mot de passe</span>
+          <input type="password" id="a-pw" autocomplete="current-password" data-i18n-ph="auth.passwordPh" placeholder="6 caractères minimum" required />
+        </label>
+        <div id="consent-block">
+          <label class="check"><input type="checkbox" id="a-age" />
+            <span data-i18n-html="auth.age">Je certifie avoir <b>18 ans ou plus</b>.</span></label>
+          <label class="check"><input type="checkbox" id="a-privacy" />
+            <span data-i18n-html="auth.privacy">J'ai lu et j'accepte la <a href="#" id="privacy-link">politique de confidentialité</a>.</span></label>
+        </div>
+        <p class="error" id="auth-error" role="alert" hidden></p>
+        <button type="submit" class="btn" id="auth-submit">S'inscrire</button>
+        <p class="switch-auth"><span id="auth-switch-lead">Déjà membre ? </span><a href="#" id="auth-switch">Se connecter</a></p>
+      </form>
+    </section>
+
+    <!-- ============ Vue Onboarding ============ -->
+    <section id="view-onboarding" class="view" hidden>
+      <div class="onboarding">
+        <div class="onb-card" id="onb-card"></div>
+        <div class="onb-dots" id="onb-dots"></div>
+        <div class="onb-actions">
+          <button type="button" class="btn" id="onb-next" data-i18n="onb.next">Suivant</button>
+          <button type="button" class="onb-skip" id="onb-skip" data-i18n="onb.skip">Passer</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ Vue Profil / Inscription ============ -->
+    <section id="view-profile" class="view" hidden>
+      <div class="hero-mini">
+        <h1>Trouvez votre <span>âme sœur</span></h1>
+        <p class="subtitle">On croise votre personnalité (MBTI), votre thème astral occidental et chinois, votre numérologie et vos affinités pour révéler vos meilleurs matchs.</p>
+      </div>
+
+      <form id="profile-form" class="card" novalidate>
+        <h2 class="section-title">Votre profil</h2>
+
+        <div class="grid2">
+          <label class="field">Prénom
+            <input type="text" id="p-name" placeholder="Ex : Camille" autocomplete="off" required />
+          </label>
+          <label class="field">Je suis
+            <select id="p-gender" required>
+              <option value="F">Une femme</option>
+              <option value="H">Un homme</option>
+              <option value="FT">Une femme trans</option>
+              <option value="HT">Un homme trans</option>
+              <option value="NB">Non-binaire (iel)</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="grid2">
+          <label class="field">Je recherche
+            <select id="p-seeking" required>
+              <option value="T">Tout le monde</option>
+              <option value="F">Des femmes</option>
+              <option value="H">Des hommes</option>
+              <option value="NB">Des personnes non-binaires</option>
+            </select>
+          </label>
+          <p class="tip form-tip">Plus votre recherche est ouverte, plus l'algorithme peut vous surprendre. Les critères trop étroits (physique, « type » précis) font passer à côté de belles rencontres. <a href="#" id="openness-link" class="tip-link">Pourquoi&nbsp;?</a></p>
+          <label class="field">Photo (optionnel)
+            <input type="file" id="p-photo" accept="image/*" />
+            <img id="p-photo-preview" class="photo-preview" hidden alt="Aperçu de votre photo" />
+            <span class="photo-note">Par défaut, votre photo n'est révélée qu'à vos matchs (jamais en découverte).</span>
+          </label>
+        </div>
+        <div class="avatar-gen">
+          <div class="avatar-gen-face" id="p-avatar-preview" hidden></div>
+          <p class="photo-note">Votre <b>avatar</b> est généré à partir de votre photo (teint et couleur de cheveux) et vous représente publiquement. Votre photo, elle, reste réservée à vos matchs.</p>
+          <div class="avatar-tune" id="avatar-tune" hidden>
+            <p class="tune-hint">Pas le bon rendu ? Ajustez d'un tap :</p>
+            <div class="tune-row"><span class="tune-lab">Teint</span><div class="swatches" id="skin-swatches"></div></div>
+            <div class="tune-row"><span class="tune-lab">Cheveux</span><div class="swatches" id="hair-swatches"></div></div>
+            <div class="tune-row tune-row-hair"><span class="tune-lab">Coiffure</span><div class="hair-styles" id="hair-styles"></div></div>
+            <button type="button" class="btn btn-ghost small" id="avatar-reset">↻ Regénérer depuis ma photo</button>
+          </div>
+        </div>
+        <label class="check"><input type="checkbox" id="p-discover-photo" />
+          Afficher ma photo dès la découverte (au lieu de l'avatar). Sinon, elle reste réservée à mes matchs.</label>
+
+        <label class="field">Bio
+          <textarea id="p-bio" rows="2" maxlength="180" placeholder="Quelques mots sur vous…"></textarea>
+        </label>
+
+        <h2 class="section-title">Naissance <small>— thème occidental, chinois &amp; numérologie</small></h2>
+        <p class="hint">Renseignez juste ces trois champs : tout le reste est <b>calculé automatiquement</b>, vous n'avez rien à saisir vous-même.</p>
+        <div class="grid2">
+          <label class="field">Date de naissance
+            <input type="date" id="p-dob" required />
+          </label>
+          <label class="field">Heure de naissance <small>ascendant + heure chinoise</small>
+            <input type="time" id="p-time" />
+          </label>
+        </div>
+        <label class="field">Ville de naissance <small>pour l'ascendant</small>
+          <div class="city-ac">
+            <input type="text" id="p-city" class="wide" autocomplete="off" placeholder="Tapez votre ville…" />
+            <div class="city-suggest" id="city-suggest" hidden></div>
+          </div>
+        </label>
+        <p class="hint">L'heure d'été et les fuseaux historiques sont gérés automatiquement.</p>
+        <div class="birth-recap" id="birth-recap">
+          <b>Calculé pour vous</b>
+          <ul>
+            <li>☀️ <b>Thème occidental</b> — signe solaire &amp; ascendant</li>
+            <li>🐉 <b>Thème chinois</b> — signe, élément &amp; heure chinoise</li>
+            <li>🔢 <b>Numérologie</b> — votre chemin de vie</li>
+          </ul>
+        </div>
+        <div class="astro-live" id="astro-live" hidden></div>
+
+        <h2 class="section-title">Personnalité <small>— 64 questions, inspiré du modèle MBTI®</small></h2>
+        <p class="hint">Votre type se détermine par le test, pour une compatibilité juste — pas de type auto-déclaré. Deux minutes, aucune bonne réponse.</p>
+        <button type="button" class="btn btn-ghost" id="btn-mbti-test">Passer le test de personnalité</button>
+        <p class="badge-line" id="mbti-badge" hidden></p>
+        <p class="hint">Envie d'aller plus loin ? Explorer la démarche des 16 types (MBTI®) est un beau levier de développement personnel — pour mieux vous comprendre, et mieux comprendre l'autre.</p>
+        <p class="legal-note">Test indépendant inspiré des 16 types jungiens, non affilié à ni approuvé par The Myers-Briggs Company. « MBTI® » et « Myers-Briggs® » sont des marques de leurs détenteurs respectifs.</p>
+
+        <h2 class="section-title">Affinités kink <small>— facultatif, 18+, données sensibles</small></h2>
+        <label class="check">
+          <input type="checkbox" id="p-bdsm-optin" />
+          J'ai 18 ans ou plus et je consens explicitement au traitement de mes données intimes (préférences kink) pour le calcul de compatibilité — facultatif et privé
+        </label>
+        <div id="bdsm-area" hidden>
+          <button type="button" class="btn btn-ghost" id="btn-bdsm-test">Passer le test kink (16 questions)</button>
+          <p class="badge-line" id="bdsm-badge" hidden></p>
+        </div>
+
+        <h2 class="section-title">Notifications</h2>
+        <label class="check"><input type="checkbox" id="p-notify-email" checked />
+          Me prévenir par email des nouveaux matchs, messages et Super Likes.</label>
+        <div id="push-row" class="push-row" hidden>
+          <button type="button" class="btn btn-ghost small" id="btn-push">Activer les notifications push</button>
+          <span class="hint" id="push-note">Recevez une alerte même quand l'app est fermée.</span>
+        </div>
+
+        <h2 class="section-title">Vérification <small>— badge « profil vérifié »</small></h2>
+        <div id="verif-area"></div>
+        <input type="file" id="verif-file" accept="image/*" capture="user" hidden />
+
+        <p class="error" id="form-error" role="alert" hidden></p>
+        <button type="submit" class="btn">Enregistrer et découvrir mes matchs</button>
+
+        <h2 class="section-title">Confidentialité <small>— vos droits (RGPD)</small></h2>
+        <p class="hint">Vous pouvez à tout moment consulter, exporter ou supprimer vos données.</p>
+        <div class="rgpd-actions">
+          <button type="button" class="btn btn-ghost small" id="btn-privacy">Politique de confidentialité</button>
+          <button type="button" class="btn btn-ghost small" id="btn-export">Exporter mes données</button>
+          <button type="button" class="btn btn-ghost small danger" id="btn-delete">Supprimer mon compte</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ============ Vue Découvrir (swipe) ============ -->
+    <section id="view-discover" class="view" hidden>
+      <div class="hero-mini">
+        <h1 data-i18n-html="disc.title">À <span>découvrir</span></h1>
+        <p class="subtitle" id="discover-sub"></p>
+      </div>
+
+      <details class="filters card" id="filters">
+        <summary data-i18n="filters.summary">Filtres — distance</summary>
+        <label class="field">Distance max : <b id="dist-val">∞</b>
+          <input type="range" id="f-dist" min="50" max="2050" step="50" value="2050" />
+        </label>
+        <p class="nudge-inline" id="filter-nudge" hidden></p>
+      </details>
+
+      <div class="sort-bar">
+        <span data-i18n="sort.by">Trier par</span>
+        <div class="seg" id="sort-seg">
+          <button type="button" class="seg-btn active" data-sort="score" data-i18n="sort.score">Affinité</button>
+          <button type="button" class="seg-btn" data-sort="distance" data-i18n="sort.distance">Proximité</button>
+          <button type="button" class="seg-btn" data-sort="active" data-i18n="sort.active">Actifs</button>
+        </div>
+      </div>
+
+      <div id="deck" class="deck"></div>
+
+      <div class="deck-actions" id="deck-actions">
+        <button type="button" class="act pass" id="act-pass" title="Passer" aria-label="Passer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        <button type="button" class="act msg" id="act-msg" title="Message direct" aria-label="Message direct"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="1.5"/><path d="M4.5 7.5l7.5 5.5 7.5-5.5"/></svg></button>
+        <button type="button" class="act superlike" id="act-super" title="Super Like" aria-label="Super Like"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M12 3.5l2.6 5.7 6.2.6-4.7 4.1 1.4 6.1L12 16.9 6.5 20.1l1.4-6.1L3.2 9.8l6.2-.6z"/></svg></button>
+        <button type="button" class="act like" id="act-like" title="J'aime" aria-label="J'aime"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 20.3l-1.4-1.3C5.4 14.2 2.5 11.6 2.5 8.3 2.5 5.8 4.5 3.9 7 3.9c1.5 0 2.9.7 3.8 1.8.9-1.1 2.3-1.8 3.8-1.8 2.5 0 4.5 1.9 4.5 4.4 0 3.3-2.9 5.9-8.1 10.7L12 20.3z"/></svg></button>
+      </div>
+    </section>
+
+    <!-- ============ Vue Résultats (Moi) ============ -->
+    <section id="view-insights" class="view" hidden>
+      <div class="hero-mini">
+        <h1>Vos <span>résultats</span></h1>
+        <p class="subtitle">Ce que révèlent votre thème astral, vos nombres et votre personnalité — à titre de découverte de soi.</p>
+      </div>
+      <div id="insights-hub" class="insights-hub"></div>
+      <div id="insights-detail" class="insights-detail" hidden></div>
+    </section>
+
+    <!-- ============ Vue Messages ============ -->
+    <section id="view-matches" class="view" hidden>
+      <div class="hero-mini"><h1>Vos <span>conversations</span></h1></div>
+      <div id="matches-list" class="matches-list"></div>
+      <div id="chat" class="chat card" hidden>
+        <div class="chat-head">
+          <button type="button" class="chat-back" id="chat-back">←</button>
+          <div class="chat-face" id="chat-face"></div>
+          <div><h3 id="chat-name"></h3><p id="chat-meta"></p></div>
+        </div>
+        <div class="chat-reveal" id="chat-reveal" hidden></div>
+        <div class="chat-body" id="chat-body"></div>
+        <form class="chat-compose" id="chat-form">
+          <input type="text" id="chat-input" placeholder="Votre message…" autocomplete="off" />
+          <button type="submit" class="btn small">Envoyer</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ Modal générique (match / premium / message) ============ -->
+  <div id="modal" class="overlay" hidden>
+    <div class="overlay-card" id="modal-card"></div>
+  </div>
+
+  <!-- ============ Overlay de test ============ -->
+  <div id="overlay" class="overlay" hidden>
+    <div class="overlay-card">
+      <div class="overlay-head">
+        <h3 id="quiz-title"></h3>
+        <button type="button" class="close" id="quiz-close" aria-label="Fermer">✕</button>
+      </div>
+      <p class="quiz-intro" id="quiz-intro"></p>
+      <form id="quiz-form"><div id="quiz-body"></div>
+        <p class="error" id="quiz-error" role="alert" hidden></p>
+        <button type="submit" class="btn" id="quiz-submit">Valider</button>
+      </form>
+    </div>
+  </div>
+
+  <footer>
+    <p data-i18n="footer.demo">Âme Sœur — prototype de démonstration.</p>
+    <p><a href="#" id="footer-privacy" data-i18n="footer.privacy">Politique de confidentialité</a><span data-i18n="footer.controller"> · Responsable de traitement : Âme Sœur (démo)</span></p>
+  </footer>
+
+  <div id="install-banner" class="install-banner" hidden>
+    <button type="button" class="install-close" id="install-close" aria-label="Fermer">✕</button>
+    <div class="install-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M5 21h14"/></svg>
+    </div>
+    <div class="install-txt">
+      <b data-i18n="install.title">Installer l'app</b>
+      <span data-i18n="install.text">Ajoutez Âme Sœur à votre écran d'accueil, comme une vraie app.</span>
+      <span class="install-ios" id="install-ios" hidden data-i18n-html="install.ios">Appuyez sur <b>Partager</b> puis « <b>Sur l'écran d'accueil</b> ».</span>
+    </div>
+    <button type="button" class="btn small" id="install-btn" data-i18n="install.btn">Installer</button>
+  </div>
+
+  <div id="cookie-banner" class="cookie-banner" hidden>
+    <p><span data-i18n="cookie.text">Nous utilisons uniquement un cookie strictement nécessaire à votre connexion, sans aucun traceur publicitaire. </span><a href="#" id="cookie-privacy" data-i18n="cookie.link">En savoir plus</a>.</p>
+    <button type="button" class="btn small" id="cookie-ok" data-i18n="cookie.ok">J'ai compris</button>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="content.js"></script>
+  <script src="i18n.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#08080a" />
+  <title>Back office · Âme Sœur</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+  <div class="admin-wrap">
+    <header class="admin-top">
+      <div class="brand">Âme&nbsp;Sœur · <span>Back office</span></div>
+      <a class="admin-applink" href="/">← Retour à l'app</a>
+    </header>
+
+    <div id="admin-gate" class="admin-gate" hidden>
+      <h2>Accès réservé à l'administration</h2>
+      <p id="gate-msg">Connectez-vous avec un compte administrateur pour accéder au tableau de bord.</p>
+      <a class="btn" href="/">Aller à la connexion</a>
+    </div>
+
+    <main id="admin-main" hidden>
+      <!-- Vue d'ensemble -->
+      <h2 class="admin-h">Vue d'ensemble</h2>
+      <div id="kpis" class="kpis"></div>
+
+      <!-- Démographie -->
+      <h2 class="admin-h">Démographie <small>— pour le marketing</small></h2>
+      <div class="admin-grid">
+        <section class="acard"><h3>Genre</h3><div id="ch-gender"></div></section>
+        <section class="acard"><h3>Tranches d'âge</h3><div id="ch-age"></div></section>
+        <section class="acard"><h3>Recherche</h3><div id="ch-seeking"></div></section>
+        <section class="acard"><h3>Top villes</h3><div id="ch-city"></div></section>
+      </div>
+
+      <!-- Personnalité & engagement -->
+      <h2 class="admin-h">Personnalité & engagement</h2>
+      <div class="admin-grid">
+        <section class="acard"><h3>Types MBTI</h3><div id="ch-mbti"></div></section>
+        <section class="acard"><h3>Inscriptions (30 derniers jours)</h3><div id="ch-signups" class="signups"></div></section>
+      </div>
+
+      <!-- Membres -->
+      <div class="admin-h-row">
+        <h2 class="admin-h">Membres <small>— <span id="members-count">0</span> inscrits</small></h2>
+        <button type="button" class="btn btn-ghost small" id="export-csv">⬇ Export CSV</button>
+      </div>
+      <div class="table-scroll">
+        <table class="admin-table" id="members-table">
+          <thead><tr><th>Prénom</th><th>Âge</th><th>Genre</th><th>Recherche</th><th>Ville</th><th>MBTI</th><th>Kink</th><th>Premium</th><th>Vérifié</th><th>Inscrit·e</th><th>Email</th></tr></thead>
+          <tbody id="members-body"></tbody>
+        </table>
+      </div>
+
+      <!-- Vérifications en attente -->
+      <h2 class="admin-h">Vérifications en attente <small>— <span id="verif-count">0</span></small></h2>
+      <div id="verif-list" class="verif-list"></div>
+
+      <!-- Signalements & modération -->
+      <h2 class="admin-h">Signalements & modération</h2>
+      <div class="table-scroll">
+        <table class="admin-table">
+          <thead><tr><th>Membre</th><th>Signaleurs</th><th>Signalements</th><th>Motifs</th><th>Dernier</th><th>Statut</th><th></th></tr></thead>
+          <tbody id="reports-body"></tbody>
+        </table>
+      </div>
+
+      <!-- Audit d'un match -->
+      <h2 class="admin-h">Auditer un match</h2>
+      <section class="acard">
+        <div class="audit-pick">
+          <label class="field">Membre A<select id="mA"></select></label>
+          <label class="field">Membre B<select id="mB"></select></label>
+          <button type="button" class="btn small" id="audit-run">Calculer le détail</button>
+        </div>
+        <div id="audit-result"></div>
+      </section>
+
+      <!-- Pondérations -->
+      <h2 class="admin-h">Pondération du matching <small>— sans redéploiement</small></h2>
+      <section class="acard">
+        <p class="hint">Ajustez l'importance de chaque item. Les poids sont relatifs : ils sont normalisés à 100 % au calcul. La modification est immédiate et persistée.</p>
+        <div id="weights-form" class="weights-form"></div>
+        <div class="weights-actions">
+          <button type="button" class="btn small" id="weights-save">Enregistrer</button>
+          <button type="button" class="btn btn-ghost small" id="weights-reset">Valeurs par défaut</button>
+          <span id="weights-msg" class="weights-msg"></span>
+        </div>
+      </section>
+
+      <!-- Journal des accès admin -->
+      <h2 class="admin-h">Journal des accès admin <small>— actions sensibles tracées</small></h2>
+      <div class="table-scroll">
+        <table class="admin-table">
+          <thead><tr><th>Date</th><th>Admin</th><th>Action</th><th>IP</th></tr></thead>
+          <tbody id="log-body"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+  <script src="admin.js"></script>
+</body>
+</html>
